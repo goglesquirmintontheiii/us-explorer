@@ -1,0 +1,6017 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-20T07:07:05Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 65294838,
+  "lat": 37.8060512,
+  "lon": -122.4757879,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "crossing:signals": "no",
+    "highway": "crossing",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 65374006,
+  "lat": 37.8071667,
+  "lon": -122.4756577,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 434668708,
+  "lat": 37.8095111,
+  "lon": -122.4761626,
+  "tags": {
+    "crossing": "uncontrolled",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 822485358,
+  "lat": 37.8078281,
+  "lon": -122.4758784,
+  "tags": {
+    "crossing": "marked",
+    "crossing:markings": "zebra",
+    "highway": "crossing",
+    "tactile_paving": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 1819433845,
+  "lat": 37.8061421,
+  "lon": -122.4758077,
+  "tags": {
+    "direction": "forward",
+    "highway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 2638978411,
+  "lat": 37.8100455,
+  "lon": -122.4764266,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 2961623553,
+  "lat": 37.8068658,
+  "lon": -122.4759832,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "crossing:signals": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 3722698242,
+  "lat": 37.8059752,
+  "lon": -122.4759045,
+  "tags": {
+    "direction": "forward",
+    "highway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 3741990097,
+  "lat": 37.8084109,
+  "lon": -122.4762449,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:island": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 4202269755,
+  "lat": 37.8056230,
+  "lon": -122.4761319,
+  "tags": {
+    "crossing": "zebra",
+    "crossing:island": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 4202269763,
+  "lat": 37.8056655,
+  "lon": -122.4759718,
+  "tags": {
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 4202269783,
+  "lat": 37.8058231,
+  "lon": -122.4757738,
+  "tags": {
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 4721387789,
+  "lat": 37.8059388,
+  "lon": -122.4757395,
+  "tags": {
+    "bus": "yes",
+    "highway": "bus_stop",
+    "local_ref": "A",
+    "name": "Golden Gate West",
+    "network": "PresidiGo",
+    "public_transport": "platform"
+  }
+},
+{
+  "type": "node",
+  "id": 5241881434,
+  "lat": 37.8107521,
+  "lon": -122.4766335,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5241881438,
+  "lat": 37.8102459,
+  "lon": -122.4769542,
+  "tags": {
+    "emergency": "fire_hydrant",
+    "fire_hydrant:position": "sidewalk",
+    "fire_hydrant:type": "pillar"
+  }
+},
+{
+  "type": "node",
+  "id": 5241881440,
+  "lat": 37.8107214,
+  "lon": -122.4766842,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5241881442,
+  "lat": 37.8107341,
+  "lon": -122.4766603,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5372048512,
+  "lat": 37.8059741,
+  "lon": -122.4758825,
+  "tags": {
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 5372048513,
+  "lat": 37.8061286,
+  "lon": -122.4757962,
+  "tags": {
+    "crossing": "unmarked",
+    "crossing:markings": "no",
+    "highway": "crossing",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5372048514,
+  "lat": 37.8062565,
+  "lon": -122.4756288,
+  "tags": {
+    "crossing": "unmarked",
+    "crossing:markings": "no",
+    "highway": "crossing",
+    "tactile_paving": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 8548046089,
+  "lat": 37.8071412,
+  "lon": -122.4756943,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 8548046114,
+  "lat": 37.8070927,
+  "lon": -122.4757711,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 8548079936,
+  "lat": 37.8071909,
+  "lon": -122.4756222,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 8548079949,
+  "lat": 37.8071183,
+  "lon": -122.4757295,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 8548079975,
+  "lat": 37.8070659,
+  "lon": -122.4758138,
+  "tags": {
+    "camera:type": "fixed",
+    "highway": "toll_gantry",
+    "man_made": "surveillance",
+    "manufacturer:wikidata": "Q5579434",
+    "name": "Golden Gate Bridge Automated Toll Plaza",
+    "opening_hours": "24/7",
+    "operator": "Golden Gate Bridge Highway and Transportation District",
+    "operator:wikidata": "Q5579434",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 9143330809,
+  "lat": 37.8068853,
+  "lon": -122.4760041,
+  "tags": {
+    "direction": "forward",
+    "highway": "stop",
+    "traffic_sign": "US:R1-1"
+  }
+},
+{
+  "type": "node",
+  "id": 10111975832,
+  "lat": 37.8097263,
+  "lon": -122.4764216,
+  "tags": {
+    "access": "yes",
+    "amenity": "bench",
+    "backrest": "yes",
+    "colour": "brown",
+    "direction": "160",
+    "material": "wood"
+  }
+},
+{
+  "type": "node",
+  "id": 10111975833,
+  "lat": 37.8095596,
+  "lon": -122.4764265,
+  "tags": {
+    "access": "yes",
+    "amenity": "bench",
+    "backrest": "yes",
+    "colour": "brown",
+    "direction": "75",
+    "lit": "no",
+    "material": "wood"
+  }
+},
+{
+  "type": "node",
+  "id": 10691449145,
+  "lat": 37.8067081,
+  "lon": -122.4757155,
+  "tags": {
+    "camera:mount": "pole",
+    "camera:type": "panning",
+    "direction": "S",
+    "man_made": "surveillance",
+    "surveillance": "outdoor",
+    "surveillance:type": "camera",
+    "surveillance:zone": "parking"
+  }
+},
+{
+  "type": "node",
+  "id": 10691449146,
+  "lat": 37.8067756,
+  "lon": -122.4756090,
+  "tags": {
+    "camera:mount": "pole",
+    "camera:type": "panning",
+    "direction": "E",
+    "man_made": "surveillance",
+    "surveillance": "outdoor",
+    "surveillance:type": "camera",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 10815354119,
+  "lat": 37.8102846,
+  "lon": -122.4771485,
+  "tags": {
+    "camera:direction": "199",
+    "camera:mount": "pole",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "surveillance": "outdoor",
+    "surveillance:type": "camera"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289125,
+  "lat": 37.8081307,
+  "lon": -122.4760558,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289126,
+  "lat": 37.8080119,
+  "lon": -122.4758610,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289127,
+  "lat": 37.8083176,
+  "lon": -122.4757640,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289128,
+  "lat": 37.8079942,
+  "lon": -122.4758974,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289129,
+  "lat": 37.8080600,
+  "lon": -122.4760237,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289130,
+  "lat": 37.8080833,
+  "lon": -122.4760353,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289132,
+  "lat": 37.8081064,
+  "lon": -122.4760457,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11078289133,
+  "lat": 37.8083079,
+  "lon": -122.4757289,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12908497636,
+  "lat": 37.8087560,
+  "lon": -122.4757927,
+  "tags": {
+    "power": "pole"
+  }
+},
+{
+  "type": "node",
+  "id": 12908497657,
+  "lat": 37.8093539,
+  "lon": -122.4762112,
+  "tags": {
+    "power": "pole"
+  }
+},
+{
+  "type": "node",
+  "id": 12908497663,
+  "lat": 37.8087099,
+  "lon": -122.4756828,
+  "tags": {
+    "camera:mount": "pole",
+    "camera:type": "dome",
+    "check_date": "2026-05-30",
+    "man_made": "surveillance",
+    "surveillance": "outdoor",
+    "surveillance:type": "camera",
+    "surveillance:zone": "entrance"
+  }
+},
+{
+  "type": "node",
+  "id": 13519465344,
+  "lat": 37.8068856,
+  "lon": -122.4759083,
+  "tags": {
+    "direction": "forward",
+    "highway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 13810023688,
+  "lat": 37.8062655,
+  "lon": -122.4756401,
+  "tags": {
+    "direction": "backward",
+    "highway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 13903004612,
+  "lat": 37.8068516,
+  "lon": -122.4758876,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "lines",
+    "crossing:signals": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 13903004717,
+  "lat": 37.8068790,
+  "lon": -122.4759626,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "crossing:signals": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 13903004718,
+  "lat": 37.8068825,
+  "lon": -122.4759254,
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "lines",
+    "crossing:signals": "no",
+    "highway": "crossing"
+  }
+},
+{
+  "type": "node",
+  "id": 13903004758,
+  "lat": 37.8068601,
+  "lon": -122.4758820,
+  "tags": {
+    "direction": "forward",
+    "highway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 13903004763,
+  "lat": 37.8067255,
+  "lon": -122.4758374,
+  "tags": {
+    "direction": "backward",
+    "highway": "stop",
+    "traffic_sign": "US:R1-1"
+  }
+},
+{
+  "type": "node",
+  "id": 14025074001,
+  "lat": 37.8078705,
+  "lon": -122.4759829,
+  "tags": {
+    "camera:mount": "street_lamp",
+    "camera:type": "fixed",
+    "direction": "269",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 14284377101,
+  "lat": 37.8070301,
+  "lon": -122.4757653,
+  "tags": {
+    "camera:direction": "140",
+    "camera:mount": "gantry",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 14284377102,
+  "lat": 37.8070576,
+  "lon": -122.4757240,
+  "tags": {
+    "camera:direction": "140",
+    "camera:mount": "gantry",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 14284377103,
+  "lat": 37.8070827,
+  "lon": -122.4756819,
+  "tags": {
+    "camera:direction": "140",
+    "camera:mount": "gantry",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 14284377104,
+  "lat": 37.8071118,
+  "lon": -122.4756370,
+  "tags": {
+    "camera:direction": "140",
+    "camera:mount": "gantry",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "node",
+  "id": 14284377105,
+  "lat": 37.8071382,
+  "lon": -122.4756032,
+  "tags": {
+    "camera:direction": "140",
+    "camera:mount": "gantry",
+    "camera:type": "fixed",
+    "man_made": "surveillance",
+    "manufacturer": "Flock Safety",
+    "manufacturer:wikidata": "Q108485435",
+    "operator": "San Francisco Police Department",
+    "operator:wikidata": "Q1320247",
+    "surveillance": "public",
+    "surveillance:type": "ALPR",
+    "surveillance:zone": "traffic"
+  }
+},
+{
+  "type": "way",
+  "id": 8916356,
+  "bounds": {
+    "minlat": 37.8044145,
+    "minlon": -122.4763059,
+    "maxlat": 37.8063366,
+    "maxlon": -122.4754205
+  },
+  "nodes": [
+    65309205,
+    4202269629,
+    3722628293,
+    3722628544,
+    295492317,
+    3722628428,
+    1709838891,
+    295492299,
+    3722628238,
+    1709838948,
+    295492316,
+    3722628242,
+    295492296,
+    1819433806,
+    4202269708,
+    1709838943,
+    1819433807,
+    295492467,
+    65294846,
+    3722627781,
+    295493434,
+    3834434208,
+    3722628591,
+    1709838957,
+    1709838952,
+    65294844,
+    3722628289,
+    65294842,
+    4202269781,
+    65294840,
+    8547995459,
+    1709838923,
+    8547995455,
+    8547995457,
+    3722628461,
+    8547995453,
+    65294838,
+    8547995456,
+    8547995458,
+    3454073889,
+    295490435,
+    13809973180,
+    3722628430,
+    3454073890,
+    13187897042
+  ],
+  "geometry": [
+    { "lat": 37.8044145, "lon": -122.4756442 },
+    { "lat": 37.8044158, "lon": -122.4757605 },
+    { "lat": 37.8044175, "lon": -122.4758123 },
+    { "lat": 37.8044230, "lon": -122.4758590 },
+    { "lat": 37.8044347, "lon": -122.4759159 },
+    { "lat": 37.8044519, "lon": -122.4759712 },
+    { "lat": 37.8044763, "lon": -122.4760236 },
+    { "lat": 37.8045119, "lon": -122.4760793 },
+    { "lat": 37.8045555, "lon": -122.4761316 },
+    { "lat": 37.8046032, "lon": -122.4761797 },
+    { "lat": 37.8046480, "lon": -122.4762150 },
+    { "lat": 37.8047018, "lon": -122.4762472 },
+    { "lat": 37.8047547, "lon": -122.4762722 },
+    { "lat": 37.8048025, "lon": -122.4762881 },
+    { "lat": 37.8048519, "lon": -122.4762998 },
+    { "lat": 37.8049141, "lon": -122.4763059 },
+    { "lat": 37.8049743, "lon": -122.4763044 },
+    { "lat": 37.8050234, "lon": -122.4762974 },
+    { "lat": 37.8050717, "lon": -122.4762846 },
+    { "lat": 37.8051189, "lon": -122.4762650 },
+    { "lat": 37.8051614, "lon": -122.4762387 },
+    { "lat": 37.8052635, "lon": -122.4761670 },
+    { "lat": 37.8055338, "lon": -122.4759773 },
+    { "lat": 37.8055897, "lon": -122.4759420 },
+    { "lat": 37.8056447, "lon": -122.4759119 },
+    { "lat": 37.8056983, "lon": -122.4758858 },
+    { "lat": 37.8057501, "lon": -122.4758667 },
+    { "lat": 37.8057876, "lon": -122.4758580 },
+    { "lat": 37.8058207, "lon": -122.4758532 },
+    { "lat": 37.8059329, "lon": -122.4758348 },
+    { "lat": 37.8059528, "lon": -122.4758310 },
+    { "lat": 37.8059708, "lon": -122.4758266 },
+    { "lat": 37.8059875, "lon": -122.4758213 },
+    { "lat": 37.8060044, "lon": -122.4758146 },
+    { "lat": 37.8060199, "lon": -122.4758072 },
+    { "lat": 37.8060361, "lon": -122.4757981 },
+    { "lat": 37.8060512, "lon": -122.4757879 },
+    { "lat": 37.8060682, "lon": -122.4757768 },
+    { "lat": 37.8060826, "lon": -122.4757659 },
+    { "lat": 37.8061034, "lon": -122.4757470 },
+    { "lat": 37.8061303, "lon": -122.4757168 },
+    { "lat": 37.8061555, "lon": -122.4756828 },
+    { "lat": 37.8061760, "lon": -122.4756518 },
+    { "lat": 37.8062193, "lon": -122.4755901 },
+    { "lat": 37.8063366, "lon": -122.4754205 }
+  ],
+  "tags": {
+    "cycleway": "lane",
+    "destination:backward": "Golden Gate National Recreation Area",
+    "destination:ref:forward": "US 101 South;CA 1 South",
+    "highway": "secondary",
+    "lanes": "2",
+    "lcn_ref": "95",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "Merchant Road",
+    "sidewalk:left": "separate",
+    "sidewalk:right": "no",
+    "surface": "asphalt",
+    "tiger:cfcc": "A41",
+    "tiger:name_base": "Merchant",
+    "tiger:name_type": "Rd"
+  }
+},
+{
+  "type": "way",
+  "id": 26965625,
+  "bounds": {
+    "minlat": 37.8038030,
+    "minlon": -122.4767911,
+    "maxlat": 37.8055844,
+    "maxlon": -122.4760243
+  },
+  "nodes": [
+    4202269742,
+    7576554720,
+    7576554717,
+    4202269736,
+    8754745698,
+    4202269731,
+    4202269727,
+    4202269724,
+    295493468,
+    65294850,
+    3722628338,
+    3722628577,
+    3722628363,
+    3722628332,
+    3722627783,
+    3722628465,
+    3722628397,
+    65294851,
+    3722628606,
+    3722628451,
+    3722628231,
+    3722628300,
+    3722628379,
+    3722628554,
+    65294854,
+    3722627762,
+    3722628404,
+    65294857,
+    3722628421,
+    3722627748,
+    65294858,
+    65294860,
+    3722628399,
+    4202269589,
+    4202269461,
+    4202269442,
+    65294863,
+    65294869,
+    3834434215
+  ],
+  "geometry": [
+    { "lat": 37.8055844, "lon": -122.4764179 },
+    { "lat": 37.8055428, "lon": -122.4764161 },
+    { "lat": 37.8055044, "lon": -122.4764283 },
+    { "lat": 37.8054189, "lon": -122.4764789 },
+    { "lat": 37.8053801, "lon": -122.4765060 },
+    { "lat": 37.8053394, "lon": -122.4765343 },
+    { "lat": 37.8052596, "lon": -122.4765940 },
+    { "lat": 37.8051770, "lon": -122.4766530 },
+    { "lat": 37.8051005, "lon": -122.4766963 },
+    { "lat": 37.8050501, "lon": -122.4767192 },
+    { "lat": 37.8050060, "lon": -122.4767366 },
+    { "lat": 37.8049586, "lon": -122.4767509 },
+    { "lat": 37.8049035, "lon": -122.4767655 },
+    { "lat": 37.8048506, "lon": -122.4767780 },
+    { "lat": 37.8048014, "lon": -122.4767871 },
+    { "lat": 37.8047530, "lon": -122.4767911 },
+    { "lat": 37.8047087, "lon": -122.4767908 },
+    { "lat": 37.8046591, "lon": -122.4767834 },
+    { "lat": 37.8046004, "lon": -122.4767652 },
+    { "lat": 37.8045434, "lon": -122.4767451 },
+    { "lat": 37.8044860, "lon": -122.4767199 },
+    { "lat": 37.8044421, "lon": -122.4766971 },
+    { "lat": 37.8044101, "lon": -122.4766731 },
+    { "lat": 37.8043832, "lon": -122.4766453 },
+    { "lat": 37.8043650, "lon": -122.4766125 },
+    { "lat": 37.8043494, "lon": -122.4765746 },
+    { "lat": 37.8043424, "lon": -122.4765299 },
+    { "lat": 37.8043336, "lon": -122.4764226 },
+    { "lat": 37.8043257, "lon": -122.4763782 },
+    { "lat": 37.8043122, "lon": -122.4763316 },
+    { "lat": 37.8042924, "lon": -122.4762808 },
+    { "lat": 37.8042646, "lon": -122.4762366 },
+    { "lat": 37.8042280, "lon": -122.4761899 },
+    { "lat": 37.8041772, "lon": -122.4761327 },
+    { "lat": 37.8041061, "lon": -122.4760820 },
+    { "lat": 37.8040610, "lon": -122.4760626 },
+    { "lat": 37.8039281, "lon": -122.4760243 },
+    { "lat": 37.8038565, "lon": -122.4760243 },
+    { "lat": 37.8038030, "lon": -122.4760458 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "smoothness": "good",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 420287756,
+  "bounds": {
+    "minlat": 37.8043320,
+    "minlon": -122.4763818,
+    "maxlat": 37.8068385,
+    "maxlon": -122.4755420
+  },
+  "nodes": [
+    4202269890,
+    14272327804,
+    7399481905,
+    14272327805,
+    4202269851,
+    4202269849,
+    4202269845,
+    4202269841,
+    4202269838,
+    5372048514,
+    4202269826,
+    5372048513,
+    4202269821,
+    4202269817,
+    4202269807,
+    5372048512,
+    4202269797,
+    4202269789,
+    4202269772,
+    4202269769,
+    4202269763,
+    4202269756,
+    4202269750,
+    4202269728,
+    4202269722,
+    4202269720,
+    4202269717,
+    4202269711,
+    4202269706,
+    4202269685,
+    4202269672,
+    4202269661,
+    4202269654,
+    4202269645,
+    4202269641,
+    4202269637,
+    4202269631,
+    4202269627,
+    4202269625,
+    4202269623,
+    4202269622,
+    4202269621,
+    4202269617
+  ],
+  "geometry": [
+    { "lat": 37.8068385, "lon": -122.4760256 },
+    { "lat": 37.8067290, "lon": -122.4759093 },
+    { "lat": 37.8066862, "lon": -122.4758669 },
+    { "lat": 37.8064747, "lon": -122.4756426 },
+    { "lat": 37.8063974, "lon": -122.4755545 },
+    { "lat": 37.8063737, "lon": -122.4755420 },
+    { "lat": 37.8063404, "lon": -122.4755449 },
+    { "lat": 37.8063189, "lon": -122.4755530 },
+    { "lat": 37.8062978, "lon": -122.4755724 },
+    { "lat": 37.8062565, "lon": -122.4756288 },
+    { "lat": 37.8061584, "lon": -122.4757629 },
+    { "lat": 37.8061286, "lon": -122.4757962 },
+    { "lat": 37.8061065, "lon": -122.4758165 },
+    { "lat": 37.8060774, "lon": -122.4758420 },
+    { "lat": 37.8060180, "lon": -122.4758702 },
+    { "lat": 37.8059741, "lon": -122.4758825 },
+    { "lat": 37.8059481, "lon": -122.4758910 },
+    { "lat": 37.8058495, "lon": -122.4759091 },
+    { "lat": 37.8057791, "lon": -122.4759245 },
+    { "lat": 37.8057245, "lon": -122.4759439 },
+    { "lat": 37.8056655, "lon": -122.4759718 },
+    { "lat": 37.8056233, "lon": -122.4759976 },
+    { "lat": 37.8055750, "lon": -122.4760266 },
+    { "lat": 37.8052891, "lon": -122.4762287 },
+    { "lat": 37.8051608, "lon": -122.4763194 },
+    { "lat": 37.8050972, "lon": -122.4763510 },
+    { "lat": 37.8050050, "lon": -122.4763738 },
+    { "lat": 37.8049213, "lon": -122.4763818 },
+    { "lat": 37.8048419, "lon": -122.4763716 },
+    { "lat": 37.8047396, "lon": -122.4763396 },
+    { "lat": 37.8046816, "lon": -122.4763104 },
+    { "lat": 37.8046212, "lon": -122.4762748 },
+    { "lat": 37.8045651, "lon": -122.4762292 },
+    { "lat": 37.8045195, "lon": -122.4761856 },
+    { "lat": 37.8044819, "lon": -122.4761394 },
+    { "lat": 37.8044480, "lon": -122.4760918 },
+    { "lat": 37.8044220, "lon": -122.4760468 },
+    { "lat": 37.8044013, "lon": -122.4759952 },
+    { "lat": 37.8043807, "lon": -122.4759328 },
+    { "lat": 37.8043696, "lon": -122.4758792 },
+    { "lat": 37.8043616, "lon": -122.4758329 },
+    { "lat": 37.8043486, "lon": -122.4758040 },
+    { "lat": 37.8043320, "lon": -122.4757694 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 810370149,
+  "bounds": {
+    "minlat": 37.8029902,
+    "minlon": -122.4774619,
+    "maxlat": 37.8058290,
+    "maxlon": -122.4767442
+  },
+  "nodes": [
+    7576554724,
+    4202269776,
+    4202269760,
+    678730855,
+    678730865,
+    1819433819,
+    678730867,
+    1819433817,
+    1819433816,
+    678730835,
+    1819433814,
+    1819433812,
+    678730818,
+    1819433810,
+    1819433808,
+    678730837,
+    3834434212,
+    4202269709,
+    678730839,
+    4202269694,
+    678730841,
+    4202269673,
+    678730820,
+    4202269657,
+    4202269644,
+    678730816,
+    4202269619,
+    678730822,
+    678730833,
+    9789576844,
+    4202269430,
+    4202269068,
+    678730814,
+    5040162201,
+    678730812,
+    2480861700
+  ],
+  "geometry": [
+    { "lat": 37.8058290, "lon": -122.4767809 },
+    { "lat": 37.8058216, "lon": -122.4767673 },
+    { "lat": 37.8056515, "lon": -122.4768528 },
+    { "lat": 37.8056115, "lon": -122.4767442 },
+    { "lat": 37.8055236, "lon": -122.4767979 },
+    { "lat": 37.8054542, "lon": -122.4768361 },
+    { "lat": 37.8053991, "lon": -122.4768448 },
+    { "lat": 37.8053334, "lon": -122.4768459 },
+    { "lat": 37.8052825, "lon": -122.4768459 },
+    { "lat": 37.8052308, "lon": -122.4768722 },
+    { "lat": 37.8051827, "lon": -122.4769014 },
+    { "lat": 37.8051293, "lon": -122.4769552 },
+    { "lat": 37.8050728, "lon": -122.4769852 },
+    { "lat": 37.8050333, "lon": -122.4769967 },
+    { "lat": 37.8049776, "lon": -122.4769870 },
+    { "lat": 37.8049193, "lon": -122.4769561 },
+    { "lat": 37.8048981, "lon": -122.4769350 },
+    { "lat": 37.8048664, "lon": -122.4769158 },
+    { "lat": 37.8048287, "lon": -122.4769031 },
+    { "lat": 37.8047795, "lon": -122.4769017 },
+    { "lat": 37.8047291, "lon": -122.4769178 },
+    { "lat": 37.8046820, "lon": -122.4769520 },
+    { "lat": 37.8046290, "lon": -122.4769742 },
+    { "lat": 37.8045808, "lon": -122.4769735 },
+    { "lat": 37.8045178, "lon": -122.4769654 },
+    { "lat": 37.8044573, "lon": -122.4769480 },
+    { "lat": 37.8043334, "lon": -122.4768830 },
+    { "lat": 37.8042995, "lon": -122.4768773 },
+    { "lat": 37.8042317, "lon": -122.4768849 },
+    { "lat": 37.8041064, "lon": -122.4769686 },
+    { "lat": 37.8039651, "lon": -122.4770640 },
+    { "lat": 37.8036011, "lon": -122.4772819 },
+    { "lat": 37.8035714, "lon": -122.4772997 },
+    { "lat": 37.8032103, "lon": -122.4773693 },
+    { "lat": 37.8030979, "lon": -122.4773910 },
+    { "lat": 37.8029902, "lon": -122.4774619 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "name": "Coastal Trail",
+    "surface": "compacted"
+  }
+},
+{
+  "type": "way",
+  "id": 8915322,
+  "bounds": {
+    "minlat": 37.8081717,
+    "minlon": -122.4763464,
+    "maxlat": 37.8084587,
+    "maxlon": -122.4758919
+  },
+  "nodes": [
+    3742029247,
+    3742028884,
+    3722698198,
+    3722698204,
+    3722698194,
+    3722698228,
+    2807954104,
+    3722698238,
+    3722698207,
+    3722698229,
+    3722698237,
+    528521174,
+    3722698202,
+    3722698203,
+    3722698221,
+    528521179,
+    12139914311,
+    3722698215,
+    3722698236,
+    3722698240,
+    3722698218,
+    3722698214,
+    3722698241,
+    528521181,
+    3722698199,
+    3722698233
+  ],
+  "geometry": [
+    { "lat": 37.8083520, "lon": -122.4763464 },
+    { "lat": 37.8083527, "lon": -122.4763060 },
+    { "lat": 37.8083572, "lon": -122.4762729 },
+    { "lat": 37.8083751, "lon": -122.4762064 },
+    { "lat": 37.8083953, "lon": -122.4761462 },
+    { "lat": 37.8084162, "lon": -122.4760893 },
+    { "lat": 37.8084439, "lon": -122.4760279 },
+    { "lat": 37.8084550, "lon": -122.4760018 },
+    { "lat": 37.8084587, "lon": -122.4759743 },
+    { "lat": 37.8084549, "lon": -122.4759468 },
+    { "lat": 37.8084441, "lon": -122.4759224 },
+    { "lat": 37.8084276, "lon": -122.4759039 },
+    { "lat": 37.8084079, "lon": -122.4758937 },
+    { "lat": 37.8083868, "lon": -122.4758919 },
+    { "lat": 37.8083662, "lon": -122.4758989 },
+    { "lat": 37.8083507, "lon": -122.4759111 },
+    { "lat": 37.8083406, "lon": -122.4759282 },
+    { "lat": 37.8083355, "lon": -122.4759506 },
+    { "lat": 37.8083240, "lon": -122.4760030 },
+    { "lat": 37.8083108, "lon": -122.4760558 },
+    { "lat": 37.8082926, "lon": -122.4761062 },
+    { "lat": 37.8082697, "lon": -122.4761534 },
+    { "lat": 37.8082487, "lon": -122.4761879 },
+    { "lat": 37.8082252, "lon": -122.4762196 },
+    { "lat": 37.8081995, "lon": -122.4762484 },
+    { "lat": 37.8081717, "lon": -122.4762739 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "foot": "no",
+    "highway": "cycleway",
+    "incline": "up",
+    "lanes": "2",
+    "lcn_ref": "95",
+    "maxspeed": "5 mph",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 8918961,
+  "bounds": {
+    "minlat": 37.8059329,
+    "minlon": -122.4759045,
+    "maxlat": 37.8059752,
+    "maxlon": -122.4758348
+  },
+  "nodes": [
+    3722698242,
+    5372048512,
+    3722698234,
+    65294840
+  ],
+  "geometry": [
+    { "lat": 37.8059752, "lon": -122.4759045 },
+    { "lat": 37.8059741, "lon": -122.4758825 },
+    { "lat": 37.8059524, "lon": -122.4758578 },
+    { "lat": 37.8059329, "lon": -122.4758348 }
+  ],
+  "tags": {
+    "highway": "service",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 8920698,
+  "bounds": {
+    "minlat": 37.8087268,
+    "minlon": -122.4770051,
+    "maxlat": 37.8090041,
+    "maxlon": -122.4756541
+  },
+  "nodes": [
+    65358943,
+    2340246553,
+    65358945,
+    3741990648,
+    65358946,
+    65358948,
+    3741990741,
+    2340246552,
+    3741990350,
+    65358951,
+    3741990353,
+    65358953,
+    822485354
+  ],
+  "geometry": [
+    { "lat": 37.8090041, "lon": -122.4770051 },
+    { "lat": 37.8089056, "lon": -122.4766851 },
+    { "lat": 37.8088788, "lon": -122.4766073 },
+    { "lat": 37.8088503, "lon": -122.4765350 },
+    { "lat": 37.8088158, "lon": -122.4764594 },
+    { "lat": 37.8087851, "lon": -122.4763951 },
+    { "lat": 37.8087671, "lon": -122.4763439 },
+    { "lat": 37.8087523, "lon": -122.4762882 },
+    { "lat": 37.8087405, "lon": -122.4762243 },
+    { "lat": 37.8087322, "lon": -122.4761578 },
+    { "lat": 37.8087272, "lon": -122.4760886 },
+    { "lat": 37.8087268, "lon": -122.4760156 },
+    { "lat": 37.8087331, "lon": -122.4756541 }
+  ],
+  "tags": {
+    "access": "no",
+    "highway": "service",
+    "name": "Battery East Road",
+    "surface": "dirt",
+    "tiger:cfcc": "A41",
+    "tiger:name_base": "Battery East",
+    "tiger:name_type": "Rd"
+  }
+},
+{
+  "type": "way",
+  "id": 25822538,
+  "bounds": {
+    "minlat": 37.8084109,
+    "minlon": -122.4762449,
+    "maxlat": 37.8086422,
+    "maxlon": -122.4753262
+  },
+  "nodes": [
+    3741990716,
+    5659339661,
+    3741990361,
+    3741990583,
+    3741990683,
+    310974816,
+    5659339660,
+    3741990470,
+    7059349291,
+    310974818,
+    3741990218,
+    310974819,
+    7059349292,
+    310974820,
+    5659339659,
+    3741990079,
+    5659339658,
+    3741990080,
+    281658730,
+    3741990668,
+    3741990743,
+    3741990720,
+    281660592,
+    3741990097
+  ],
+  "geometry": [
+    { "lat": 37.8084306, "lon": -122.4753262 },
+    { "lat": 37.8084625, "lon": -122.4753436 },
+    { "lat": 37.8084882, "lon": -122.4753592 },
+    { "lat": 37.8085151, "lon": -122.4753811 },
+    { "lat": 37.8085404, "lon": -122.4754080 },
+    { "lat": 37.8085639, "lon": -122.4754386 },
+    { "lat": 37.8085845, "lon": -122.4754728 },
+    { "lat": 37.8086030, "lon": -122.4755096 },
+    { "lat": 37.8086094, "lon": -122.4755267 },
+    { "lat": 37.8086166, "lon": -122.4755458 },
+    { "lat": 37.8086280, "lon": -122.4755855 },
+    { "lat": 37.8086365, "lon": -122.4756257 },
+    { "lat": 37.8086371, "lon": -122.4756315 },
+    { "lat": 37.8086410, "lon": -122.4756684 },
+    { "lat": 37.8086422, "lon": -122.4757109 },
+    { "lat": 37.8086413, "lon": -122.4757534 },
+    { "lat": 37.8086368, "lon": -122.4757941 },
+    { "lat": 37.8086288, "lon": -122.4758334 },
+    { "lat": 37.8086180, "lon": -122.4758722 },
+    { "lat": 37.8086016, "lon": -122.4759221 },
+    { "lat": 37.8085833, "lon": -122.4759677 },
+    { "lat": 37.8085570, "lon": -122.4760177 },
+    { "lat": 37.8085260, "lon": -122.4760699 },
+    { "lat": 37.8084109, "lon": -122.4762449 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "designated",
+    "highway": "cycleway",
+    "lanes": "2",
+    "lcn_ref": "202",
+    "segregated": "yes",
+    "sidewalk": "right",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 26968360,
+  "bounds": {
+    "minlat": 37.8078054,
+    "minlon": -122.4764699,
+    "maxlat": 37.8081243,
+    "maxlon": -122.4760250
+  },
+  "nodes": [
+    4785385138,
+    5207348624,
+    8547596572,
+    5207348623,
+    8547596552,
+    8547596563,
+    8547596574,
+    5673261809
+  ],
+  "geometry": [
+    { "lat": 37.8078054, "lon": -122.4760250 },
+    { "lat": 37.8078421, "lon": -122.4760814 },
+    { "lat": 37.8078923, "lon": -122.4761582 },
+    { "lat": 37.8079307, "lon": -122.4762196 },
+    { "lat": 37.8080210, "lon": -122.4763429 },
+    { "lat": 37.8080556, "lon": -122.4763870 },
+    { "lat": 37.8080934, "lon": -122.4764329 },
+    { "lat": 37.8081243, "lon": -122.4764699 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "lanes": "3",
+    "lanes:conditional": "4 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "35 mph",
+    "name": "Presidio Parkway",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "tiger:name_base": "Richardson",
+    "tiger:name_type": "Ave",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 27031216,
+  "bounds": {
+    "minlat": 37.8068781,
+    "minlon": -122.4764810,
+    "maxlat": 37.8073019,
+    "maxlon": -122.4759964
+  },
+  "nodes": [
+    4202269933,
+    4202269924,
+    14190386640,
+    7399469710,
+    9143330809,
+    13903004719
+  ],
+  "geometry": [
+    { "lat": 37.8073019, "lon": -122.4764810 },
+    { "lat": 37.8072275, "lon": -122.4763702 },
+    { "lat": 37.8071200, "lon": -122.4762552 },
+    { "lat": 37.8071085, "lon": -122.4762429 },
+    { "lat": 37.8068853, "lon": -122.4760041 },
+    { "lat": 37.8068781, "lon": -122.4759964 }
+  ],
+  "tags": {
+    "access": "private",
+    "highway": "service",
+    "maxspeed": "5 mph"
+  }
+},
+{
+  "type": "way",
+  "id": 48037441,
+  "bounds": {
+    "minlat": 37.8081071,
+    "minlon": -122.4764084,
+    "maxlat": 37.8081666,
+    "maxlon": -122.4763406
+  },
+  "nodes": [
+    528521184,
+    3718987409
+  ],
+  "geometry": [
+    { "lat": 37.8081071, "lon": -122.4763406 },
+    { "lat": 37.8081666, "lon": -122.4764084 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "designated",
+    "highway": "cycleway",
+    "segregated": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 68313655,
+  "bounds": {
+    "minlat": 37.8084306,
+    "minlon": -122.4756541,
+    "maxlat": 37.8087339,
+    "maxlon": -122.4753262
+  },
+  "nodes": [
+    822485354,
+    65358956,
+    3741990540,
+    3741990424,
+    65358958,
+    65358960,
+    7059349290,
+    3741990638,
+    3741990427,
+    3741990716
+  ],
+  "geometry": [
+    { "lat": 37.8087331, "lon": -122.4756541 },
+    { "lat": 37.8087339, "lon": -122.4755953 },
+    { "lat": 37.8087244, "lon": -122.4755296 },
+    { "lat": 37.8087032, "lon": -122.4754498 },
+    { "lat": 37.8086720, "lon": -122.4754036 },
+    { "lat": 37.8086295, "lon": -122.4753879 },
+    { "lat": 37.8086093, "lon": -122.4753775 },
+    { "lat": 37.8085867, "lon": -122.4753658 },
+    { "lat": 37.8085404, "lon": -122.4753528 },
+    { "lat": 37.8084306, "lon": -122.4753262 }
+  ],
+  "tags": {
+    "highway": "service",
+    "name": "Battery East Road",
+    "surface": "concrete",
+    "tiger:cfcc": "A41",
+    "tiger:name_base": "Battery East",
+    "tiger:name_type": "Rd"
+  }
+},
+{
+  "type": "way",
+  "id": 68313657,
+  "bounds": {
+    "minlat": 37.8077502,
+    "minlon": -122.4758268,
+    "maxlat": 37.8077874,
+    "maxlon": -122.4757698
+  },
+  "nodes": [
+    1274882630,
+    4785385140,
+    12139914303
+  ],
+  "geometry": [
+    { "lat": 37.8077502, "lon": -122.4757698 },
+    { "lat": 37.8077614, "lon": -122.4757863 },
+    { "lat": 37.8077874, "lon": -122.4758268 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 133354896,
+  "bounds": {
+    "minlat": 37.8077963,
+    "minlon": -122.4769862,
+    "maxlat": 37.8083520,
+    "maxlon": -122.4763464
+  },
+  "nodes": [
+    281658736,
+    3741990684,
+    3741990452,
+    3741990099,
+    281659916,
+    3741990567,
+    3741990200,
+    281659858,
+    3741990492,
+    281659915,
+    3741990607,
+    3741990137,
+    3741990128,
+    3741990531,
+    3742029253,
+    3742028856,
+    281658732,
+    3742029247
+  ],
+  "geometry": [
+    { "lat": 37.8077963, "lon": -122.4769023 },
+    { "lat": 37.8078091, "lon": -122.4769305 },
+    { "lat": 37.8078303, "lon": -122.4769537 },
+    { "lat": 37.8078544, "lon": -122.4769704 },
+    { "lat": 37.8078832, "lon": -122.4769811 },
+    { "lat": 37.8079148, "lon": -122.4769862 },
+    { "lat": 37.8079477, "lon": -122.4769806 },
+    { "lat": 37.8079793, "lon": -122.4769651 },
+    { "lat": 37.8080094, "lon": -122.4769422 },
+    { "lat": 37.8080412, "lon": -122.4769053 },
+    { "lat": 37.8080669, "lon": -122.4768627 },
+    { "lat": 37.8080879, "lon": -122.4768144 },
+    { "lat": 37.8081122, "lon": -122.4767549 },
+    { "lat": 37.8081383, "lon": -122.4767023 },
+    { "lat": 37.8081693, "lon": -122.4766456 },
+    { "lat": 37.8082008, "lon": -122.4765910 },
+    { "lat": 37.8082656, "lon": -122.4764943 },
+    { "lat": 37.8083520, "lon": -122.4763464 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "check_date:surface": "2025-07-15",
+    "cycleway:surface": "asphalt",
+    "foot": "designated",
+    "footway:surface": "asphalt",
+    "highway": "cycleway",
+    "lanes": "2",
+    "lcn_ref": "95",
+    "maxheight": "4",
+    "maxspeed": "5 mph",
+    "segregated": "yes",
+    "sidewalk": "left",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 258565518,
+  "bounds": {
+    "minlat": 37.8103032,
+    "minlon": -122.4769597,
+    "maxlat": 37.8103813,
+    "maxlon": -122.4768928
+  },
+  "nodes": [
+    2639008920,
+    3742032750,
+    5658080264
+  ],
+  "geometry": [
+    { "lat": 37.8103813, "lon": -122.4769597 },
+    { "lat": 37.8103147, "lon": -122.4769026 },
+    { "lat": 37.8103032, "lon": -122.4768928 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 307398208,
+  "bounds": {
+    "minlat": 37.8105161,
+    "minlon": -122.4766084,
+    "maxlat": 37.8106605,
+    "maxlon": -122.4765525
+  },
+  "nodes": [
+    2908408465,
+    3125305435
+  ],
+  "geometry": [
+    { "lat": 37.8105161, "lon": -122.4765525 },
+    { "lat": 37.8106605, "lon": -122.4766084 }
+  ],
+  "tags": {
+    "highway": "unclassified",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 307398212,
+  "bounds": {
+    "minlat": 37.8100400,
+    "minlon": -122.4765160,
+    "maxlat": 37.8100523,
+    "maxlon": -122.4763164
+  },
+  "nodes": [
+    2639008918,
+    2638978411,
+    3125301923
+  ],
+  "geometry": [
+    { "lat": 37.8100400, "lon": -122.4765160 },
+    { "lat": 37.8100455, "lon": -122.4764266 },
+    { "lat": 37.8100523, "lon": -122.4763164 }
+  ],
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 307398214,
+  "bounds": {
+    "minlat": 37.8094947,
+    "minlon": -122.4761961,
+    "maxlat": 37.8095344,
+    "maxlon": -122.4761090
+  },
+  "nodes": [
+    3125301904,
+    3741990152,
+    434668708,
+    3125301906
+  ],
+  "geometry": [
+    { "lat": 37.8095344, "lon": -122.4761090 },
+    { "lat": 37.8095196, "lon": -122.4761291 },
+    { "lat": 37.8095111, "lon": -122.4761626 },
+    { "lat": 37.8094947, "lon": -122.4761961 }
+  ],
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "yes",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 307398215,
+  "bounds": {
+    "minlat": 37.8090627,
+    "minlon": -122.4765146,
+    "maxlat": 37.8107188,
+    "maxlon": -122.4748644
+  },
+  "nodes": [
+    434668686,
+    3125301905,
+    3125305429,
+    3125301904,
+    3125305436,
+    3741990578,
+    3125301903,
+    3125301923,
+    3125305432,
+    3125301922
+  ],
+  "geometry": [
+    { "lat": 37.8090627, "lon": -122.4748644 },
+    { "lat": 37.8091854, "lon": -122.4749916 },
+    { "lat": 37.8093176, "lon": -122.4756153 },
+    { "lat": 37.8095344, "lon": -122.4761090 },
+    { "lat": 37.8095427, "lon": -122.4761250 },
+    { "lat": 37.8095550, "lon": -122.4761360 },
+    { "lat": 37.8098966, "lon": -122.4763063 },
+    { "lat": 37.8100523, "lon": -122.4763164 },
+    { "lat": 37.8102386, "lon": -122.4763232 },
+    { "lat": 37.8107188, "lon": -122.4765146 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 338329725,
+  "bounds": {
+    "minlat": 37.8061286,
+    "minlon": -122.4761438,
+    "maxlat": 37.8065956,
+    "maxlon": -122.4757962
+  },
+  "nodes": [
+    3454073892,
+    3454073891,
+    1819433845,
+    5372048513
+  ],
+  "geometry": [
+    { "lat": 37.8065956, "lon": -122.4759617 },
+    { "lat": 37.8064750, "lon": -122.4761438 },
+    { "lat": 37.8061421, "lon": -122.4758077 },
+    { "lat": 37.8061286, "lon": -122.4757962 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "service": "parking_aisle"
+  }
+},
+{
+  "type": "way",
+  "id": 338329740,
+  "bounds": {
+    "minlat": 37.8062193,
+    "minlon": -122.4756288,
+    "maxlat": 37.8062565,
+    "maxlon": -122.4755901
+  },
+  "nodes": [
+    3454073890,
+    5372048514
+  ],
+  "geometry": [
+    { "lat": 37.8062193, "lon": -122.4755901 },
+    { "lat": 37.8062565, "lon": -122.4756288 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 368434795,
+  "bounds": {
+    "minlat": 37.8065103,
+    "minlon": -122.4756020,
+    "maxlat": 37.8067269,
+    "maxlon": -122.4754380
+  },
+  "nodes": [
+    3722705734,
+    13810202143,
+    3722705728,
+    3722705731,
+    13810202141,
+    13810202135,
+    3722705733,
+    3722705729
+  ],
+  "geometry": [
+    { "lat": 37.8067269, "lon": -122.4756020 },
+    { "lat": 37.8066694, "lon": -122.4755338 },
+    { "lat": 37.8065915, "lon": -122.4754505 },
+    { "lat": 37.8065783, "lon": -122.4754409 },
+    { "lat": 37.8065617, "lon": -122.4754380 },
+    { "lat": 37.8065446, "lon": -122.4754463 },
+    { "lat": 37.8065329, "lon": -122.4754595 },
+    { "lat": 37.8065103, "lon": -122.4754929 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "parking_aisle",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 370505354,
+  "bounds": {
+    "minlat": 37.8100455,
+    "minlon": -122.4765525,
+    "maxlat": 37.8105161,
+    "maxlon": -122.4764255
+  },
+  "nodes": [
+    2638978411,
+    3741990415,
+    2908408462,
+    2908408465
+  ],
+  "geometry": [
+    { "lat": 37.8100455, "lon": -122.4764266 },
+    { "lat": 37.8101786, "lon": -122.4764255 },
+    { "lat": 37.8102060, "lon": -122.4764300 },
+    { "lat": 37.8105161, "lon": -122.4765525 }
+  ],
+  "tags": {
+    "highway": "unclassified",
+    "oneway": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 370505358,
+  "bounds": {
+    "minlat": 37.8100455,
+    "minlon": -122.4767354,
+    "maxlat": 37.8105161,
+    "maxlon": -122.4764266
+  },
+  "nodes": [
+    2908408465,
+    3741990721,
+    3741990646,
+    3741990378,
+    3741990593,
+    2908408464,
+    3741990701,
+    3741990461,
+    3741990479,
+    2908408463,
+    3741990400,
+    3741990160,
+    3741990553,
+    3741990521,
+    3741990647,
+    3741990419,
+    2638978411
+  ],
+  "geometry": [
+    { "lat": 37.8105161, "lon": -122.4765525 },
+    { "lat": 37.8105030, "lon": -122.4766047 },
+    { "lat": 37.8104871, "lon": -122.4766469 },
+    { "lat": 37.8104659, "lon": -122.4766819 },
+    { "lat": 37.8104391, "lon": -122.4767112 },
+    { "lat": 37.8104100, "lon": -122.4767269 },
+    { "lat": 37.8103777, "lon": -122.4767354 },
+    { "lat": 37.8103490, "lon": -122.4767350 },
+    { "lat": 37.8103127, "lon": -122.4767242 },
+    { "lat": 37.8102796, "lon": -122.4767050 },
+    { "lat": 37.8102477, "lon": -122.4766736 },
+    { "lat": 37.8102172, "lon": -122.4766348 },
+    { "lat": 37.8101481, "lon": -122.4765350 },
+    { "lat": 37.8101252, "lon": -122.4765038 },
+    { "lat": 37.8100978, "lon": -122.4764717 },
+    { "lat": 37.8100726, "lon": -122.4764468 },
+    { "lat": 37.8100455, "lon": -122.4764266 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "unclassified",
+    "oneway": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 370509219,
+  "bounds": {
+    "minlat": 37.8076703,
+    "minlon": -122.4759342,
+    "maxlat": 37.8079411,
+    "maxlon": -122.4751746
+  },
+  "nodes": [
+    4785385150,
+    9789495541,
+    12321581067,
+    12321581082,
+    4785385149,
+    4785385148,
+    12321581084,
+    4785385147,
+    4785385146,
+    12321581820,
+    12321581830,
+    12321581822,
+    4785385145,
+    12139914304,
+    4785385144,
+    12139914305,
+    12321581817,
+    4785385143,
+    4785385142,
+    12139914306,
+    3741990207
+  ],
+  "geometry": [
+    { "lat": 37.8076703, "lon": -122.4751746 },
+    { "lat": 37.8076765, "lon": -122.4752037 },
+    { "lat": 37.8076973, "lon": -122.4752584 },
+    { "lat": 37.8077219, "lon": -122.4753061 },
+    { "lat": 37.8077433, "lon": -122.4753464 },
+    { "lat": 37.8077651, "lon": -122.4753857 },
+    { "lat": 37.8077815, "lon": -122.4754113 },
+    { "lat": 37.8077990, "lon": -122.4754362 },
+    { "lat": 37.8078214, "lon": -122.4754668 },
+    { "lat": 37.8078780, "lon": -122.4755338 },
+    { "lat": 37.8078981, "lon": -122.4755565 },
+    { "lat": 37.8079110, "lon": -122.4755760 },
+    { "lat": 37.8079232, "lon": -122.4756030 },
+    { "lat": 37.8079332, "lon": -122.4756354 },
+    { "lat": 37.8079395, "lon": -122.4756653 },
+    { "lat": 37.8079411, "lon": -122.4756980 },
+    { "lat": 37.8079378, "lon": -122.4757344 },
+    { "lat": 37.8079298, "lon": -122.4757676 },
+    { "lat": 37.8079205, "lon": -122.4757927 },
+    { "lat": 37.8078766, "lon": -122.4758965 },
+    { "lat": 37.8078601, "lon": -122.4759342 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 380096128,
+  "bounds": {
+    "minlat": 37.8045502,
+    "minlon": -122.4759392,
+    "maxlat": 37.8058231,
+    "maxlon": -122.4757518
+  },
+  "nodes": [
+    4202269655,
+    14181591246,
+    9789495547,
+    14181591247,
+    3834434229,
+    14181591248,
+    14181591249,
+    14181591250,
+    14181591251,
+    4202269668,
+    14181591252,
+    14181591253,
+    14181591254,
+    14181591255,
+    14181591256,
+    3834434230,
+    14181591257,
+    14181591258,
+    14181591259,
+    4202269698,
+    4202269707,
+    4202269712,
+    3834434231,
+    3834434232,
+    4202269726,
+    4202269730,
+    3834434233,
+    4202269739,
+    3834434234,
+    4202269753,
+    3834434235,
+    3834434236,
+    4202269783
+  ],
+  "geometry": [
+    { "lat": 37.8045502, "lon": -122.4757530 },
+    { "lat": 37.8045752, "lon": -122.4757572 },
+    { "lat": 37.8045840, "lon": -122.4757638 },
+    { "lat": 37.8045898, "lon": -122.4757783 },
+    { "lat": 37.8045919, "lon": -122.4758036 },
+    { "lat": 37.8045936, "lon": -122.4758615 },
+    { "lat": 37.8045924, "lon": -122.4758764 },
+    { "lat": 37.8045953, "lon": -122.4758862 },
+    { "lat": 37.8046045, "lon": -122.4758980 },
+    { "lat": 37.8046336, "lon": -122.4759193 },
+    { "lat": 37.8046491, "lon": -122.4759242 },
+    { "lat": 37.8046760, "lon": -122.4759268 },
+    { "lat": 37.8046849, "lon": -122.4759311 },
+    { "lat": 37.8046903, "lon": -122.4759331 },
+    { "lat": 37.8046968, "lon": -122.4759321 },
+    { "lat": 37.8047047, "lon": -122.4759256 },
+    { "lat": 37.8047139, "lon": -122.4759132 },
+    { "lat": 37.8047194, "lon": -122.4759116 },
+    { "lat": 37.8047857, "lon": -122.4759257 },
+    { "lat": 37.8048277, "lon": -122.4759392 },
+    { "lat": 37.8048656, "lon": -122.4759361 },
+    { "lat": 37.8049510, "lon": -122.4759015 },
+    { "lat": 37.8050691, "lon": -122.4758503 },
+    { "lat": 37.8051643, "lon": -122.4758021 },
+    { "lat": 37.8052427, "lon": -122.4757652 },
+    { "lat": 37.8053078, "lon": -122.4757518 },
+    { "lat": 37.8053873, "lon": -122.4757565 },
+    { "lat": 37.8054583, "lon": -122.4757887 },
+    { "lat": 37.8055330, "lon": -122.4758316 },
+    { "lat": 37.8055982, "lon": -122.4758443 },
+    { "lat": 37.8056506, "lon": -122.4758346 },
+    { "lat": 37.8057589, "lon": -122.4757873 },
+    { "lat": 37.8058231, "lon": -122.4757738 }
+  ],
+  "tags": {
+    "access": "private",
+    "highway": "path"
+  }
+},
+{
+  "type": "way",
+  "id": 419755786,
+  "bounds": {
+    "minlat": 37.8080728,
+    "minlon": -122.4763406,
+    "maxlat": 37.8081071,
+    "maxlon": -122.4763001
+  },
+  "nodes": [
+    528521184,
+    822485363
+  ],
+  "geometry": [
+    { "lat": 37.8081071, "lon": -122.4763406 },
+    { "lat": 37.8080728, "lon": -122.4763001 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "designated",
+    "highway": "path",
+    "lcn_ref": "95",
+    "lit": "yes",
+    "maxspeed": "5 mph",
+    "segregated": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 420287696,
+  "bounds": {
+    "minlat": 37.8058557,
+    "minlon": -122.4768778,
+    "maxlat": 37.8059473,
+    "maxlon": -122.4768165
+  },
+  "nodes": [
+    4202269792,
+    4202269786,
+    7576554723
+  ],
+  "geometry": [
+    { "lat": 37.8059473, "lon": -122.4768165 },
+    { "lat": 37.8058607, "lon": -122.4768778 },
+    { "lat": 37.8058557, "lon": -122.4768636 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "name": "Coastal Trail",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 420287713,
+  "bounds": {
+    "minlat": 37.8058207,
+    "minlon": -122.4758532,
+    "maxlat": 37.8061103,
+    "maxlon": -122.4753451
+  },
+  "nodes": [
+    4202269781,
+    4202269783,
+    4202269788,
+    4202269791,
+    4202269795,
+    4202269801,
+    4202269814,
+    4202269820,
+    4202269822,
+    4202269819,
+    4202269806
+  ],
+  "geometry": [
+    { "lat": 37.8058207, "lon": -122.4758532 },
+    { "lat": 37.8058231, "lon": -122.4757738 },
+    { "lat": 37.8058433, "lon": -122.4757400 },
+    { "lat": 37.8058799, "lon": -122.4757226 },
+    { "lat": 37.8059445, "lon": -122.4757105 },
+    { "lat": 37.8059922, "lon": -122.4756891 },
+    { "lat": 37.8060372, "lon": -122.4756374 },
+    { "lat": 37.8061045, "lon": -122.4755208 },
+    { "lat": 37.8061103, "lon": -122.4754825 },
+    { "lat": 37.8060971, "lon": -122.4754483 },
+    { "lat": 37.8060113, "lon": -122.4753451 }
+  ],
+  "tags": {
+    "highway": "service"
+  }
+},
+{
+  "type": "way",
+  "id": 420287717,
+  "bounds": {
+    "minlat": 37.8064416,
+    "minlon": -122.4759305,
+    "maxlat": 37.8071443,
+    "maxlon": -122.4753262
+  },
+  "nodes": [
+    6914081913,
+    6914081914,
+    4202269891,
+    13903004750,
+    7833954038,
+    8548400848,
+    4202269875,
+    8548400853,
+    4202269873,
+    8548400850,
+    4202269871,
+    8548400846,
+    4202269869,
+    8548400852,
+    4202269865,
+    8548400849,
+    4202269862,
+    8548400845,
+    4202269861,
+    8548400851,
+    4202269860,
+    8548400847,
+    4202269856
+  ],
+  "geometry": [
+    { "lat": 37.8071443, "lon": -122.4759305 },
+    { "lat": 37.8070204, "lon": -122.4757931 },
+    { "lat": 37.8068226, "lon": -122.4755914 },
+    { "lat": 37.8067840, "lon": -122.4755519 },
+    { "lat": 37.8066097, "lon": -122.4753577 },
+    { "lat": 37.8066018, "lon": -122.4753505 },
+    { "lat": 37.8065940, "lon": -122.4753439 },
+    { "lat": 37.8065828, "lon": -122.4753365 },
+    { "lat": 37.8065731, "lon": -122.4753314 },
+    { "lat": 37.8065602, "lon": -122.4753278 },
+    { "lat": 37.8065487, "lon": -122.4753262 },
+    { "lat": 37.8065360, "lon": -122.4753269 },
+    { "lat": 37.8065238, "lon": -122.4753289 },
+    { "lat": 37.8065113, "lon": -122.4753335 },
+    { "lat": 37.8064993, "lon": -122.4753401 },
+    { "lat": 37.8064875, "lon": -122.4753483 },
+    { "lat": 37.8064766, "lon": -122.4753584 },
+    { "lat": 37.8064683, "lon": -122.4753692 },
+    { "lat": 37.8064608, "lon": -122.4753811 },
+    { "lat": 37.8064545, "lon": -122.4753945 },
+    { "lat": 37.8064494, "lon": -122.4754083 },
+    { "lat": 37.8064459, "lon": -122.4754226 },
+    { "lat": 37.8064416, "lon": -122.4754587 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 420287733,
+  "bounds": {
+    "minlat": 37.8059473,
+    "minlon": -122.4770373,
+    "maxlat": 37.8077963,
+    "maxlon": -122.4768165
+  },
+  "nodes": [
+    281658736,
+    4202269965,
+    4202269961,
+    4202269959,
+    4202269958,
+    4202269951,
+    4202269946,
+    4202269943,
+    4202269935,
+    4202269929,
+    4202269925,
+    4202269912,
+    4202269905,
+    4202269896,
+    4202269880,
+    4202269850,
+    4202269840,
+    4202269836,
+    4202269827,
+    4202269824,
+    4202269813,
+    4202269799,
+    4202269793,
+    4202269792
+  ],
+  "geometry": [
+    { "lat": 37.8077963, "lon": -122.4769023 },
+    { "lat": 37.8076788, "lon": -122.4769112 },
+    { "lat": 37.8076306, "lon": -122.4769186 },
+    { "lat": 37.8075877, "lon": -122.4769320 },
+    { "lat": 37.8075262, "lon": -122.4769649 },
+    { "lat": 37.8074658, "lon": -122.4769836 },
+    { "lat": 37.8074097, "lon": -122.4769877 },
+    { "lat": 37.8073556, "lon": -122.4769810 },
+    { "lat": 37.8072920, "lon": -122.4769568 },
+    { "lat": 37.8072634, "lon": -122.4769516 },
+    { "lat": 37.8072303, "lon": -122.4769611 },
+    { "lat": 37.8070028, "lon": -122.4770185 },
+    { "lat": 37.8069434, "lon": -122.4770306 },
+    { "lat": 37.8068958, "lon": -122.4770373 },
+    { "lat": 37.8066648, "lon": -122.4770252 },
+    { "lat": 37.8063840, "lon": -122.4770150 },
+    { "lat": 37.8063141, "lon": -122.4770024 },
+    { "lat": 37.8062759, "lon": -122.4769957 },
+    { "lat": 37.8061620, "lon": -122.4769590 },
+    { "lat": 37.8061159, "lon": -122.4769375 },
+    { "lat": 37.8060788, "lon": -122.4769193 },
+    { "lat": 37.8060386, "lon": -122.4769005 },
+    { "lat": 37.8060045, "lon": -122.4768642 },
+    { "lat": 37.8059473, "lon": -122.4768165 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "name": "Coastal Trail",
+    "smoothness": "good",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 420287761,
+  "bounds": {
+    "minlat": 37.8055844,
+    "minlon": -122.4764179,
+    "maxlat": 37.8055967,
+    "maxlon": -122.4763848
+  },
+  "nodes": [
+    4202269742,
+    7576554722
+  ],
+  "geometry": [
+    { "lat": 37.8055844, "lon": -122.4764179 },
+    { "lat": 37.8055967, "lon": -122.4763848 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 420287764,
+  "bounds": {
+    "minlat": 37.8069310,
+    "minlon": -122.4767438,
+    "maxlat": 37.8073529,
+    "maxlon": -122.4764810
+  },
+  "nodes": [
+    4202269933,
+    4202269942,
+    4202269940,
+    4202269914,
+    4202269915,
+    4202269901
+  ],
+  "geometry": [
+    { "lat": 37.8073019, "lon": -122.4764810 },
+    { "lat": 37.8073529, "lon": -122.4765627 },
+    { "lat": 37.8073218, "lon": -122.4765979 },
+    { "lat": 37.8070366, "lon": -122.4766678 },
+    { "lat": 37.8070413, "lon": -122.4767179 },
+    { "lat": 37.8069310, "lon": -122.4767438 }
+  ],
+  "tags": {
+    "access": "private",
+    "highway": "service",
+    "layer": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 420287766,
+  "bounds": {
+    "minlat": 37.8058231,
+    "minlon": -122.4757738,
+    "maxlat": 37.8060233,
+    "maxlon": -122.4757249
+  },
+  "nodes": [
+    4202269809,
+    4202269803,
+    4202269798,
+    3834434237,
+    4202269783
+  ],
+  "geometry": [
+    { "lat": 37.8060233, "lon": -122.4757249 },
+    { "lat": 37.8059988, "lon": -122.4757407 },
+    { "lat": 37.8059514, "lon": -122.4757588 },
+    { "lat": 37.8058802, "lon": -122.4757674 },
+    { "lat": 37.8058231, "lon": -122.4757738 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 432042997,
+  "bounds": {
+    "minlat": 37.8068979,
+    "minlon": -122.4759331,
+    "maxlat": 37.8074399,
+    "maxlon": -122.4751751
+  },
+  "nodes": [
+    4202269897,
+    6914081912,
+    6914081925,
+    6914081926
+  ],
+  "geometry": [
+    { "lat": 37.8068979, "lon": -122.4759331 },
+    { "lat": 37.8069741, "lon": -122.4758301 },
+    { "lat": 37.8074260, "lon": -122.4751941 },
+    { "lat": 37.8074399, "lon": -122.4751751 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "layer": "-1",
+    "surface": "paved",
+    "tunnel": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 443955917,
+  "bounds": {
+    "minlat": 37.8094335,
+    "minlon": -122.4763876,
+    "maxlat": 37.8094947,
+    "maxlon": -122.4761961
+  },
+  "nodes": [
+    3125301906,
+    4414622361
+  ],
+  "geometry": [
+    { "lat": 37.8094947, "lon": -122.4761961 },
+    { "lat": 37.8094335, "lon": -122.4763876 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 443955920,
+  "bounds": {
+    "minlat": 37.8106605,
+    "minlon": -122.4766084,
+    "maxlat": 37.8107188,
+    "maxlon": -122.4765146
+  },
+  "nodes": [
+    3125305435,
+    3125301922
+  ],
+  "geometry": [
+    { "lat": 37.8106605, "lon": -122.4766084 },
+    { "lat": 37.8107188, "lon": -122.4765146 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 485772589,
+  "bounds": {
+    "minlat": 37.8078054,
+    "minlon": -122.4760250,
+    "maxlat": 37.8078281,
+    "maxlon": -122.4758784
+  },
+  "nodes": [
+    822485358,
+    4785385139,
+    4785385138
+  ],
+  "geometry": [
+    { "lat": 37.8078281, "lon": -122.4758784 },
+    { "lat": 37.8078256, "lon": -122.4759255 },
+    { "lat": 37.8078054, "lon": -122.4760250 }
+  ],
+  "tags": {
+    "bicycle": "no",
+    "foot": "no",
+    "highway": "service",
+    "lcn_ref": "95",
+    "lit": "yes",
+    "maxspeed": "5 mph",
+    "motor_vehicle": "private",
+    "service": "emergency_access",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 485772590,
+  "bounds": {
+    "minlat": 37.8076529,
+    "minlon": -122.4758784,
+    "maxlat": 37.8079090,
+    "maxlon": -122.4752410
+  },
+  "nodes": [
+    822485358,
+    12321581829,
+    14190419072,
+    3722698223,
+    3722698212,
+    12321581836,
+    65284248,
+    3722698232,
+    12321581801,
+    3722698224,
+    65284253,
+    3722698211,
+    3722698195,
+    12321581809,
+    3722698226,
+    12321581068,
+    65284255,
+    12321581818,
+    3722698205,
+    12321581080,
+    65284261,
+    3743685529
+  ],
+  "geometry": [
+    { "lat": 37.8078281, "lon": -122.4758784 },
+    { "lat": 37.8078423, "lon": -122.4758569 },
+    { "lat": 37.8078531, "lon": -122.4758366 },
+    { "lat": 37.8078904, "lon": -122.4757663 },
+    { "lat": 37.8078992, "lon": -122.4757455 },
+    { "lat": 37.8079064, "lon": -122.4757205 },
+    { "lat": 37.8079090, "lon": -122.4756928 },
+    { "lat": 37.8079067, "lon": -122.4756624 },
+    { "lat": 37.8078994, "lon": -122.4756325 },
+    { "lat": 37.8078897, "lon": -122.4756072 },
+    { "lat": 37.8078777, "lon": -122.4755855 },
+    { "lat": 37.8078609, "lon": -122.4755638 },
+    { "lat": 37.8078314, "lon": -122.4755306 },
+    { "lat": 37.8078055, "lon": -122.4754992 },
+    { "lat": 37.8077793, "lon": -122.4754648 },
+    { "lat": 37.8077574, "lon": -122.4754338 },
+    { "lat": 37.8077346, "lon": -122.4754002 },
+    { "lat": 37.8077137, "lon": -122.4753669 },
+    { "lat": 37.8076954, "lon": -122.4753363 },
+    { "lat": 37.8076776, "lon": -122.4753016 },
+    { "lat": 37.8076646, "lon": -122.4752710 },
+    { "lat": 37.8076529, "lon": -122.4752410 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "cycleway",
+    "lcn_ref": "95",
+    "lit": "yes",
+    "maxspeed": "5 mph",
+    "motor_vehicle": "private",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 485772812,
+  "bounds": {
+    "minlat": 37.8078668,
+    "minlon": -122.4761130,
+    "maxlat": 37.8081088,
+    "maxlon": -122.4759567
+  },
+  "nodes": [
+    3741990526,
+    3742029242
+  ],
+  "geometry": [
+    { "lat": 37.8078668, "lon": -122.4759567 },
+    { "lat": 37.8081088, "lon": -122.4761130 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 485772813,
+  "bounds": {
+    "minlat": 37.8068819,
+    "minlon": -122.4756319,
+    "maxlat": 37.8076745,
+    "maxlon": -122.4742282
+  },
+  "nodes": [
+    4785390938,
+    12321581094,
+    12321581814,
+    12321581808,
+    4785390937,
+    12321581076,
+    12321581061,
+    4785390936,
+    12321581802,
+    12321581834,
+    12321581824,
+    4785390935,
+    4785390934,
+    12321581066,
+    12321581813,
+    4785390933,
+    12321581819,
+    12321581832,
+    4785390932,
+    12321581815,
+    12321581812,
+    4785390931,
+    12321581065,
+    4785390930,
+    12321581081,
+    6914081922,
+    12321581077,
+    4785390929,
+    4785390928,
+    4785390927,
+    4785385141
+  ],
+  "geometry": [
+    { "lat": 37.8071580, "lon": -122.4742282 },
+    { "lat": 37.8071255, "lon": -122.4742424 },
+    { "lat": 37.8070975, "lon": -122.4742595 },
+    { "lat": 37.8070673, "lon": -122.4742852 },
+    { "lat": 37.8070446, "lon": -122.4743156 },
+    { "lat": 37.8070218, "lon": -122.4743535 },
+    { "lat": 37.8069950, "lon": -122.4744015 },
+    { "lat": 37.8069735, "lon": -122.4744444 },
+    { "lat": 37.8069099, "lon": -122.4745777 },
+    { "lat": 37.8068947, "lon": -122.4746146 },
+    { "lat": 37.8068855, "lon": -122.4746518 },
+    { "lat": 37.8068819, "lon": -122.4746827 },
+    { "lat": 37.8068848, "lon": -122.4747128 },
+    { "lat": 37.8068923, "lon": -122.4747410 },
+    { "lat": 37.8069049, "lon": -122.4747694 },
+    { "lat": 37.8069222, "lon": -122.4747979 },
+    { "lat": 37.8069418, "lon": -122.4748230 },
+    { "lat": 37.8069723, "lon": -122.4748582 },
+    { "lat": 37.8070072, "lon": -122.4748948 },
+    { "lat": 37.8070391, "lon": -122.4749239 },
+    { "lat": 37.8070735, "lon": -122.4749515 },
+    { "lat": 37.8071098, "lon": -122.4749788 },
+    { "lat": 37.8071653, "lon": -122.4750203 },
+    { "lat": 37.8072098, "lon": -122.4750583 },
+    { "lat": 37.8072540, "lon": -122.4751022 },
+    { "lat": 37.8073524, "lon": -122.4752060 },
+    { "lat": 37.8074645, "lon": -122.4753256 },
+    { "lat": 37.8075398, "lon": -122.4754158 },
+    { "lat": 37.8075809, "lon": -122.4754422 },
+    { "lat": 37.8076536, "lon": -122.4755718 },
+    { "lat": 37.8076745, "lon": -122.4756319 }
+  ],
+  "tags": {
+    "foot": "designated",
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 485773297,
+  "bounds": {
+    "minlat": 37.8056447,
+    "minlon": -122.4760433,
+    "maxlat": 37.8056903,
+    "maxlon": -122.4759119
+  },
+  "nodes": [
+    4202269766,
+    4202269764,
+    4202269763,
+    1709838952
+  ],
+  "geometry": [
+    { "lat": 37.8056903, "lon": -122.4760433 },
+    { "lat": 37.8056721, "lon": -122.4759908 },
+    { "lat": 37.8056655, "lon": -122.4759718 },
+    { "lat": 37.8056447, "lon": -122.4759119 }
+  ],
+  "tags": {
+    "highway": "service",
+    "oneway": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 485774479,
+  "bounds": {
+    "minlat": 37.8080728,
+    "minlon": -122.4763001,
+    "maxlat": 37.8084982,
+    "maxlon": -122.4758320
+  },
+  "nodes": [
+    822485363,
+    9789495540,
+    4785407877,
+    4785407878,
+    4785407879,
+    12139914310,
+    4785407880,
+    4785407881,
+    12139914314,
+    4785407882,
+    12139914313,
+    4785407883,
+    4785407884,
+    12139914312,
+    4785407885,
+    4785407886,
+    4785407887,
+    5659334483,
+    12139914315,
+    4785407888,
+    4785407889,
+    4785407890,
+    3741990097
+  ],
+  "geometry": [
+    { "lat": 37.8080728, "lon": -122.4763001 },
+    { "lat": 37.8081353, "lon": -122.4762531 },
+    { "lat": 37.8081856, "lon": -122.4761935 },
+    { "lat": 37.8082291, "lon": -122.4761284 },
+    { "lat": 37.8082566, "lon": -122.4760687 },
+    { "lat": 37.8082799, "lon": -122.4759889 },
+    { "lat": 37.8082963, "lon": -122.4759091 },
+    { "lat": 37.8083292, "lon": -122.4758575 },
+    { "lat": 37.8083695, "lon": -122.4758347 },
+    { "lat": 37.8083970, "lon": -122.4758320 },
+    { "lat": 37.8084193, "lon": -122.4758347 },
+    { "lat": 37.8084362, "lon": -122.4758428 },
+    { "lat": 37.8084600, "lon": -122.4758562 },
+    { "lat": 37.8084775, "lon": -122.4758850 },
+    { "lat": 37.8084908, "lon": -122.4759112 },
+    { "lat": 37.8084982, "lon": -122.4759541 },
+    { "lat": 37.8084908, "lon": -122.4760030 },
+    { "lat": 37.8084744, "lon": -122.4760419 },
+    { "lat": 37.8084553, "lon": -122.4760848 },
+    { "lat": 37.8084351, "lon": -122.4761304 },
+    { "lat": 37.8084113, "lon": -122.4761941 },
+    { "lat": 37.8083959, "lon": -122.4762312 },
+    { "lat": 37.8084109, "lon": -122.4762449 }
+  ],
+  "tags": {
+    "bicycle": "no",
+    "highway": "footway",
+    "incline": "down",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 485774480,
+  "bounds": {
+    "minlat": 37.8082434,
+    "minlon": -122.4759091,
+    "maxlat": 37.8082963,
+    "maxlon": -122.4759042
+  },
+  "nodes": [
+    4785407880,
+    4785407892
+  ],
+  "geometry": [
+    { "lat": 37.8082963, "lon": -122.4759091 },
+    { "lat": 37.8082434, "lon": -122.4759042 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 485774481,
+  "bounds": {
+    "minlat": 37.8081904,
+    "minlon": -122.4759056,
+    "maxlat": 37.8082434,
+    "maxlon": -122.4759042
+  },
+  "nodes": [
+    4785407892,
+    4785407893
+  ],
+  "geometry": [
+    { "lat": 37.8082434, "lon": -122.4759042 },
+    { "lat": 37.8081904, "lon": -122.4759056 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "step_count": "15"
+  }
+},
+{
+  "type": "way",
+  "id": 485774482,
+  "bounds": {
+    "minlat": 37.8081406,
+    "minlon": -122.4759226,
+    "maxlat": 37.8081904,
+    "maxlon": -122.4759056
+  },
+  "nodes": [
+    4785407893,
+    822485361
+  ],
+  "geometry": [
+    { "lat": 37.8081904, "lon": -122.4759056 },
+    { "lat": 37.8081406, "lon": -122.4759226 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 485774485,
+  "bounds": {
+    "minlat": 37.8081390,
+    "minlon": -122.4761457,
+    "maxlat": 37.8081652,
+    "maxlon": -122.4761311
+  },
+  "nodes": [
+    822485362,
+    3742029254
+  ],
+  "geometry": [
+    { "lat": 37.8081390, "lon": -122.4761311 },
+    { "lat": 37.8081652, "lon": -122.4761457 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 485774486,
+  "bounds": {
+    "minlat": 37.8081088,
+    "minlon": -122.4761311,
+    "maxlat": 37.8081390,
+    "maxlon": -122.4761130
+  },
+  "nodes": [
+    3742029242,
+    822485362
+  ],
+  "geometry": [
+    { "lat": 37.8081088, "lon": -122.4761130 },
+    { "lat": 37.8081390, "lon": -122.4761311 }
+  ],
+  "tags": {
+    "access": "yes",
+    "covered": "no",
+    "foot": "yes",
+    "handrail": "no",
+    "highway": "steps",
+    "incline": "down",
+    "indoor": "no",
+    "lit": "yes",
+    "step_count": "3"
+  }
+},
+{
+  "type": "way",
+  "id": 485774487,
+  "bounds": {
+    "minlat": 37.8078957,
+    "minlon": -122.4759356,
+    "maxlat": 37.8079345,
+    "maxlon": -122.4759092
+  },
+  "nodes": [
+    12139914309,
+    4785407895
+  ],
+  "geometry": [
+    { "lat": 37.8078957, "lon": -122.4759092 },
+    { "lat": 37.8079345, "lon": -122.4759356 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "handrail": "yes",
+    "highway": "steps",
+    "incline": "up",
+    "ramp": "no",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 485774488,
+  "bounds": {
+    "minlat": 37.8079345,
+    "minlon": -122.4763001,
+    "maxlat": 37.8081724,
+    "maxlon": -122.4759226
+  },
+  "nodes": [
+    4785407895,
+    11226422003,
+    822485359,
+    3741990596,
+    3741990475,
+    822485361,
+    3741990749,
+    2908408453,
+    13903004607,
+    822485362,
+    822485363
+  ],
+  "geometry": [
+    { "lat": 37.8079345, "lon": -122.4759356 },
+    { "lat": 37.8079488, "lon": -122.4759440 },
+    { "lat": 37.8079859, "lon": -122.4759688 },
+    { "lat": 37.8080224, "lon": -122.4759742 },
+    { "lat": 37.8080802, "lon": -122.4759682 },
+    { "lat": 37.8081406, "lon": -122.4759226 },
+    { "lat": 37.8081665, "lon": -122.4759722 },
+    { "lat": 37.8081724, "lon": -122.4760171 },
+    { "lat": 37.8081644, "lon": -122.4760728 },
+    { "lat": 37.8081390, "lon": -122.4761311 },
+    { "lat": 37.8080728, "lon": -122.4763001 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 485774489,
+  "bounds": {
+    "minlat": 37.8076899,
+    "minlon": -122.4758147,
+    "maxlat": 37.8082423,
+    "maxlon": -122.4751448
+  },
+  "nodes": [
+    9789495543,
+    9789495544,
+    9789495542,
+    3741990630,
+    13903001095,
+    4785407896,
+    12139914316,
+    4785407897
+  ],
+  "geometry": [
+    { "lat": 37.8076899, "lon": -122.4751448 },
+    { "lat": 37.8079079, "lon": -122.4753807 },
+    { "lat": 37.8079609, "lon": -122.4754380 },
+    { "lat": 37.8079805, "lon": -122.4755263 },
+    { "lat": 37.8080295, "lon": -122.4755625 },
+    { "lat": 37.8082211, "lon": -122.4756946 },
+    { "lat": 37.8082423, "lon": -122.4757455 },
+    { "lat": 37.8082370, "lon": -122.4758147 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 485774490,
+  "bounds": {
+    "minlat": 37.8082195,
+    "minlon": -122.4759042,
+    "maxlat": 37.8082466,
+    "maxlon": -122.4758545
+  },
+  "nodes": [
+    4785407898,
+    4785407899,
+    4785407892
+  ],
+  "geometry": [
+    { "lat": 37.8082195, "lon": -122.4758545 },
+    { "lat": 37.8082466, "lon": -122.4758720 },
+    { "lat": 37.8082434, "lon": -122.4759042 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 485774491,
+  "bounds": {
+    "minlat": 37.8082195,
+    "minlon": -122.4758545,
+    "maxlat": 37.8082370,
+    "maxlon": -122.4758147
+  },
+  "nodes": [
+    4785407897,
+    4785407898
+  ],
+  "geometry": [
+    { "lat": 37.8082370, "lon": -122.4758147 },
+    { "lat": 37.8082195, "lon": -122.4758545 }
+  ],
+  "tags": {
+    "handrail": "yes",
+    "highway": "steps",
+    "step_count": "15",
+    "surface": "metal"
+  }
+},
+{
+  "type": "way",
+  "id": 562765504,
+  "bounds": {
+    "minlat": 37.8053360,
+    "minlon": -122.4763416,
+    "maxlat": 37.8056903,
+    "maxlon": -122.4760433
+  },
+  "nodes": [
+    3834434209,
+    4202269755,
+    4202269766
+  ],
+  "geometry": [
+    { "lat": 37.8053360, "lon": -122.4763416 },
+    { "lat": 37.8056230, "lon": -122.4761319 },
+    { "lat": 37.8056903, "lon": -122.4760433 }
+  ],
+  "tags": {
+    "highway": "service",
+    "oneway": "yes",
+    "service": "parking_aisle",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 562765562,
+  "bounds": {
+    "minlat": 37.8059752,
+    "minlon": -122.4763696,
+    "maxlat": 37.8064304,
+    "maxlon": -122.4759045
+  },
+  "nodes": [
+    1819433854,
+    13810202137,
+    3722698242
+  ],
+  "geometry": [
+    { "lat": 37.8064304, "lon": -122.4763696 },
+    { "lat": 37.8060046, "lon": -122.4759394 },
+    { "lat": 37.8059752, "lon": -122.4759045 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "parking_aisle",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 562765679,
+  "bounds": {
+    "minlat": 37.8062565,
+    "minlon": -122.4759617,
+    "maxlat": 37.8065956,
+    "maxlon": -122.4756288
+  },
+  "nodes": [
+    5372048514,
+    13810023688,
+    13810023684,
+    13809973177,
+    13810023691,
+    13810023683,
+    13810023687,
+    3454073892
+  ],
+  "geometry": [
+    { "lat": 37.8062565, "lon": -122.4756288 },
+    { "lat": 37.8062655, "lon": -122.4756401 },
+    { "lat": 37.8063139, "lon": -122.4756882 },
+    { "lat": 37.8065375, "lon": -122.4759443 },
+    { "lat": 37.8065495, "lon": -122.4759522 },
+    { "lat": 37.8065634, "lon": -122.4759515 },
+    { "lat": 37.8065803, "lon": -122.4759513 },
+    { "lat": 37.8065956, "lon": -122.4759617 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "service": "parking_aisle",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 562765681,
+  "bounds": {
+    "minlat": 37.8061034,
+    "minlon": -122.4757962,
+    "maxlat": 37.8061286,
+    "maxlon": -122.4757470
+  },
+  "nodes": [
+    5372048513,
+    3454073889
+  ],
+  "geometry": [
+    { "lat": 37.8061286, "lon": -122.4757962 },
+    { "lat": 37.8061034, "lon": -122.4757470 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 592969581,
+  "bounds": {
+    "minlat": 37.8102630,
+    "minlon": -122.4768928,
+    "maxlat": 37.8103032,
+    "maxlon": -122.4768584
+  },
+  "nodes": [
+    5658080264,
+    5658080263
+  ],
+  "geometry": [
+    { "lat": 37.8103032, "lon": -122.4768928 },
+    { "lat": 37.8102630, "lon": -122.4768584 }
+  ],
+  "tags": {
+    "crossing": "marked",
+    "crossing:markings": "lines",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 592969597,
+  "bounds": {
+    "minlat": 37.8096021,
+    "minlon": -122.4762906,
+    "maxlat": 37.8096051,
+    "maxlon": -122.4762809
+  },
+  "nodes": [
+    5658080327,
+    5658080329
+  ],
+  "geometry": [
+    { "lat": 37.8096021, "lon": -122.4762906 },
+    { "lat": 37.8096051, "lon": -122.4762809 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "no",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 592969599,
+  "bounds": {
+    "minlat": 37.8096051,
+    "minlon": -122.4762809,
+    "maxlat": 37.8096118,
+    "maxlon": -122.4762597
+  },
+  "nodes": [
+    5658080329,
+    5658080328
+  ],
+  "geometry": [
+    { "lat": 37.8096051, "lon": -122.4762809 },
+    { "lat": 37.8096118, "lon": -122.4762597 }
+  ],
+  "tags": {
+    "check_date:handrail": "2022-08-03",
+    "handrail": "no",
+    "highway": "steps",
+    "incline": "down",
+    "lit": "no",
+    "ramp": "no",
+    "step_count": "6",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 592969625,
+  "bounds": {
+    "minlat": 37.8097101,
+    "minlon": -122.4765083,
+    "maxlat": 37.8098365,
+    "maxlon": -122.4763826
+  },
+  "nodes": [
+    5658080385,
+    5658080381,
+    5658080382,
+    5658080383,
+    5658080384,
+    5658080385
+  ],
+  "geometry": [
+    { "lat": 37.8098142, "lon": -122.4765083 },
+    { "lat": 37.8098365, "lon": -122.4764339 },
+    { "lat": 37.8097300, "lon": -122.4763826 },
+    { "lat": 37.8097101, "lon": -122.4764490 },
+    { "lat": 37.8097137, "lon": -122.4764600 },
+    { "lat": 37.8098142, "lon": -122.4765083 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 592969627,
+  "bounds": {
+    "minlat": 37.8098365,
+    "minlon": -122.4768584,
+    "maxlat": 37.8102630,
+    "maxlon": -122.4764339
+  },
+  "nodes": [
+    5658080381,
+    3742032755,
+    5658080295,
+    3742032767,
+    2639008922,
+    5658080296,
+    5658080297,
+    5658080298,
+    3742032748,
+    5658080299,
+    5658080301,
+    5658080300,
+    2639008918,
+    3742032756,
+    3742032743,
+    3742032762,
+    2639008917,
+    3742032776,
+    5658080263
+  ],
+  "geometry": [
+    { "lat": 37.8098365, "lon": -122.4764339 },
+    { "lat": 37.8098459, "lon": -122.4764394 },
+    { "lat": 37.8098497, "lon": -122.4764412 },
+    { "lat": 37.8099590, "lon": -122.4764762 },
+    { "lat": 37.8099680, "lon": -122.4764801 },
+    { "lat": 37.8099774, "lon": -122.4764839 },
+    { "lat": 37.8099857, "lon": -122.4764877 },
+    { "lat": 37.8099948, "lon": -122.4764918 },
+    { "lat": 37.8100024, "lon": -122.4764957 },
+    { "lat": 37.8100101, "lon": -122.4764996 },
+    { "lat": 37.8100172, "lon": -122.4765033 },
+    { "lat": 37.8100249, "lon": -122.4765077 },
+    { "lat": 37.8100400, "lon": -122.4765160 },
+    { "lat": 37.8100642, "lon": -122.4765359 },
+    { "lat": 37.8100823, "lon": -122.4765535 },
+    { "lat": 37.8101034, "lon": -122.4765803 },
+    { "lat": 37.8101189, "lon": -122.4766054 },
+    { "lat": 37.8102394, "lon": -122.4768152 },
+    { "lat": 37.8102630, "lon": -122.4768584 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 620247385,
+  "bounds": {
+    "minlat": 37.8072123,
+    "minlon": -122.4755875,
+    "maxlat": 37.8074918,
+    "maxlon": -122.4752757
+  },
+  "nodes": [
+    65374421,
+    8547348065,
+    8547348062,
+    890277727
+  ],
+  "geometry": [
+    { "lat": 37.8072123, "lon": -122.4752757 },
+    { "lat": 37.8073935, "lon": -122.4754756 },
+    { "lat": 37.8074835, "lon": -122.4755780 },
+    { "lat": 37.8074918, "lon": -122.4755875 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "access:lanes": "yes|yes|yes|yes|no",
+    "bicycle": "no",
+    "bus:lanes": "yes|yes|yes|yes|designated",
+    "bus_bay": "right",
+    "hgv": "designated",
+    "highway": "motorway",
+    "lanes": "5",
+    "lit": "yes",
+    "maxspeed": "35 mph",
+    "name": "Presidio Parkway",
+    "oneway": "yes",
+    "placement": "right_of:2",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "concrete",
+    "tiger:name_base": "Richardson",
+    "tiger:name_type": "Ave",
+    "toll": "no",
+    "turn:lanes": "|||merge_to_left|"
+  }
+},
+{
+  "type": "way",
+  "id": 738378798,
+  "bounds": {
+    "minlat": 37.8060233,
+    "minlon": -122.4758420,
+    "maxlat": 37.8060774,
+    "maxlon": -122.4757249
+  },
+  "nodes": [
+    4202269817,
+    65294838,
+    4202269809
+  ],
+  "geometry": [
+    { "lat": 37.8060774, "lon": -122.4758420 },
+    { "lat": 37.8060512, "lon": -122.4757879 },
+    { "lat": 37.8060233, "lon": -122.4757249 }
+  ],
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "crossing:signals": "no",
+    "footway": "crossing",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 738378800,
+  "bounds": {
+    "minlat": 37.8069626,
+    "minlon": -122.4758893,
+    "maxlat": 37.8070204,
+    "maxlon": -122.4757931
+  },
+  "nodes": [
+    6914081911,
+    6914081917,
+    6914081916,
+    6914081915,
+    13129029677,
+    6914081914
+  ],
+  "geometry": [
+    { "lat": 37.8069911, "lon": -122.4758471 },
+    { "lat": 37.8069859, "lon": -122.4758416 },
+    { "lat": 37.8069626, "lon": -122.4758772 },
+    { "lat": 37.8069742, "lon": -122.4758893 },
+    { "lat": 37.8070105, "lon": -122.4758387 },
+    { "lat": 37.8070204, "lon": -122.4757931 }
+  ],
+  "tags": {
+    "covered": "yes",
+    "highway": "steps",
+    "incline": "up"
+  }
+},
+{
+  "type": "way",
+  "id": 738378801,
+  "bounds": {
+    "minlat": 37.8069618,
+    "minlon": -122.4758892,
+    "maxlat": 37.8069967,
+    "maxlon": -122.4758301
+  },
+  "nodes": [
+    6914081912,
+    6914081921,
+    6914081920,
+    6914081919,
+    6914081918,
+    6914081911
+  ],
+  "geometry": [
+    { "lat": 37.8069741, "lon": -122.4758301 },
+    { "lat": 37.8069850, "lon": -122.4758420 },
+    { "lat": 37.8069618, "lon": -122.4758774 },
+    { "lat": 37.8069730, "lon": -122.4758892 },
+    { "lat": 37.8069967, "lon": -122.4758530 },
+    { "lat": 37.8069911, "lon": -122.4758471 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "incline": "up",
+    "layer": "-1",
+    "tunnel": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 738378806,
+  "bounds": {
+    "minlat": 37.8068385,
+    "minlon": -122.4760256,
+    "maxlat": 37.8068979,
+    "maxlon": -122.4759331
+  },
+  "nodes": [
+    4202269890,
+    2961623553,
+    13903004717,
+    13371056465,
+    4202269897
+  ],
+  "geometry": [
+    { "lat": 37.8068385, "lon": -122.4760256 },
+    { "lat": 37.8068658, "lon": -122.4759832 },
+    { "lat": 37.8068790, "lon": -122.4759626 },
+    { "lat": 37.8068939, "lon": -122.4759394 },
+    { "lat": 37.8068979, "lon": -122.4759331 }
+  ],
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "zebra",
+    "crossing:signals": "no",
+    "footway": "crossing",
+    "highway": "footway",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 755812477,
+  "bounds": {
+    "minlat": 37.8086371,
+    "minlon": -122.4756315,
+    "maxlat": 37.8086607,
+    "maxlon": -122.4756258
+  },
+  "nodes": [
+    7059349294,
+    7059349292
+  ],
+  "geometry": [
+    { "lat": 37.8086607, "lon": -122.4756258 },
+    { "lat": 37.8086371, "lon": -122.4756315 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 755812481,
+  "bounds": {
+    "minlat": 37.8086607,
+    "minlon": -122.4756258,
+    "maxlat": 37.8086712,
+    "maxlon": -122.4756232
+  },
+  "nodes": [
+    7059349296,
+    7059349294
+  ],
+  "geometry": [
+    { "lat": 37.8086712, "lon": -122.4756232 },
+    { "lat": 37.8086607, "lon": -122.4756258 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 755812487,
+  "bounds": {
+    "minlat": 37.8086462,
+    "minlon": -122.4756232,
+    "maxlat": 37.8086860,
+    "maxlon": -122.4754755
+  },
+  "nodes": [
+    7059349296,
+    7059349297,
+    7059349295,
+    7059349293,
+    6467212907
+  ],
+  "geometry": [
+    { "lat": 37.8086712, "lon": -122.4756232 },
+    { "lat": 37.8086860, "lon": -122.4756191 },
+    { "lat": 37.8086720, "lon": -122.4755558 },
+    { "lat": 37.8086553, "lon": -122.4755058 },
+    { "lat": 37.8086462, "lon": -122.4754755 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 755812488,
+  "bounds": {
+    "minlat": 37.8077925,
+    "minlon": -122.4769023,
+    "maxlat": 37.8080000,
+    "maxlon": -122.4766218
+  },
+  "nodes": [
+    3719112694,
+    667116048,
+    8268675016,
+    281658739,
+    281658738,
+    3742028891,
+    281659860,
+    3742028861,
+    3742028898,
+    281658736
+  ],
+  "geometry": [
+    { "lat": 37.8080000, "lon": -122.4766506 },
+    { "lat": 37.8079673, "lon": -122.4766218 },
+    { "lat": 37.8079289, "lon": -122.4766990 },
+    { "lat": 37.8079145, "lon": -122.4767297 },
+    { "lat": 37.8078960, "lon": -122.4767615 },
+    { "lat": 37.8078739, "lon": -122.4767844 },
+    { "lat": 37.8078094, "lon": -122.4768393 },
+    { "lat": 37.8077967, "lon": -122.4768580 },
+    { "lat": 37.8077925, "lon": -122.4768795 },
+    { "lat": 37.8077963, "lon": -122.4769023 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "no",
+    "highway": "cycleway",
+    "lcn_ref": "95",
+    "maxheight": "4",
+    "maxspeed": "5 mph",
+    "segregated": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 775551118,
+  "bounds": {
+    "minlat": 37.8084109,
+    "minlon": -122.4762580,
+    "maxlat": 37.8084277,
+    "maxlon": -122.4762449
+  },
+  "nodes": [
+    3741990097,
+    4785407891
+  ],
+  "geometry": [
+    { "lat": 37.8084109, "lon": -122.4762449 },
+    { "lat": 37.8084277, "lon": -122.4762580 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 775551119,
+  "bounds": {
+    "minlat": 37.8078601,
+    "minlon": -122.4763001,
+    "maxlat": 37.8080728,
+    "maxlon": -122.4759342
+  },
+  "nodes": [
+    822485363,
+    3741990747,
+    3741990472,
+    528521191,
+    3741990397,
+    3741990526,
+    3741990207
+  ],
+  "geometry": [
+    { "lat": 37.8080728, "lon": -122.4763001 },
+    { "lat": 37.8080182, "lon": -122.4762290 },
+    { "lat": 37.8079730, "lon": -122.4761480 },
+    { "lat": 37.8079316, "lon": -122.4760788 },
+    { "lat": 37.8078872, "lon": -122.4760029 },
+    { "lat": 37.8078668, "lon": -122.4759567 },
+    { "lat": 37.8078601, "lon": -122.4759342 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "designated",
+    "highway": "path",
+    "lcn_ref": "95",
+    "maxspeed": "5 mph",
+    "segregated": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 775551120,
+  "bounds": {
+    "minlat": 37.8083520,
+    "minlon": -122.4763464,
+    "maxlat": 37.8084109,
+    "maxlon": -122.4762449
+  },
+  "nodes": [
+    3741990097,
+    3741990164,
+    3742029247
+  ],
+  "geometry": [
+    { "lat": 37.8084109, "lon": -122.4762449 },
+    { "lat": 37.8083793, "lon": -122.4762949 },
+    { "lat": 37.8083520, "lon": -122.4763464 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "foot": "designated",
+    "highway": "cycleway",
+    "lanes": "2",
+    "lcn_ref": "202",
+    "segregated": "yes",
+    "sidewalk": "right",
+    "smoothness": "excellent",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 791514279,
+  "bounds": {
+    "minlat": 37.8066317,
+    "minlon": -122.4763499,
+    "maxlat": 37.8071085,
+    "maxlon": -122.4760012
+  },
+  "nodes": [
+    7399469712,
+    13810231855,
+    13810231860,
+    13810231861,
+    7399469711,
+    7399469710
+  ],
+  "geometry": [
+    { "lat": 37.8066317, "lon": -122.4760012 },
+    { "lat": 37.8067061, "lon": -122.4760695 },
+    { "lat": 37.8067612, "lon": -122.4761199 },
+    { "lat": 37.8069192, "lon": -122.4762573 },
+    { "lat": 37.8070232, "lon": -122.4763499 },
+    { "lat": 37.8071085, "lon": -122.4762429 }
+  ],
+  "tags": {
+    "access": "private",
+    "highway": "service",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 791514915,
+  "bounds": {
+    "minlat": 37.8066811,
+    "minlon": -122.4758739,
+    "maxlat": 37.8066862,
+    "maxlon": -122.4758669
+  },
+  "nodes": [
+    7399481905,
+    13809973188
+  ],
+  "geometry": [
+    { "lat": 37.8066862, "lon": -122.4758669 },
+    { "lat": 37.8066811, "lon": -122.4758739 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 810370144,
+  "bounds": {
+    "minlat": 37.8056808,
+    "minlon": -122.4767585,
+    "maxlat": 37.8058910,
+    "maxlon": -122.4765012
+  },
+  "nodes": [
+    7576554716,
+    7576554715
+  ],
+  "geometry": [
+    { "lat": 37.8058910, "lon": -122.4767585 },
+    { "lat": 37.8056808, "lon": -122.4765012 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "bridge": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "smoothness": "good",
+    "surface": "wood"
+  }
+},
+{
+  "type": "way",
+  "id": 810370145,
+  "bounds": {
+    "minlat": 37.8055844,
+    "minlon": -122.4765012,
+    "maxlat": 37.8056808,
+    "maxlon": -122.4764179
+  },
+  "nodes": [
+    7576554715,
+    10111975821,
+    7576554718,
+    7576554719,
+    4202269742
+  ],
+  "geometry": [
+    { "lat": 37.8056808, "lon": -122.4765012 },
+    { "lat": 37.8056784, "lon": -122.4764982 },
+    { "lat": 37.8056470, "lon": -122.4764578 },
+    { "lat": 37.8056237, "lon": -122.4764383 },
+    { "lat": 37.8055844, "lon": -122.4764179 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "smoothness": "good",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 810370146,
+  "bounds": {
+    "minlat": 37.8055967,
+    "minlon": -122.4763848,
+    "maxlat": 37.8056231,
+    "maxlon": -122.4763229
+  },
+  "nodes": [
+    7576554722,
+    7576554721
+  ],
+  "geometry": [
+    { "lat": 37.8055967, "lon": -122.4763848 },
+    { "lat": 37.8056231, "lon": -122.4763229 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "incline": "down"
+  }
+},
+{
+  "type": "way",
+  "id": 810370147,
+  "bounds": {
+    "minlat": 37.8055750,
+    "minlon": -122.4763229,
+    "maxlat": 37.8056646,
+    "maxlon": -122.4760266
+  },
+  "nodes": [
+    7576554721,
+    4202269762,
+    4202269755,
+    4202269750
+  ],
+  "geometry": [
+    { "lat": 37.8056231, "lon": -122.4763229 },
+    { "lat": 37.8056646, "lon": -122.4762231 },
+    { "lat": 37.8056230, "lon": -122.4761319 },
+    { "lat": 37.8055750, "lon": -122.4760266 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 810370148,
+  "bounds": {
+    "minlat": 37.8058290,
+    "minlon": -122.4768636,
+    "maxlat": 37.8058557,
+    "maxlon": -122.4767809
+  },
+  "nodes": [
+    7576554723,
+    7576554724
+  ],
+  "geometry": [
+    { "lat": 37.8058557, "lon": -122.4768636 },
+    { "lat": 37.8058290, "lon": -122.4767809 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "lit": "no",
+    "name": "Coastal Trail"
+  }
+},
+{
+  "type": "way",
+  "id": 867886311,
+  "bounds": {
+    "minlat": 37.8074918,
+    "minlon": -122.4760250,
+    "maxlat": 37.8078054,
+    "maxlon": -122.4755875
+  },
+  "nodes": [
+    890277727,
+    4785385138
+  ],
+  "geometry": [
+    { "lat": 37.8074918, "lon": -122.4755875 },
+    { "lat": 37.8078054, "lon": -122.4760250 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "35 mph",
+    "name": "Presidio Parkway",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:name_base": "Richardson",
+    "tiger:name_type": "Ave",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 945677101,
+  "bounds": {
+    "minlat": 37.8072275,
+    "minlon": -122.4766218,
+    "maxlat": 37.8079673,
+    "maxlon": -122.4763460
+  },
+  "nodes": [
+    667116048,
+    12322131359,
+    12322131360,
+    12322131354,
+    8754727162,
+    8754727163,
+    8754727165,
+    12322131355,
+    8754727161,
+    12322131357,
+    12322131361,
+    12322131362,
+    4202269924
+  ],
+  "geometry": [
+    { "lat": 37.8079673, "lon": -122.4766218 },
+    { "lat": 37.8079246, "lon": -122.4765969 },
+    { "lat": 37.8077713, "lon": -122.4764814 },
+    { "lat": 37.8076946, "lon": -122.4764423 },
+    { "lat": 37.8075748, "lon": -122.4763712 },
+    { "lat": 37.8075165, "lon": -122.4763460 },
+    { "lat": 37.8074366, "lon": -122.4764781 },
+    { "lat": 37.8074219, "lon": -122.4764920 },
+    { "lat": 37.8074054, "lon": -122.4764988 },
+    { "lat": 37.8073833, "lon": -122.4764961 },
+    { "lat": 37.8073642, "lon": -122.4764816 },
+    { "lat": 37.8072943, "lon": -122.4764087 },
+    { "lat": 37.8072275, "lon": -122.4763702 }
+  ],
+  "tags": {
+    "access": "no",
+    "highway": "service",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1133280377,
+  "bounds": {
+    "minlat": 37.8058910,
+    "minlon": -122.4768165,
+    "maxlat": 37.8059473,
+    "maxlon": -122.4767585
+  },
+  "nodes": [
+    4202269792,
+    7576554716
+  ],
+  "geometry": [
+    { "lat": 37.8059473, "lon": -122.4768165 },
+    { "lat": 37.8058910, "lon": -122.4767585 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "footway",
+    "lit": "no",
+    "name": "Coastal Trail",
+    "smoothness": "good",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 1211755776,
+  "bounds": {
+    "minlat": 37.8079488,
+    "minlon": -122.4759440,
+    "maxlat": 37.8081406,
+    "maxlon": -122.4758448
+  },
+  "nodes": [
+    11226422003,
+    11226422004,
+    11226422005,
+    822485361
+  ],
+  "geometry": [
+    { "lat": 37.8079488, "lon": -122.4759440 },
+    { "lat": 37.8079928, "lon": -122.4758495 },
+    { "lat": 37.8080124, "lon": -122.4758448 },
+    { "lat": 37.8081406, "lon": -122.4759226 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1267474226,
+  "bounds": {
+    "minlat": 37.8081666,
+    "minlon": -122.4772706,
+    "maxlat": 37.8099070,
+    "maxlon": -122.4764084
+  },
+  "nodes": [
+    3718987409,
+    3718987389,
+    3718987364,
+    3718987416,
+    3718987549,
+    3718987530,
+    3718987366,
+    3718987380,
+    3718987424,
+    3718987359,
+    3718987417,
+    3718987525,
+    3718987391,
+    3718987349,
+    3718987551,
+    11771808553
+  ],
+  "geometry": [
+    { "lat": 37.8081666, "lon": -122.4764084 },
+    { "lat": 37.8082776, "lon": -122.4765213 },
+    { "lat": 37.8083785, "lon": -122.4766187 },
+    { "lat": 37.8084911, "lon": -122.4767165 },
+    { "lat": 37.8085942, "lon": -122.4767977 },
+    { "lat": 37.8086970, "lon": -122.4768721 },
+    { "lat": 37.8088067, "lon": -122.4769421 },
+    { "lat": 37.8089168, "lon": -122.4770040 },
+    { "lat": 37.8090378, "lon": -122.4770650 },
+    { "lat": 37.8091472, "lon": -122.4771137 },
+    { "lat": 37.8092463, "lon": -122.4771496 },
+    { "lat": 37.8093432, "lon": -122.4771806 },
+    { "lat": 37.8094479, "lon": -122.4772067 },
+    { "lat": 37.8095522, "lon": -122.4772280 },
+    { "lat": 37.8096545, "lon": -122.4772436 },
+    { "lat": 37.8099070, "lon": -122.4772706 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate",
+    "bridge:structure": "suspension",
+    "elevation": "220",
+    "foot": "designated",
+    "highway": "cycleway",
+    "layer": "1",
+    "lit": "yes",
+    "name": "Golden Gate Bridge East Sidewalk",
+    "note": "Closes to pedestrians in the evening (exact time depends by season) but you can call on the interphone and they'll send a police car for to take you to the other side. Bikes allowed at night but must call on the interphone. Hours and instructions here: ht",
+    "oneway": "no",
+    "source": "Bing",
+    "start_date": "1937-05-27",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1311508634,
+  "bounds": {
+    "minlat": 37.8077874,
+    "minlon": -122.4758784,
+    "maxlat": 37.8078281,
+    "maxlon": -122.4758268
+  },
+  "nodes": [
+    12139914303,
+    822485358
+  ],
+  "geometry": [
+    { "lat": 37.8077874, "lon": -122.4758268 },
+    { "lat": 37.8078281, "lon": -122.4758784 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "crossing": "marked",
+    "crossing:markings": "zebra",
+    "footway": "crossing",
+    "highway": "footway",
+    "segregated": "no",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1311508635,
+  "bounds": {
+    "minlat": 37.8078766,
+    "minlon": -122.4759092,
+    "maxlat": 37.8078957,
+    "maxlon": -122.4758965
+  },
+  "nodes": [
+    12139914306,
+    12139914309
+  ],
+  "geometry": [
+    { "lat": 37.8078766, "lon": -122.4758965 },
+    { "lat": 37.8078957, "lon": -122.4759092 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1311508636,
+  "bounds": {
+    "minlat": 37.8077033,
+    "minlon": -122.4757698,
+    "maxlat": 37.8077502,
+    "maxlon": -122.4756879
+  },
+  "nodes": [
+    3742028903,
+    14190419070,
+    14190419058,
+    1274882630
+  ],
+  "geometry": [
+    { "lat": 37.8077033, "lon": -122.4756879 },
+    { "lat": 37.8077077, "lon": -122.4756945 },
+    { "lat": 37.8077455, "lon": -122.4757616 },
+    { "lat": 37.8077502, "lon": -122.4757698 }
+  ],
+  "tags": {
+    "covered": "yes",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1311508637,
+  "bounds": {
+    "minlat": 37.8076745,
+    "minlon": -122.4756879,
+    "maxlat": 37.8077238,
+    "maxlon": -122.4755499
+  },
+  "nodes": [
+    9789495546,
+    4785385141,
+    3742028903
+  ],
+  "geometry": [
+    { "lat": 37.8077238, "lon": -122.4755499 },
+    { "lat": 37.8076745, "lon": -122.4756319 },
+    { "lat": 37.8077033, "lon": -122.4756879 }
+  ],
+  "tags": {
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1457965007,
+  "bounds": {
+    "minlat": 37.8068044,
+    "minlon": -122.4759394,
+    "maxlat": 37.8068939,
+    "maxlon": -122.4758102
+  },
+  "nodes": [
+    13371056465,
+    13903004718,
+    13903004612,
+    13371056467
+  ],
+  "geometry": [
+    { "lat": 37.8068939, "lon": -122.4759394 },
+    { "lat": 37.8068825, "lon": -122.4759254 },
+    { "lat": 37.8068516, "lon": -122.4758876 },
+    { "lat": 37.8068044, "lon": -122.4758102 }
+  ],
+  "tags": {
+    "crossing": "uncontrolled",
+    "crossing:markings": "lines",
+    "crossing:signals": "no",
+    "footway": "crossing",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1511849862,
+  "bounds": {
+    "minlat": 37.8066695,
+    "minlon": -122.4758896,
+    "maxlat": 37.8066811,
+    "maxlon": -122.4758739
+  },
+  "nodes": [
+    13809973188,
+    13809973185
+  ],
+  "geometry": [
+    { "lat": 37.8066811, "lon": -122.4758739 },
+    { "lat": 37.8066695, "lon": -122.4758896 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1511849863,
+  "bounds": {
+    "minlat": 37.8066610,
+    "minlon": -122.4759012,
+    "maxlat": 37.8066695,
+    "maxlon": -122.4758896
+  },
+  "nodes": [
+    13809973185,
+    13809973182
+  ],
+  "geometry": [
+    { "lat": 37.8066695, "lon": -122.4758896 },
+    { "lat": 37.8066610, "lon": -122.4759012 }
+  ],
+  "tags": {
+    "footway": "sidewalk",
+    "highway": "footway",
+    "lit": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1511849864,
+  "bounds": {
+    "minlat": 37.8066464,
+    "minlon": -122.4759211,
+    "maxlat": 37.8066610,
+    "maxlon": -122.4759012
+  },
+  "nodes": [
+    13809973182,
+    13809973176
+  ],
+  "geometry": [
+    { "lat": 37.8066610, "lon": -122.4759012 },
+    { "lat": 37.8066464, "lon": -122.4759211 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327132,
+  "bounds": {
+    "minlat": 37.8068839,
+    "minlon": -122.4759179,
+    "maxlat": 37.8068954,
+    "maxlon": -122.4758533
+  },
+  "nodes": [
+    13903004720,
+    13519465344,
+    13903001092
+  ],
+  "geometry": [
+    { "lat": 37.8068954, "lon": -122.4758533 },
+    { "lat": 37.8068856, "lon": -122.4759083 },
+    { "lat": 37.8068839, "lon": -122.4759179 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lanes": "1",
+    "layer": "-1",
+    "oneway": "yes",
+    "turn:lanes": "right"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327134,
+  "bounds": {
+    "minlat": 37.8080067,
+    "minlon": -122.4757809,
+    "maxlat": 37.8080866,
+    "maxlon": -122.4755625
+  },
+  "nodes": [
+    13903001098,
+    13903001097,
+    13903001096,
+    13903001095
+  ],
+  "geometry": [
+    { "lat": 37.8080067, "lon": -122.4757809 },
+    { "lat": 37.8080866, "lon": -122.4756456 },
+    { "lat": 37.8080291, "lon": -122.4755930 },
+    { "lat": 37.8080295, "lon": -122.4755625 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327137,
+  "bounds": {
+    "minlat": 37.8068035,
+    "minlon": -122.4759964,
+    "maxlat": 37.8068781,
+    "maxlon": -122.4759184
+  },
+  "nodes": [
+    13903004719,
+    2961623553,
+    13903004762
+  ],
+  "geometry": [
+    { "lat": 37.8068781, "lon": -122.4759964 },
+    { "lat": 37.8068658, "lon": -122.4759832 },
+    { "lat": 37.8068035, "lon": -122.4759184 }
+  ],
+  "tags": {
+    "access": "private",
+    "highway": "service",
+    "maxspeed": "5 mph"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327147,
+  "bounds": {
+    "minlat": 37.8068035,
+    "minlon": -122.4759184,
+    "maxlat": 37.8068543,
+    "maxlon": -122.4758858
+  },
+  "nodes": [
+    13903004716,
+    13903004612,
+    13903004762
+  ],
+  "geometry": [
+    { "lat": 37.8068543, "lon": -122.4758858 },
+    { "lat": 37.8068516, "lon": -122.4758876 },
+    { "lat": 37.8068035, "lon": -122.4759184 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "change": "no",
+    "destination:forward": "San Francisco",
+    "destination:ref:forward": "US 101 South",
+    "dual_carriageway": "no",
+    "highway": "secondary",
+    "lanes": "2",
+    "lanes:backward": "1",
+    "lanes:forward": "1",
+    "lcn_ref": "95",
+    "lit": "yes",
+    "maxspeed": "15 mph",
+    "noname": "yes",
+    "overtaking": "no",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327149,
+  "bounds": {
+    "minlat": 37.8068781,
+    "minlon": -122.4759964,
+    "maxlat": 37.8068839,
+    "maxlon": -122.4759179
+  },
+  "nodes": [
+    13903001092,
+    13903004718,
+    13903004717,
+    13903004719
+  ],
+  "geometry": [
+    { "lat": 37.8068839, "lon": -122.4759179 },
+    { "lat": 37.8068825, "lon": -122.4759254 },
+    { "lat": 37.8068790, "lon": -122.4759626 },
+    { "lat": 37.8068781, "lon": -122.4759964 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lanes": "1",
+    "lanes:forward": "1",
+    "oneway": "yes",
+    "turn:lanes": "right"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327150,
+  "bounds": {
+    "minlat": 37.8063366,
+    "minlon": -122.4759184,
+    "maxlat": 37.8068035,
+    "maxlon": -122.4754205
+  },
+  "nodes": [
+    13903004762,
+    13903004763,
+    13903004722,
+    13903004764,
+    13903004757,
+    13903004721,
+    13187897042
+  ],
+  "geometry": [
+    { "lat": 37.8068035, "lon": -122.4759184 },
+    { "lat": 37.8067255, "lon": -122.4758374 },
+    { "lat": 37.8064651, "lon": -122.4755598 },
+    { "lat": 37.8064299, "lon": -122.4755222 },
+    { "lat": 37.8064248, "lon": -122.4755167 },
+    { "lat": 37.8064067, "lon": -122.4754969 },
+    { "lat": 37.8063366, "lon": -122.4754205 }
+  ],
+  "tags": {
+    "change": "no",
+    "dual_carriageway": "no",
+    "highway": "secondary",
+    "lanes": "2",
+    "lanes:backward": "1",
+    "lanes:forward": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327153,
+  "bounds": {
+    "minlat": 37.8067523,
+    "minlon": -122.4756530,
+    "maxlat": 37.8068407,
+    "maxlon": -122.4755846
+  },
+  "nodes": [
+    13903004752,
+    13903004749,
+    13903004748,
+    14190386646
+  ],
+  "geometry": [
+    { "lat": 37.8067523, "lon": -122.4756292 },
+    { "lat": 37.8067822, "lon": -122.4755846 },
+    { "lat": 37.8068407, "lon": -122.4756454 },
+    { "lat": 37.8068355, "lon": -122.4756530 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327154,
+  "bounds": {
+    "minlat": 37.8067402,
+    "minlon": -122.4756162,
+    "maxlat": 37.8067840,
+    "maxlon": -122.4755519
+  },
+  "nodes": [
+    13903004751,
+    13903004750
+  ],
+  "geometry": [
+    { "lat": 37.8067402, "lon": -122.4756162 },
+    { "lat": 37.8067840, "lon": -122.4755519 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327155,
+  "bounds": {
+    "minlat": 37.8067125,
+    "minlon": -122.4756889,
+    "maxlat": 37.8067523,
+    "maxlon": -122.4756020
+  },
+  "nodes": [
+    3722705734,
+    13903004751,
+    13903004752,
+    13903004753
+  ],
+  "geometry": [
+    { "lat": 37.8067269, "lon": -122.4756020 },
+    { "lat": 37.8067402, "lon": -122.4756162 },
+    { "lat": 37.8067523, "lon": -122.4756292 },
+    { "lat": 37.8067125, "lon": -122.4756889 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327156,
+  "bounds": {
+    "minlat": 37.8066906,
+    "minlon": -122.4757214,
+    "maxlat": 37.8067125,
+    "maxlon": -122.4756889
+  },
+  "nodes": [
+    13903004753,
+    13903004756
+  ],
+  "geometry": [
+    { "lat": 37.8067125, "lon": -122.4756889 },
+    { "lat": 37.8066906, "lon": -122.4757214 }
+  ],
+  "tags": {
+    "highway": "steps"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327157,
+  "bounds": {
+    "minlat": 37.8066906,
+    "minlon": -122.4758102,
+    "maxlat": 37.8068044,
+    "maxlon": -122.4757214
+  },
+  "nodes": [
+    13903004756,
+    13903004755,
+    13903004754,
+    13371056467
+  ],
+  "geometry": [
+    { "lat": 37.8066906, "lon": -122.4757214 },
+    { "lat": 37.8067557, "lon": -122.4757958 },
+    { "lat": 37.8067740, "lon": -122.4758069 },
+    { "lat": 37.8068044, "lon": -122.4758102 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327158,
+  "bounds": {
+    "minlat": 37.8068543,
+    "minlon": -122.4758858,
+    "maxlat": 37.8074104,
+    "maxlon": -122.4751441
+  },
+  "nodes": [
+    13903004759,
+    14190386652,
+    13903004720,
+    13903004758,
+    13903004716
+  ],
+  "geometry": [
+    { "lat": 37.8074104, "lon": -122.4751441 },
+    { "lat": 37.8069682, "lon": -122.4757843 },
+    { "lat": 37.8068954, "lon": -122.4758533 },
+    { "lat": 37.8068601, "lon": -122.4758820 },
+    { "lat": 37.8068543, "lon": -122.4758858 }
+  ],
+  "tags": {
+    "covered": "yes",
+    "dual_carriageway": "no",
+    "foot": "no",
+    "highway": "secondary",
+    "lanes": "2",
+    "lanes:backward": "1",
+    "lanes:forward": "1",
+    "layer": "-1",
+    "lcn_ref": "95",
+    "maxheight": "11'10\"",
+    "noname": "yes",
+    "overtaking": "no",
+    "sidewalk:right": "no",
+    "surface": "asphalt",
+    "tunnel": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1525327195,
+  "bounds": {
+    "minlat": 37.8081071,
+    "minlon": -122.4763406,
+    "maxlat": 37.8081717,
+    "maxlon": -122.4762739
+  },
+  "nodes": [
+    3722698233,
+    528521184
+  ],
+  "geometry": [
+    { "lat": 37.8081717, "lon": -122.4762739 },
+    { "lat": 37.8081071, "lon": -122.4763406 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "foot": "no",
+    "highway": "cycleway",
+    "incline": "up",
+    "lanes": "2",
+    "lcn_ref": "95",
+    "maxspeed": "5 mph",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010117,
+  "bounds": {
+    "minlat": 37.8070659,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4758138
+  },
+  "nodes": [
+    14190356539,
+    14190386633,
+    14190386638,
+    14190386623,
+    14190386639,
+    14190356537,
+    8548079975
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8075862, "lon": -122.4761956 },
+    { "lat": 37.8075036, "lon": -122.4761563 },
+    { "lat": 37.8073362, "lon": -122.4760765 },
+    { "lat": 37.8072836, "lon": -122.4760310 },
+    { "lat": 37.8072088, "lon": -122.4759664 },
+    { "lat": 37.8070659, "lon": -122.4758138 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010118,
+  "bounds": {
+    "minlat": 37.8077264,
+    "minlon": -122.4765727,
+    "maxlat": 37.8080536,
+    "maxlon": -122.4762623
+  },
+  "nodes": [
+    5207344513,
+    14190356539
+  ],
+  "geometry": [
+    { "lat": 37.8080536, "lon": -122.4765727 },
+    { "lat": 37.8077264, "lon": -122.4762623 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:name": "Golden Gate Bridge",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "historic": "yes",
+    "lanes": "3",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "layer": "0",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "name": "Golden Gate Bridge",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes",
+    "wikidata": "Q44440",
+    "wikipedia": "en:Golden Gate Bridge"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010120,
+  "bounds": {
+    "minlat": 37.8070927,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4757711
+  },
+  "nodes": [
+    14190356539,
+    14190386624,
+    14190386622,
+    14190356541,
+    8548046114
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8073563, "lon": -122.4760336 },
+    { "lat": 37.8072824, "lon": -122.4759726 },
+    { "lat": 37.8071649, "lon": -122.4758456 },
+    { "lat": 37.8070927, "lon": -122.4757711 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010129,
+  "bounds": {
+    "minlat": 37.8071183,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4757295
+  },
+  "nodes": [
+    14190356539,
+    14190386626,
+    14190386625,
+    14190386607,
+    8548079949
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8073788, "lon": -122.4760021 },
+    { "lat": 37.8072864, "lon": -122.4759127 },
+    { "lat": 37.8071893, "lon": -122.4758051 },
+    { "lat": 37.8071183, "lon": -122.4757295 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010130,
+  "bounds": {
+    "minlat": 37.8071412,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4756943
+  },
+  "nodes": [
+    14190356539,
+    14190386627,
+    14190386609,
+    8548046089
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8074944, "lon": -122.4760611 },
+    { "lat": 37.8072147, "lon": -122.4757703 },
+    { "lat": 37.8071412, "lon": -122.4756943 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010131,
+  "bounds": {
+    "minlat": 37.8071667,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4756577
+  },
+  "nodes": [
+    14190356539,
+    14190386628,
+    14190386611,
+    65374006
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8075273, "lon": -122.4760448 },
+    { "lat": 37.8072380, "lon": -122.4757327 },
+    { "lat": 37.8071667, "lon": -122.4756577 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "name": "Golden Gate Bridge",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes",
+    "wikidata": "Q44440",
+    "wikipedia": "en:Golden Gate Bridge"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010132,
+  "bounds": {
+    "minlat": 37.8071909,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4756222
+  },
+  "nodes": [
+    14190356539,
+    14190386630,
+    14190386629,
+    14190386613,
+    8548079936
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8074800, "lon": -122.4759350 },
+    { "lat": 37.8073868, "lon": -122.4758253 },
+    { "lat": 37.8072629, "lon": -122.4756965 },
+    { "lat": 37.8071909, "lon": -122.4756222 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010133,
+  "bounds": {
+    "minlat": 37.8072159,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4755840
+  },
+  "nodes": [
+    14190356539,
+    14190386631,
+    14190386615,
+    8548046101
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8074117, "lon": -122.4757917 },
+    { "lat": 37.8072889, "lon": -122.4756590 },
+    { "lat": 37.8072159, "lon": -122.4755840 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010134,
+  "bounds": {
+    "minlat": 37.8072460,
+    "minlon": -122.4762623,
+    "maxlat": 37.8077264,
+    "maxlon": -122.4755427
+  },
+  "nodes": [
+    14190356539,
+    14190386632,
+    14190386617,
+    8548079958
+  ],
+  "geometry": [
+    { "lat": 37.8077264, "lon": -122.4762623 },
+    { "lat": 37.8074414, "lon": -122.4757490 },
+    { "lat": 37.8073191, "lon": -122.4756174 },
+    { "lat": 37.8072460, "lon": -122.4755427 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "historic": "yes",
+    "lanes": "1",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010135,
+  "bounds": {
+    "minlat": 37.8075165,
+    "minlon": -122.4763460,
+    "maxlat": 37.8075862,
+    "maxlon": -122.4761956
+  },
+  "nodes": [
+    14190386633,
+    14190386634,
+    8754727163
+  ],
+  "geometry": [
+    { "lat": 37.8075862, "lon": -122.4761956 },
+    { "lat": 37.8075393, "lon": -122.4762948 },
+    { "lat": 37.8075165, "lon": -122.4763460 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "emergency_access"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010137,
+  "bounds": {
+    "minlat": 37.8074540,
+    "minlon": -122.4762319,
+    "maxlat": 37.8075036,
+    "maxlon": -122.4761563
+  },
+  "nodes": [
+    14190386637,
+    14190386638
+  ],
+  "geometry": [
+    { "lat": 37.8074540, "lon": -122.4762319 },
+    { "lat": 37.8075036, "lon": -122.4761563 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "driveway"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010138,
+  "bounds": {
+    "minlat": 37.8071200,
+    "minlon": -122.4762552,
+    "maxlat": 37.8071749,
+    "maxlon": -122.4761797
+  },
+  "nodes": [
+    14190386641,
+    14190386640
+  ],
+  "geometry": [
+    { "lat": 37.8071749, "lon": -122.4761797 },
+    { "lat": 37.8071200, "lon": -122.4762552 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "emergency_access"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010139,
+  "bounds": {
+    "minlat": 37.8072394,
+    "minlon": -122.4760911,
+    "maxlat": 37.8072836,
+    "maxlon": -122.4760310
+  },
+  "nodes": [
+    14190386639,
+    8548392492
+  ],
+  "geometry": [
+    { "lat": 37.8072836, "lon": -122.4760310 },
+    { "lat": 37.8072394, "lon": -122.4760911 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "emergency_access"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010140,
+  "bounds": {
+    "minlat": 37.8071749,
+    "minlon": -122.4761797,
+    "maxlat": 37.8072394,
+    "maxlon": -122.4760911
+  },
+  "nodes": [
+    8548392492,
+    14190386641
+  ],
+  "geometry": [
+    { "lat": 37.8072394, "lon": -122.4760911 },
+    { "lat": 37.8071749, "lon": -122.4761797 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "emergency_access",
+    "tunnel": "building_passage"
+  }
+},
+{
+  "type": "way",
+  "id": 1560010145,
+  "bounds": {
+    "minlat": 37.8065956,
+    "minlon": -122.4760012,
+    "maxlat": 37.8066317,
+    "maxlon": -122.4759617
+  },
+  "nodes": [
+    3454073892,
+    7399481904,
+    7399469712
+  ],
+  "geometry": [
+    { "lat": 37.8065956, "lon": -122.4759617 },
+    { "lat": 37.8066071, "lon": -122.4759745 },
+    { "lat": 37.8066317, "lon": -122.4760012 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1560016296,
+  "bounds": {
+    "minlat": 37.8078016,
+    "minlon": -122.4758038,
+    "maxlat": 37.8078255,
+    "maxlon": -122.4757695
+  },
+  "nodes": [
+    14190419056,
+    14190419057,
+    14190419071
+  ],
+  "geometry": [
+    { "lat": 37.8078255, "lon": -122.4758038 },
+    { "lat": 37.8078056, "lon": -122.4757754 },
+    { "lat": 37.8078016, "lon": -122.4757695 }
+  ],
+  "tags": {
+    "highway": "steps",
+    "incline": "up"
+  }
+},
+{
+  "type": "way",
+  "id": 1560016297,
+  "bounds": {
+    "minlat": 37.8077077,
+    "minlon": -122.4757742,
+    "maxlat": 37.8078600,
+    "maxlon": -122.4755788
+  },
+  "nodes": [
+    14190419058,
+    14190419059,
+    14190419071,
+    14190419060,
+    14190419061,
+    14190419062,
+    14190419063,
+    14190419064,
+    14190419065,
+    14190419066,
+    14190419067,
+    14190419068,
+    14190419069,
+    14190419070
+  ],
+  "geometry": [
+    { "lat": 37.8077455, "lon": -122.4757616 },
+    { "lat": 37.8077786, "lon": -122.4757742 },
+    { "lat": 37.8078016, "lon": -122.4757695 },
+    { "lat": 37.8078127, "lon": -122.4757672 },
+    { "lat": 37.8078411, "lon": -122.4757421 },
+    { "lat": 37.8078580, "lon": -122.4757039 },
+    { "lat": 37.8078600, "lon": -122.4756602 },
+    { "lat": 37.8078467, "lon": -122.4756198 },
+    { "lat": 37.8078208, "lon": -122.4755907 },
+    { "lat": 37.8077876, "lon": -122.4755788 },
+    { "lat": 37.8077535, "lon": -122.4755865 },
+    { "lat": 37.8077255, "lon": -122.4756122 },
+    { "lat": 37.8077092, "lon": -122.4756508 },
+    { "lat": 37.8077077, "lon": -122.4756945 }
+  ],
+  "tags": {
+    "covered": "yes",
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1560016298,
+  "bounds": {
+    "minlat": 37.8078255,
+    "minlon": -122.4758366,
+    "maxlat": 37.8078531,
+    "maxlon": -122.4758038
+  },
+  "nodes": [
+    14190419056,
+    14190419072
+  ],
+  "geometry": [
+    { "lat": 37.8078255, "lon": -122.4758038 },
+    { "lat": 37.8078531, "lon": -122.4758366 }
+  ],
+  "tags": {
+    "highway": "footway"
+  }
+},
+{
+  "type": "way",
+  "id": 1560016299,
+  "bounds": {
+    "minlat": 37.8078281,
+    "minlon": -122.4759342,
+    "maxlat": 37.8078601,
+    "maxlon": -122.4758784
+  },
+  "nodes": [
+    3741990207,
+    822485358
+  ],
+  "geometry": [
+    { "lat": 37.8078601, "lon": -122.4759342 },
+    { "lat": 37.8078281, "lon": -122.4758784 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway": "crossing",
+    "foot": "designated",
+    "highway": "cycleway",
+    "lcn_ref": "95",
+    "maxspeed": "5 mph",
+    "segregated": "yes",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1564594100,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4756577,
+    "maxlat": 37.8071667,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    65374006,
+    14190386612,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8071667, "lon": -122.4756577 },
+    { "lat": 37.8070015, "lon": -122.4754839 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "alt_name": "Doyle Drive",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "name": "Presidio Parkway",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "Richardson",
+    "tiger:name_type": "Ave",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1568134554,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4758138,
+    "maxlat": 37.8070659,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    8548079975,
+    14190356538,
+    14190356540,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8070659, "lon": -122.4758138 },
+    { "lat": 37.8069760, "lon": -122.4757178 },
+    { "lat": 37.8069357, "lon": -122.4756722 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "United States Highway 101;Redwood",
+    "tiger:name_type": "Hwy",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1568134555,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4757711,
+    "maxlat": 37.8070927,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    8548046114,
+    14190356542,
+    14190386619,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8070927, "lon": -122.4757711 },
+    { "lat": 37.8070200, "lon": -122.4756960 },
+    { "lat": 37.8069343, "lon": -122.4755805 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "United States Highway 101;Redwood",
+    "tiger:name_type": "Hwy",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1568134556,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4757295,
+    "maxlat": 37.8071183,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    8548079949,
+    14190386608,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8071183, "lon": -122.4757295 },
+    { "lat": 37.8069616, "lon": -122.4755438 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "United States Highway 101;Redwood",
+    "tiger:name_type": "Hwy",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1568134557,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4756943,
+    "maxlat": 37.8071412,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    8548046089,
+    14190386610,
+    14190386620,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8071412, "lon": -122.4756943 },
+    { "lat": 37.8070699, "lon": -122.4756207 },
+    { "lat": 37.8069770, "lon": -122.4755164 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "United States Highway 101;Redwood",
+    "tiger:name_type": "Hwy",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 1568134558,
+  "bounds": {
+    "minlat": 37.8068518,
+    "minlon": -122.4756222,
+    "maxlat": 37.8071909,
+    "maxlon": -122.4753238
+  },
+  "nodes": [
+    8548079936,
+    14190386614,
+    14190386621,
+    8548082072
+  ],
+  "geometry": [
+    { "lat": 37.8071909, "lon": -122.4756222 },
+    { "lat": 37.8071181, "lon": -122.4755469 },
+    { "lat": 37.8070239, "lon": -122.4754523 },
+    { "lat": 37.8068518, "lon": -122.4753238 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "hgv": "designated",
+    "highway": "motorway_link",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "maxspeed:advisory": "25 mph",
+    "old_ref": "CA 480",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25",
+    "tiger:name_base": "United States Highway 101;Redwood",
+    "tiger:name_type": "Hwy",
+    "toll": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 106042063,
+  "bounds": {
+    "minlat": 37.8087436,
+    "minlon": -122.4764266,
+    "maxlat": 37.8100455,
+    "maxlon": -122.4719551
+  },
+  "nodes": [
+    434670503,
+    3741990495,
+    434668659,
+    3741990430,
+    3741990748,
+    434668662,
+    3741990203,
+    3741990490,
+    434668667,
+    434668673,
+    3741990331,
+    434668679,
+    434668681,
+    3741990093,
+    434668684,
+    434668686,
+    3741990184,
+    3741990435,
+    434668703,
+    3741990136,
+    3741990425,
+    3741990440,
+    3741990703,
+    434668707,
+    3741990423,
+    3741990689,
+    434668708,
+    3741990179,
+    2638978411
+  ],
+  "geometry": [
+    { "lat": 37.8087436, "lon": -122.4719551 },
+    { "lat": 37.8087847, "lon": -122.4720762 },
+    { "lat": 37.8088200, "lon": -122.4722043 },
+    { "lat": 37.8088517, "lon": -122.4723454 },
+    { "lat": 37.8088774, "lon": -122.4724862 },
+    { "lat": 37.8088997, "lon": -122.4726261 },
+    { "lat": 37.8089195, "lon": -122.4727650 },
+    { "lat": 37.8089431, "lon": -122.4729533 },
+    { "lat": 37.8089627, "lon": -122.4731324 },
+    { "lat": 37.8089770, "lon": -122.4732938 },
+    { "lat": 37.8089866, "lon": -122.4734243 },
+    { "lat": 37.8089891, "lon": -122.4735315 },
+    { "lat": 37.8089839, "lon": -122.4740226 },
+    { "lat": 37.8089865, "lon": -122.4741468 },
+    { "lat": 37.8089951, "lon": -122.4742710 },
+    { "lat": 37.8090627, "lon": -122.4748644 },
+    { "lat": 37.8090737, "lon": -122.4749313 },
+    { "lat": 37.8090854, "lon": -122.4749887 },
+    { "lat": 37.8092230, "lon": -122.4755736 },
+    { "lat": 37.8092483, "lon": -122.4756700 },
+    { "lat": 37.8092785, "lon": -122.4757608 },
+    { "lat": 37.8093121, "lon": -122.4758517 },
+    { "lat": 37.8093520, "lon": -122.4759357 },
+    { "lat": 37.8094027, "lon": -122.4760310 },
+    { "lat": 37.8094346, "lon": -122.4760812 },
+    { "lat": 37.8094619, "lon": -122.4761159 },
+    { "lat": 37.8095111, "lon": -122.4761626 },
+    { "lat": 37.8095401, "lon": -122.4761761 },
+    { "lat": 37.8100455, "lon": -122.4764266 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "cycleway:both": "no",
+    "highway": "unclassified",
+    "lit": "no",
+    "maxspeed": "15 mph",
+    "name": "Marine Drive",
+    "sidewalk": "separate",
+    "surface": "asphalt",
+    "tiger:cfcc": "A41",
+    "tiger:name_base": "Marine;Long",
+    "tiger:name_type": "Dr;Ave"
+  }
+},
+{
+  "type": "way",
+  "id": 368033990,
+  "bounds": {
+    "minlat": 37.8174339,
+    "minlon": -122.4794644,
+    "maxlat": 37.8285588,
+    "maxlon": -122.4781529
+  },
+  "nodes": [
+    8978535801,
+    6696347233,
+    6696347234,
+    6696347235,
+    6696347236,
+    6696347237,
+    6696347238,
+    6696347239,
+    6696347240,
+    14190386675
+  ],
+  "geometry": [
+    { "lat": 37.8174339, "lon": -122.4781529 },
+    { "lat": 37.8254289, "lon": -122.4790893 },
+    { "lat": 37.8254310, "lon": -122.4790358 },
+    { "lat": 37.8254704, "lon": -122.4790112 },
+    { "lat": 37.8255000, "lon": -122.4790034 },
+    { "lat": 37.8255267, "lon": -122.4790058 },
+    { "lat": 37.8255771, "lon": -122.4790401 },
+    { "lat": 37.8255904, "lon": -122.4790601 },
+    { "lat": 37.8255878, "lon": -122.4790969 },
+    { "lat": 37.8285588, "lon": -122.4794644 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate",
+    "bridge:structure": "suspension",
+    "cycleway:surface": "concrete",
+    "elevation": "220",
+    "foot": "designated",
+    "footway:surface": "concrete",
+    "highway": "cycleway",
+    "horse": "no",
+    "layer": "1",
+    "lit": "yes",
+    "name": "Golden Gate Bridge East Sidewalk",
+    "note": "Closes to pedestrians in the evening (exact time depends by season) but you can call on the interphone and they'll send a police car for to take you to the other side. Bikes allowed at night but must call on the interphone. Hours and instructions here: ht",
+    "oneway": "no",
+    "segregated": "yes",
+    "source": "Bing",
+    "start_date": "1937-05-27",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 368049578,
+  "bounds": {
+    "minlat": 37.8080000,
+    "minlon": -122.4797244,
+    "maxlat": 37.8285425,
+    "maxlon": -122.4766506
+  },
+  "nodes": [
+    14190386682,
+    6696347249,
+    6696347248,
+    6696347247,
+    6696347246,
+    6696347245,
+    6696347244,
+    6696347243,
+    6696347242,
+    6696347241,
+    6696347231,
+    6696347232,
+    6696347230,
+    6696347229,
+    6696347228,
+    6696347227,
+    6696347226,
+    6696347225,
+    6696347224,
+    14190386696,
+    14190436076,
+    3719112680,
+    3719112697,
+    3719112702,
+    3719112681,
+    3719112695,
+    3719112700,
+    3719112690,
+    3719112701,
+    3719112687,
+    3719112676,
+    3719112685,
+    3719112682,
+    3719112694
+  ],
+  "geometry": [
+    { "lat": 37.8285425, "lon": -122.4797244 },
+    { "lat": 37.8255771, "lon": -122.4793753 },
+    { "lat": 37.8255723, "lon": -122.4794125 },
+    { "lat": 37.8255575, "lon": -122.4794300 },
+    { "lat": 37.8255157, "lon": -122.4794480 },
+    { "lat": 37.8254890, "lon": -122.4794520 },
+    { "lat": 37.8254630, "lon": -122.4794470 },
+    { "lat": 37.8254338, "lon": -122.4794334 },
+    { "lat": 37.8254049, "lon": -122.4794013 },
+    { "lat": 37.8254055, "lon": -122.4793535 },
+    { "lat": 37.8140794, "lon": -122.4780340 },
+    { "lat": 37.8140760, "lon": -122.4780603 },
+    { "lat": 37.8140665, "lon": -122.4780851 },
+    { "lat": 37.8140405, "lon": -122.4781086 },
+    { "lat": 37.8140100, "lon": -122.4781134 },
+    { "lat": 37.8139838, "lon": -122.4781079 },
+    { "lat": 37.8139487, "lon": -122.4780900 },
+    { "lat": 37.8139184, "lon": -122.4780576 },
+    { "lat": 37.8139220, "lon": -122.4780179 },
+    { "lat": 37.8109908, "lon": -122.4776630 },
+    { "lat": 37.8098845, "lon": -122.4775411 },
+    { "lat": 37.8096318, "lon": -122.4775136 },
+    { "lat": 37.8095223, "lon": -122.4774969 },
+    { "lat": 37.8094100, "lon": -122.4774740 },
+    { "lat": 37.8092962, "lon": -122.4774456 },
+    { "lat": 37.8091905, "lon": -122.4774118 },
+    { "lat": 37.8090821, "lon": -122.4773725 },
+    { "lat": 37.8089625, "lon": -122.4773193 },
+    { "lat": 37.8088335, "lon": -122.4772543 },
+    { "lat": 37.8087149, "lon": -122.4771875 },
+    { "lat": 37.8085953, "lon": -122.4771113 },
+    { "lat": 37.8084843, "lon": -122.4770309 },
+    { "lat": 37.8083737, "lon": -122.4769438 },
+    { "lat": 37.8080000, "lon": -122.4766506 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate",
+    "bridge:structure": "suspension",
+    "foot": "no",
+    "highway": "cycleway",
+    "horse": "no",
+    "layer": "1",
+    "lit": "yes",
+    "maxspeed": "15 mph",
+    "motor_vehicle": "no",
+    "name": "Golden Gate Bridge West Sidewalk",
+    "note": "Bicyclists use west sidewalk during weekday afternoons and on weekend days. At other times, bicyclists share east sidewalk with pedestrians. Detailed hours here: https://www.goldengate.org/bridge/visiting-the-bridge/bikes-pedestrians/",
+    "oneway": "no",
+    "segregated": "no",
+    "source": "Bing",
+    "start_date": "1937-05-27",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 537838948,
+  "bounds": {
+    "minlat": 37.8080536,
+    "minlon": -122.4792839,
+    "maxlat": 37.8254838,
+    "maxlon": -122.4765727
+  },
+  "nodes": [
+    7190094860,
+    14190386712,
+    14190386709,
+    5207344505,
+    5207344496,
+    5207344722,
+    5207344508,
+    5207344495,
+    5207344515,
+    5207344721,
+    5207344498,
+    5207344514,
+    5207344520,
+    5207344503,
+    5207344724,
+    5207344723,
+    5207344513
+  ],
+  "geometry": [
+    { "lat": 37.8254838, "lon": -122.4792839 },
+    { "lat": 37.8109961, "lon": -122.4775912 },
+    { "lat": 37.8098912, "lon": -122.4774601 },
+    { "lat": 37.8096313, "lon": -122.4774289 },
+    { "lat": 37.8095254, "lon": -122.4774127 },
+    { "lat": 37.8094171, "lon": -122.4773906 },
+    { "lat": 37.8093078, "lon": -122.4773633 },
+    { "lat": 37.8092064, "lon": -122.4773309 },
+    { "lat": 37.8091026, "lon": -122.4772933 },
+    { "lat": 37.8089881, "lon": -122.4772423 },
+    { "lat": 37.8088631, "lon": -122.4771793 },
+    { "lat": 37.8087486, "lon": -122.4771150 },
+    { "lat": 37.8086340, "lon": -122.4770418 },
+    { "lat": 37.8085270, "lon": -122.4769644 },
+    { "lat": 37.8084159, "lon": -122.4768793 },
+    { "lat": 37.8082886, "lon": -122.4767805 },
+    { "lat": 37.8080536, "lon": -122.4765727 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate Bridge",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "historic": "yes",
+    "lanes": "3",
+    "lanes:conditional": "2 @ (Tu-Fr 15:30-17:00)",
+    "layer": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "name": "Golden Gate Bridge",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "yes",
+    "wikidata": "Q44440",
+    "wikipedia": "en:Golden Gate Bridge"
+  }
+},
+{
+  "type": "way",
+  "id": 595194543,
+  "bounds": {
+    "minlat": 37.8081243,
+    "minlon": -122.4791861,
+    "maxlat": 37.8255059,
+    "maxlon": -122.4764699
+  },
+  "nodes": [
+    5673261809,
+    5673262439,
+    5673262438,
+    5673262437,
+    5673262436,
+    5673262435,
+    5673262434,
+    5673262433,
+    5673262432,
+    5673262431,
+    5673262430,
+    5673262429,
+    5673262428,
+    5673262427,
+    5673262426,
+    14190386710,
+    14190386713,
+    7192379617
+  ],
+  "geometry": [
+    { "lat": 37.8081243, "lon": -122.4764699 },
+    { "lat": 37.8082433, "lon": -122.4765844 },
+    { "lat": 37.8083516, "lon": -122.4766840 },
+    { "lat": 37.8084684, "lon": -122.4767855 },
+    { "lat": 37.8085753, "lon": -122.4768697 },
+    { "lat": 37.8086823, "lon": -122.4769471 },
+    { "lat": 37.8087969, "lon": -122.4770203 },
+    { "lat": 37.8089114, "lon": -122.4770846 },
+    { "lat": 37.8090364, "lon": -122.4771476 },
+    { "lat": 37.8091509, "lon": -122.4771986 },
+    { "lat": 37.8092547, "lon": -122.4772362 },
+    { "lat": 37.8093561, "lon": -122.4772686 },
+    { "lat": 37.8094654, "lon": -122.4772959 },
+    { "lat": 37.8095737, "lon": -122.4773180 },
+    { "lat": 37.8096796, "lon": -122.4773342 },
+    { "lat": 37.8098999, "lon": -122.4773565 },
+    { "lat": 37.8110040, "lon": -122.4774833 },
+    { "lat": 37.8255059, "lon": -122.4791861 }
+  ],
+  "tags": {
+    "NHS": "STRAHNET",
+    "bicycle": "no",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate Bridge",
+    "bridge:structure": "suspension",
+    "colour": "orange",
+    "cycleway": "no",
+    "foot": "no",
+    "hgv": "designated",
+    "highway": "motorway",
+    "historic": "yes",
+    "lanes": "3",
+    "lanes:conditional": "4 @ (Tu-Fr 15:30-17:00)",
+    "layer": "1",
+    "lit": "yes",
+    "maxspeed": "45 mph",
+    "name": "Golden Gate Bridge",
+    "oneway": "yes",
+    "ref": "US 101;CA 1",
+    "sidewalk": "separate",
+    "source": "Bing",
+    "source:hgv": "https://sfplanninggis.org/TIM/?search=3591024#searchbox",
+    "start_date": "1937-05-27",
+    "surface": "asphalt",
+    "tiger:cfcc": "A25;A11;A29",
+    "tiger:name_base": "United States Highway 101;Redwood;Golden Gate",
+    "tiger:name_base_1": "Golden Gate",
+    "tiger:name_type": "Hwy;Brg",
+    "tiger:name_type_1": "Brg",
+    "toll": "no",
+    "wikidata": "Q44440",
+    "wikipedia": "en:Golden Gate Bridge"
+  }
+},
+{
+  "type": "way",
+  "id": 970229713,
+  "bounds": {
+    "minlat": 37.8099070,
+    "minlon": -122.4781529,
+    "maxlat": 37.8174339,
+    "maxlon": -122.4772706
+  },
+  "nodes": [
+    11771808553,
+    14190386711,
+    6696347214,
+    6696347213,
+    6696347212,
+    6696347211,
+    6696347210,
+    6696347209,
+    6696347208,
+    6696347207,
+    8978535801
+  ],
+  "geometry": [
+    { "lat": 37.8099070, "lon": -122.4772706 },
+    { "lat": 37.8110106, "lon": -122.4773919 },
+    { "lat": 37.8139515, "lon": -122.4777418 },
+    { "lat": 37.8139539, "lon": -122.4776936 },
+    { "lat": 37.8139799, "lon": -122.4776748 },
+    { "lat": 37.8140073, "lon": -122.4776703 },
+    { "lat": 37.8140434, "lon": -122.4776712 },
+    { "lat": 37.8140634, "lon": -122.4776783 },
+    { "lat": 37.8141023, "lon": -122.4777127 },
+    { "lat": 37.8141037, "lon": -122.4777637 },
+    { "lat": 37.8174339, "lon": -122.4781529 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "bridge": "yes",
+    "bridge:name": "Golden Gate",
+    "bridge:structure": "suspension",
+    "elevation": "220",
+    "foot": "designated",
+    "highway": "cycleway",
+    "layer": "1",
+    "lit": "yes",
+    "name": "Golden Gate Bridge East Sidewalk",
+    "note": "Closes to pedestrians in the evening (exact time depends by season) but you can call on the interphone and they'll send a police car for to take you to the other side. Bikes allowed at night but must call on the interphone. Hours and instructions here: ht",
+    "oneway": "no",
+    "source": "Bing",
+    "start_date": "1937-05-27",
+    "surface": "concrete"
+  }
+}
+
+  ]
+}
