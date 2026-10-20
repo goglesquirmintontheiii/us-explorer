@@ -1,6 +1,6 @@
 # Progress: Phase 2 (Player, cameras and maps), v0.2.0
 
-**Status:** in progress · previous phase: [Phase 1](progress/progress_phase_1.md) (released [v0.1.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.1.0))
+**Status:** complete · released as v0.2.0 on 2026-10-20 · previous phase: [Phase 1](progress/progress_phase_1.md) (released [v0.1.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.1.0))
 
 Goal: a player you can walk, jump, swim and fly as, with three camera views, a minimap and a full map with search, teleport and bookmarks.
 
@@ -27,9 +27,18 @@ Open GitHub issues checked at the start of this phase: none.
 - [x] Bookmarks with name (looked up from the location) and view direction (B or the map); recent places list
 - [x] Weather service now runs from the same executable (one file to download on Windows too)
 - [x] Windows: no console window; one-click self-update for the .exe
-- [ ] Screenshots from CI reviewed
-- [ ] v0.2.0 release with AppImage
+- [x] Fix: the third-person and orbit cameras pull in rather than going into cliffs
+- [x] Fix: lidar flattens water to its surface; sea depths now come from the bathymetry tiles there
+- [x] Screenshots from CI reviewed
+- [x] v0.2.0 release with AppImage
 
 ## Screenshots
 
-_Added when the CI screenshot run finishes._
+From the CI screenshot run (software rendering, so frame rates in the overlay are meaningless).
+
+| | |
+|---|---|
+| ![Third person in Central Park](docs/screenshots/phase2/third-person-park.jpg) | ![Orbit camera in Yosemite Valley, Half Dome ahead](docs/screenshots/phase2/orbit-yosemite.jpg) |
+| Third person, Central Park | Orbit camera, Yosemite Valley |
+| ![Swimming off Waikiki](docs/screenshots/phase2/swim-waikiki.jpg) | ![Full map over Denver](docs/screenshots/phase2/map-us.jpg) |
+| Swimming off Waikiki | Full map with search, bookmarks and layers |
