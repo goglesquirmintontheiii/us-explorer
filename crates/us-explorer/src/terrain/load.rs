@@ -169,10 +169,27 @@ fn bilinear(px: &[f32], w: usize, x: f64, y: f64) -> f32 {
 fn heights(job: &LoadJob) -> Result<(HeightGrid, &'static str), String> {
     let id = job.id;
     if job.lidar && id.z > TERRARIUM_MAX_ZOOM && in_us(id) {
-        if let Some(g) = lidar_heights(id) {
-            return Ok((g, "USGS 3DEP lidar"));
+        if let Some(mut h) = lidar_heights(id) {
+            // Lidar flattens water to its surface; take sea depths from the bathymetric
+            // tiles there so there's a sea floor to wade and swim over.
+            if h.iter().any(|&x| x < 1.0)
+                && let Ok(t) = terrarium_grid(id)
+            {
+                for (a, b) in h.iter_mut().zip(t) {
+                    if *a < 1.0 && b < -0.5 {
+                        *a = a.min(b);
+                    }
+                }
+            }
+            return Ok((surface_grid(id, h), "USGS 3DEP lidar"));
         }
     }
+    Ok((surface_grid(id, terrarium_grid(id)?), "terrain tiles (3DEP 10 m / SRTM)"))
+}
+
+/// Heights for a tile sampled from the terrarium pyramid (walking up to a parent when a
+/// tile is missing).
+fn terrarium_grid(id: TileId) -> Result<Vec<f32>, String> {
     let mut ez = id.z.min(TERRARIUM_MAX_ZOOM);
     let dem = loop {
         match terrarium(id.ancestor(ez)) {
@@ -188,11 +205,10 @@ fn heights(job: &LoadJob) -> Result<(HeightGrid, &'static str), String> {
         for i in 0..GRID {
             let u = u0 + s * i as f64 / (GRID - 1) as f64;
             let v = v0 + s * j as f64 / (GRID - 1) as f64;
-            // Ocean depths are kept out of the visible surface until water exists (Phase 5).
             h.push(bilinear(&dem, TEX, u * TEX as f64, v * TEX as f64));
         }
     }
-    Ok((surface_grid(id, h), "terrain tiles (3DEP 10 m / SRTM)"))
+    Ok(h)
 }
 
 fn grid_from(h: Vec<f32>) -> HeightGrid {
@@ -224,7 +240,7 @@ fn in_us(id: TileId) -> bool {
 }
 
 /// Exact-size lattice from the 3DEP dynamic service, as a 32-bit float TIFF.
-fn lidar_heights(id: TileId) -> Option<HeightGrid> {
+fn lidar_heights(id: TileId) -> Option<Vec<f32>> {
     let bytes = fetch(&format!("dem/3dep/{}.tif", id.path()), &sources::usgs_3dep_url(id, GRID as u32)).ok()?;
     let mut dec = tiff::decoder::Decoder::new(std::io::Cursor::new(bytes)).ok()?;
     let (w, hgt) = dec.dimensions().ok()?;
@@ -238,7 +254,7 @@ fn lidar_heights(id: TileId) -> Option<HeightGrid> {
     if v.len() != GRID * GRID || v.iter().any(|x| !x.is_finite() || *x < -500.0) {
         return None;
     }
-    Some(surface_grid(id, v))
+    Some(v)
 }
 
 // ------------------------------------------------------------------- imagery

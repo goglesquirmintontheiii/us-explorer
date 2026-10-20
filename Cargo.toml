@@ -10,8 +10,11 @@ repository = "https://github.com/goglesquirmintontheiii/us-explorer"
 
 [profile.dev]
 opt-level = 1
+# Keep debug builds small: line tables for backtraces, no full debug info.
+debug = "line-tables-only"
 [profile.dev.package."*"]
 opt-level = 3
+debug = false
 
 [profile.release]
 lto = "thin"

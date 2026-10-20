@@ -283,11 +283,16 @@ fn simulate(
     // Hold a fixed height over the ground until detailed terrain has arrived.
     if let (Some(agl), Some((h, z))) = (p.hold_agl, ground) {
         g.h = h + agl;
+        // Over deep water, float at the surface instead of standing on the bottom.
+        p.in_water = h < SEA_LEVEL - 1.2 && g.h < SEA_LEVEL - 0.9;
+        if p.in_water {
+            g.h = SEA_LEVEL - 1.35;
+        }
         p.feet = g.to_ecef();
-        let standing = agl < 0.5;
+        let standing = agl < 0.5 && !p.in_water;
         p.on_ground = standing;
         p.air_time = 0.0;
-        if standing {
+        if standing || p.in_water {
             p.mode = Mode::Walk;
         }
         p.vel = DVec3::ZERO;
@@ -469,8 +474,23 @@ fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain
         }
     };
     let mut cam_ecef = to_ecef * cam_local + p.feet;
-    // Keep third-person and orbit cameras out of the ground.
+    // Keep third-person and orbit cameras out of the ground: like a spring arm, pull the
+    // camera in toward the player if terrain (a cliff, a slope) is in the way.
     if p.view != CameraView::FirstPerson {
+        let pivot = to_ecef * (DVec3::Y * if p.view == CameraView::Orbit { 1.0 } else { EYE_HEIGHT }) + p.feet;
+        let steps = 24;
+        let mut ok = 1.0;
+        for k in 1..=steps {
+            let t = k as f64 / steps as f64;
+            let q = Geodetic::from_ecef(pivot.lerp(cam_ecef, t));
+            if let Some(h) = terrain.height_at(q.lat, q.lon)
+                && q.h < h + 0.35
+            {
+                ok = ((k - 1) as f64 / steps as f64).max(0.08);
+                break;
+            }
+        }
+        cam_ecef = pivot.lerp(cam_ecef, ok);
         let mut cg = Geodetic::from_ecef(cam_ecef);
         if let Some(h) = terrain.height_at(cg.lat, cg.lon)
             && cg.h < h + 0.4
