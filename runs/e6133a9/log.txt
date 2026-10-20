@@ -1,0 +1,35 @@
+2026-10-20T04:49:37.464830Z  INFO bevy_diagnostic::system_information_diagnostics_plugin::internal: SystemInfo { os: "Linux (Ubuntu 24.04)", kernel: "6.17.0-1022-azure", cpu: "AMD EPYC 9V45 96-Core Processor", core_count: "2", memory: "15.6 GiB" }
+2026-10-20T04:49:37.789330Z  INFO bevy_render::renderer: AdapterInfo { name: "llvmpipe (LLVM 20.1.2, 256 bits)", vendor: 65541, device: 0, device_type: Cpu, device_pci_bus_id: "", driver: "llvmpipe", driver_info: "Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)", backend: Vulkan, subgroup_min_size: 8, subgroup_max_size: 8, transient_saves_memory: false }
+2026-10-20T04:49:37.789353Z  WARN bevy_render::renderer: The selected adapter is using a driver that only supports software rendering. This is likely to be very slow. See https://bevy.org/learn/errors/b0006/
+2026-10-20T04:49:37.933445Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-10-20T04:49:37.933491Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-10-20T04:49:37.933839Z  INFO bevy_egui::render: Using bindless_mode_array_size 16 (Device maximum 1000000)
+2026-10-20T04:49:37.934034Z  INFO bevy_winit::system: Creating new window US Explorer 0.1.0 (63v0)
+2026-10-20T04:49:37.934512Z  WARN winit::platform_impl::linux::x11::util::randr: XRandR reported that the display's 0mm in size, which is certifiably insane
+2026-10-20T04:49:37.934557Z  INFO winit::platform_impl::linux::x11::window: Guessed window scale factor: 1
+2026-10-20T04:51:32.220784Z  INFO us_explorer::shot: screenshot shots/denver-front-range.png after 114.3s (settled: true, deepest zoom 18)
+2026-10-20T04:51:33.660409Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/denver-front-range.png
+2026-10-20T04:53:48.603456Z  INFO us_explorer::shot: screenshot shots/grand-canyon.png after 131.6s (settled: true, deepest zoom 19)
+2026-10-20T04:53:50.297380Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/grand-canyon.png
+2026-10-20T04:55:26.084788Z  INFO us_explorer::shot: screenshot shots/manhattan.png after 92.0s (settled: true, deepest zoom 18)
+2026-10-20T04:55:27.467149Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/manhattan.png
+2026-10-20T04:57:44.332647Z  INFO us_explorer::shot: screenshot shots/yosemite-valley.png after 133.6s (settled: true, deepest zoom 17)
+2026-10-20T04:57:45.822635Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/yosemite-valley.png
+2026-10-20T04:59:35.063439Z  INFO us_explorer::shot: screenshot shots/golden-gate.png after 105.9s (settled: true, deepest zoom 18)
+2026-10-20T04:59:36.792612Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/golden-gate.png
+2026-10-20T05:00:27.054176Z  INFO us_explorer::shot: screenshot shots/mount-rainier.png after 46.8s (settled: true, deepest zoom 15)
+2026-10-20T05:00:28.325956Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/mount-rainier.png
+2026-10-20T05:02:42.628341Z  INFO us_explorer::shot: screenshot shots/street-level-boulder.png after 131.4s (settled: true, deepest zoom 19)
+2026-10-20T05:02:44.004304Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/street-level-boulder.png
+2026-10-20T05:03:29.460873Z  INFO us_explorer::shot: screenshot shots/us-overview.png after 42.3s (settled: true, deepest zoom 6)
+2026-10-20T05:03:30.816658Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/us-overview.png
+2026-10-20T05:05:27.081338Z  INFO us_explorer::shot: screenshot shots/el-capitan-close.png after 113.3s (settled: true, deepest zoom 19)
+2026-10-20T05:05:28.761706Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/el-capitan-close.png
+2026-10-20T05:07:31.392520Z  INFO us_explorer::shot: screenshot shots/park-ground.png after 118.9s (settled: true, deepest zoom 19)
+2026-10-20T05:07:32.660485Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/park-ground.png
+2026-10-20T05:09:20.965016Z  INFO us_explorer::shot: screenshot shots/hawaii-diamond-head.png after 105.4s (settled: true, deepest zoom 18)
+2026-10-20T05:09:22.333363Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/hawaii-diamond-head.png
+2026-10-20T05:10:29.229416Z  INFO us_explorer::shot: screenshot shots/alaska-denali.png after 63.7s (settled: true, deepest zoom 14)
+2026-10-20T05:10:30.626610Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/alaska-denali.png
+2026-10-20T05:11:28.487634Z  INFO us_explorer::shot: screenshot shots/menu-teleport.png after 54.7s (settled: true, deepest zoom 17)
+2026-10-20T05:11:29.919457Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/menu-teleport.png
