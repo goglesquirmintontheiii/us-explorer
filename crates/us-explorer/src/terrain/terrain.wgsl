@@ -56,9 +56,10 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let p = in.uv_b - vec2(select(0.0, 1048576.0, skirt), 0.0);
     let lum = dot(base, vec3(0.299, 0.587, 0.114));
 
-    // The sea: vertex colour x carries the water depth (0 on land).
+    // The sea: vertex colour alpha carries the water depth as 1 / (1 + depth), so the
+    // colour itself stays white (the standard path multiplies it into the imagery).
 #ifdef VERTEX_COLORS
-    let depth = in.color.x;
+    let depth = 1.0 / max(in.color.a, 1e-4) - 1.0;
 #else
     let depth = 0.0;
 #endif

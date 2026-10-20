@@ -36,6 +36,8 @@ Open GitHub issues checked at the start of this phase: none.
 - [x] Offline downloads include lidar blocks and road data
 - [x] Fix: road loading timed out on dense city tiles (longer Overpass limit, requests spread over all servers)
 - [x] Fix: re-draped road chunks replaced their mesh while the renderer was still using it
+- [x] Fix: terrain turned black (and the sea red) because the water data was multiplied into the imagery colour
+- [x] Fix: arriving at a bridge puts you on the deck instead of the ground or water under it
 - [ ] Screenshots from CI reviewed
 - [ ] v0.3.0 release with AppImage and Windows .exe
 

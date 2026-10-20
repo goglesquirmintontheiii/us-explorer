@@ -60,7 +60,7 @@ pub struct MeshData {
     pub uvs: Vec<[f32; 2]>,
     /// Web Mercator metres, wrapped to [`DETAIL_PERIOD`], for the detail shader.
     pub detail_uvs: Vec<[f32; 2]>,
-    /// Water depth in metres (x) under the sea surface, for the water shading.
+    /// White, with alpha = 1 / (1 + water depth in metres), for the water shading.
     pub water: Vec<[f32; 4]>,
     pub indices: Vec<u16>,
 }
@@ -468,7 +468,7 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
             normals.push(nrm.as_vec3().to_array());
             uvs.push([i as f32 / n as f32, j as f32 / n as f32]);
             let depth = g.floor.as_ref().map(|f| (g.h[k] - f[k]).max(0.0)).unwrap_or(0.0);
-            water.push([depth, 0.0, 0.0, 1.0]);
+            water.push([1.0, 1.0, 1.0, 1.0 / (1.0 + depth)]);
             detail_uvs.push(if id.z >= 12 {
                 let (lat, lon) = id.lat_lon_at(i as f64 / n as f64, j as f64 / n as f64);
                 let (x, y) = merc(lat, lon);

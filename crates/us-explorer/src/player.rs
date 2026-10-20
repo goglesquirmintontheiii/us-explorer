@@ -284,6 +284,12 @@ fn simulate(
 
     // Hold a fixed height over the ground until detailed terrain has arrived.
     if let (Some(agl), Some((h, z))) = (p.hold_agl, ground) {
+        // Arriving somewhere with a bridge deck overhead: stand on the deck (tunnel
+        // floors are under the terrain, so they never win here).
+        let h = match walk.surface_below(g.lat, g.lon, 1e7) {
+            Some((d, false)) if d > h => d,
+            _ => h,
+        };
         g.h = h + agl;
         // Over deep water, float at the surface instead of standing on the bottom.
         p.in_water = h < SEA_LEVEL - 1.2 && g.h < SEA_LEVEL - 0.9;
