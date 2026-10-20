@@ -48,7 +48,7 @@ impl RegionDownload {
     }
 
     /// Rough download size: ~22 KB imagery, ~90 KB elevation (shallow zooms), ~70 KB
-    /// lidar per zoom-17 block, ~150 KB of road data per zoom-14 tile.
+    /// lidar per zoom-17 block, ~40 KB of road data per zoom-15 tile.
     pub fn estimate_mb(tiles: &[TileId]) -> f64 {
         tiles
             .iter()
@@ -58,7 +58,7 @@ impl RegionDownload {
                     mb += 0.07;
                 }
                 if t.z == usx_core::osm::ZOOM {
-                    mb += 0.15;
+                    mb += 0.04;
                 }
                 mb
             })

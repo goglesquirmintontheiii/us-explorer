@@ -428,6 +428,68 @@ pub fn bus_stop() -> Face {
     Face { canvas: c, w_m, h_m }
 }
 
+/// A freeway mile marker: green, "MILE" over the number.
+pub fn mile_marker(n: &str) -> Face {
+    let (w_m, h_m) = (0.3, 0.6);
+    let (w, h) = (px(w_m), px(h_m));
+    let (wf, hf) = (w as f32, h as f32);
+    let mut c = Canvas::new(w, h);
+    c.round_rect(0.0, 0.0, wf, hf, 5.0, WHITE);
+    c.round_rect(3.0, 3.0, wf - 6.0, hf - 6.0, 4.0, GREEN);
+    c.text(wf * 0.5, hf * 0.2, wf * 0.8, hf * 0.12, "MILE", WHITE);
+    let lines: Vec<&str> = if n.len() > 2 { vec![&n[..n.len() - 2], &n[n.len() - 2..]] } else { vec![n] };
+    for (k, l) in lines.iter().enumerate() {
+        let y = if lines.len() == 1 { 0.6 } else { 0.47 + k as f32 * 0.28 };
+        c.text(wf * 0.5, hf * y, wf * 0.85, hf * 0.24, l, WHITE);
+    }
+    Face { canvas: c, w_m, h_m }
+}
+
+/// One blade of a railroad crossbuck.
+pub fn crossbuck_blade(word: &str) -> Face {
+    let (w_m, h_m) = (1.22, 0.23);
+    let (w, h) = (px(w_m), px(h_m));
+    let (wf, hf) = (w as f32, h as f32);
+    let mut c = Canvas::new(w, h);
+    c.round_rect(0.0, 0.0, wf, hf, 4.0, BLACK);
+    c.round_rect(3.0, 3.0, wf - 6.0, hf - 6.0, 3.0, WHITE);
+    c.text(wf * 0.5, hf * 0.52, wf * 0.86, hf * 0.62, word, BLACK);
+    Face { canvas: c, w_m, h_m }
+}
+
+/// Pedestrian signal symbols, white on black: the raised hand (drawn in white, tinted
+/// orange by the lamp material) or the walking person.
+pub fn ped_symbol(walk: bool) -> Canvas {
+    let n = 64u32;
+    let mut c = Canvas::new(n, n);
+    c.rect(0, 0, n as i32, n as i32, BLACK);
+    let s = |pts: &[(f32, f32)]| -> Vec<(f32, f32)> { pts.iter().map(|&(x, y)| (x * n as f32, y * n as f32)).collect() };
+    if walk {
+        // Head, torso leaning forward, stepping legs and swinging arms.
+        c.round_rect(0.43 * 64.0, 0.08 * 64.0, 0.14 * 64.0, 0.14 * 64.0, 4.5, WHITE);
+        let limbs: [&[(f32, f32)]; 5] = [
+            &[(0.44, 0.25), (0.56, 0.25), (0.58, 0.56), (0.46, 0.56)],
+            &[(0.47, 0.54), (0.56, 0.56), (0.40, 0.92), (0.31, 0.90)],
+            &[(0.50, 0.54), (0.58, 0.52), (0.72, 0.90), (0.63, 0.92)],
+            &[(0.45, 0.28), (0.52, 0.32), (0.36, 0.52), (0.30, 0.48)],
+            &[(0.53, 0.29), (0.58, 0.26), (0.70, 0.46), (0.64, 0.50)],
+        ];
+        for l in limbs {
+            c.poly(0, 0, &s(l), WHITE);
+        }
+    } else {
+        // Palm and four fingers, thumb out to the side.
+        c.round_rect(0.30 * 64.0, 0.42 * 64.0, 0.40 * 64.0, 0.44 * 64.0, 6.0, WHITE);
+        for k in 0..4 {
+            let x = 0.30 + k as f32 * 0.1;
+            let top = [0.18, 0.12, 0.14, 0.2][k];
+            c.round_rect(x * 64.0, top * 64.0, 0.085 * 64.0, (0.5 - top) * 64.0, 2.5, WHITE);
+        }
+        c.poly(0, 0, &s(&[(0.68, 0.62), (0.84, 0.44), (0.9, 0.5), (0.72, 0.76)]), WHITE);
+    }
+    c
+}
+
 // ------------------------------------------------------------------ atlas
 
 /// Faces packed into one texture (shelf packing), with each face's UV rectangle.

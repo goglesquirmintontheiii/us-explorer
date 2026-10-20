@@ -22,6 +22,8 @@ pub enum Shape {
     Cyl(u16, u16),
     Cone(u16, u16),
     Ball(u16),
+    /// A flat square facing -z, the whole texture on it (signal symbols); side in mm.
+    Quad(u16),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -41,6 +43,9 @@ pub enum Mat {
     SignBack,
     LampHead,
     Steel,
+    /// Solar panel glass.
+    Panel,
+    CameraGrey,
 }
 
 /// Something a system updates on a part.
@@ -90,6 +95,19 @@ fn cyl(r: f32, h: f32, mat: Mat, at: Vec3) -> Part {
     Part { shape: Shape::Cyl(mm(r), mm(h)), mat, t: Transform::from_translation(at), tag: None }
 }
 
+impl Part {
+    /// Turn a cylinder to point along z (a lens or disc facing forward).
+    fn rot_x(mut self) -> Self {
+        self.t.rotation = Quat::from_rotation_x(std::f32::consts::FRAC_PI_2);
+        self
+    }
+}
+
+/// Signal lamp colours (red, amber, green), saturated so they read as colours.
+pub const SIGNAL_COLOURS: [Color; 3] = [Color::srgb(1.0, 0.04, 0.02), Color::srgb(1.0, 0.42, 0.0), Color::srgb(0.0, 1.0, 0.62)];
+/// Pedestrian symbols: Portland orange hand, lunar white walking person.
+pub const PED_COLOURS: [Color; 2] = [Color::srgb(1.0, 0.38, 0.02), Color::srgb(0.92, 0.95, 1.0)];
+
 /// Standard sign faces painted once at startup.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum StdSign {
@@ -98,6 +116,8 @@ pub enum StdSign {
     Yield,
     Speed(u32),
     Bus,
+    /// Crossbuck blades: "RAILROAD" and "CROSSING".
+    Rail(u8),
 }
 
 #[derive(Resource)]
@@ -130,6 +150,8 @@ fn color_of(m: Mat) -> (Color, f32, f32) {
         Mat::SignBack => (Color::srgb(0.55, 0.56, 0.57), 0.5, 0.7),
         Mat::LampHead => (Color::srgb(0.3, 0.3, 0.32), 0.5, 0.5),
         Mat::Steel => (Color::srgb(0.5, 0.5, 0.52), 0.35, 0.9),
+        Mat::Panel => (Color::srgb(0.05, 0.07, 0.12), 0.12, 0.3),
+        Mat::CameraGrey => (Color::srgb(0.16, 0.16, 0.17), 0.5, 0.2),
     }
 }
 
@@ -200,6 +222,8 @@ pub fn setup(
         Mat::SignBack,
         Mat::LampHead,
         Mat::Steel,
+        Mat::Panel,
+        Mat::CameraGrey,
     ] {
         let (c, rough, metal) = color_of(mat);
         let mut sm = StandardMaterial { base_color: c, perceptual_roughness: rough, metallic: metal, ..default() };
@@ -216,15 +240,25 @@ pub fn setup(
             ..default()
         })
     };
-    let reds = [Color::srgb(1.0, 0.1, 0.05), Color::srgb(1.0, 0.65, 0.05), Color::srgb(0.1, 1.0, 0.55)];
-    let lamp_on = reds.map(|c| lamp(&mut mats, c, true));
-    let lamp_off = reds.map(|c| lamp(&mut mats, c.with_luminance(0.04), false));
-    let peds = [Color::srgb(1.0, 0.45, 0.05), Color::srgb(0.95, 0.95, 0.92)];
-    let ped_on = peds.map(|c| lamp(&mut mats, c, true));
-    let ped_off = peds.map(|c| lamp(&mut mats, c.with_luminance(0.03), false));
+    let lamp_on = SIGNAL_COLOURS.map(|c| lamp(&mut mats, c, true));
+    let lamp_off = SIGNAL_COLOURS.map(|c| lamp(&mut mats, c.with_luminance(0.035), false));
+    // Pedestrian heads: the symbol is the texture, lit through the emissive channel.
+    let sym = |mats: &mut Assets<StandardMaterial>, images: &mut Assets<Image>, walk: bool, c: Color, on: bool| {
+        let img = images.add(atlas_image(&Atlas { canvas: signs::ped_symbol(walk), rects: Vec::new() }));
+        mats.add(StandardMaterial {
+            base_color: if on { c } else { c.with_luminance(0.03) },
+            base_color_texture: Some(img.clone()),
+            emissive_texture: Some(img),
+            emissive: LinearRgba::BLACK,
+            perceptual_roughness: 0.4,
+            ..default()
+        })
+    };
+    let ped_on = [sym(&mut mats, &mut images, false, PED_COLOURS[0], true), sym(&mut mats, &mut images, true, PED_COLOURS[1], true)];
+    let ped_off = [sym(&mut mats, &mut images, false, PED_COLOURS[0], false), sym(&mut mats, &mut images, true, PED_COLOURS[1], false)];
 
     // Standard signs in one shared atlas.
-    let mut order: Vec<StdSign> = vec![StdSign::Stop, StdSign::AllWay, StdSign::Yield, StdSign::Bus];
+    let mut order: Vec<StdSign> = vec![StdSign::Stop, StdSign::AllWay, StdSign::Yield, StdSign::Bus, StdSign::Rail(0), StdSign::Rail(1)];
     order.extend((5..=85).step_by(5).map(StdSign::Speed));
     let faces: Vec<signs::Face> = order
         .iter()
@@ -234,6 +268,7 @@ pub fn setup(
             StdSign::Yield => signs::yield_sign(),
             StdSign::Bus => signs::bus_stop(),
             StdSign::Speed(n) => signs::speed_limit(*n),
+            StdSign::Rail(k) => signs::crossbuck_blade(if *k == 0 { "RAILROAD" } else { "CROSSING" }),
         })
         .collect();
     let atlas = signs::pack(faces).expect("standard signs fit");
@@ -257,6 +292,7 @@ impl PropAssets {
                     Shape::Cyl(r, h) => meshes.add(Cylinder::new(f(r), f(h)).mesh().resolution(10)),
                     Shape::Cone(r, h) => meshes.add(Cone { radius: f(r), height: f(h) }.mesh().resolution(12)),
                     Shape::Ball(r) => meshes.add(Sphere::new(f(r)).mesh().uv(10, 6)),
+                    Shape::Quad(a) => meshes.add(face_mesh(f(a), f(a), [0.0, 0.0, 1.0, 1.0], true)),
                 }
             })
             .clone()
@@ -268,7 +304,10 @@ pub fn custom_faces(kind: &PropKind) -> Vec<signs::Face> {
     match kind {
         PropKind::StreetSign { names } => vec![signs::street_blade(&names[0]), signs::street_blade(&names[1])],
         PropKind::Shield { text } => vec![signs::shield(text)],
-        PropKind::ExitSign { exit, text } => vec![signs::exit_panel(exit, text)],
+        PropKind::ExitSign { exit, text } | PropKind::Gantry { exit, text, .. } | PropKind::OverpassSign { exit, text } => {
+            vec![signs::exit_panel(exit, text)]
+        }
+        PropKind::MileMarker { text } => vec![signs::mile_marker(text)],
         _ => Vec::new(),
     }
 }
@@ -296,6 +335,10 @@ pub fn solids(kind: &PropKind) -> Vec<(Vec2, f32, f32)> {
             (0..=n).map(|k| (Vec2::new(0.0, -len * 0.5 + k as f32 * len / n as f32), 0.2, 0.8)).collect()
         }
         PropKind::BusStop { .. } => one(0.06, 2.5),
+        PropKind::MileMarker { .. } => one(0.05, 1.5),
+        PropKind::Crossbuck { .. } => one(0.1, 3.6),
+        PropKind::Gantry { span, .. } => vec![(Vec2::new(-span * 0.5, 0.0), 0.3, 8.0), (Vec2::new(span * 0.5, 0.0), 0.3, 8.0)],
+        PropKind::OverpassSign { .. } => Vec::new(),
     }
 }
 
@@ -335,13 +378,14 @@ fn parts(kind: &PropKind) -> Vec<Part> {
         }
         PropKind::PedSignal { .. } => {
             p.push(cyl(0.06, 3.0, SignalGreen, Vec3::new(0.0, 1.5, 0.0)));
-            // Faces across the street (+x).
-            p.push(bx(0.2, 0.36, 0.34, SignalBody, Vec3::new(0.12, 2.65, 0.0)));
-            for (i, y) in [2.74f32, 2.56].into_iter().enumerate() {
+            // Faces across the street (+x): a housing with the hand above the person.
+            p.push(bx(0.24, 0.72, 0.38, SignalBody, Vec3::new(0.14, 2.62, 0.0)));
+            p.push(bx(0.2, 0.03, 0.38, SignalBody, Vec3::new(0.3, 2.99, 0.0)));
+            for (i, y) in [2.8f32, 2.44].into_iter().enumerate() {
                 p.push(Part {
-                    shape: Shape::Box(20, 150, 260),
+                    shape: Shape::Quad(320),
                     mat: Black,
-                    t: Transform::from_xyz(0.23, y, 0.0),
+                    t: Transform::from_xyz(0.265, y, 0.0).with_rotation(Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2)),
                     tag: Some(PartTag::PedLamp(i as u8)),
                 });
             }
@@ -353,7 +397,9 @@ fn parts(kind: &PropKind) -> Vec<Part> {
             p.push(bx(0.34, 0.12, 0.62, LampHead, Vec3::new(0.0, 8.86, -arm)));
         }
         PropKind::StreetSign { .. } => {
-            p.push(cyl(0.035, 3.3, Galvanized, Vec3::new(0.0, 1.65, 0.0)));
+            // The pole stops under the lower blade; a cap bracket holds both blades.
+            p.push(cyl(0.035, 2.86, Galvanized, Vec3::new(0.0, 1.43, 0.0)));
+            p.push(cyl(0.045, 0.06, Galvanized, Vec3::new(0.0, 2.87, 0.0)));
         }
         PropKind::Stop { .. } | PropKind::Yield | PropKind::Shield { .. } | PropKind::SpeedLimit { .. } => {
             p.push(cyl(0.03, 2.7, Galvanized, Vec3::new(0.0, 1.35, 0.03)));
@@ -385,14 +431,82 @@ fn parts(kind: &PropKind) -> Vec<Part> {
             }
         }
         PropKind::Alpr => {
-            p.push(cyl(0.06, 4.2, Black, Vec3::new(0.0, 2.1, 0.0)));
-            p.push(bx(0.16, 0.14, 0.3, Black, Vec3::new(0.0, 3.6, -0.18)));
+            // Flock-style: a slim black pole, a small solar panel tilted to the sky on
+            // top, a battery box, and the camera on a short arm aimed at traffic.
+            p.push(cyl(0.045, 4.4, Black, Vec3::new(0.0, 2.2, 0.0)));
             p.push(Part {
-                shape: Shape::Box(600, 30, 420),
-                mat: Blue,
-                t: Transform::from_xyz(0.0, 4.25, 0.05).with_rotation(Quat::from_rotation_x(-0.6)),
+                shape: Shape::Box(560, 25, 400),
+                mat: Panel,
+                t: Transform::from_xyz(0.0, 4.5, 0.08).with_rotation(Quat::from_rotation_x(-0.55)),
                 tag: None,
             });
+            p.push(Part {
+                shape: Shape::Box(580, 20, 420),
+                mat: Galvanized,
+                t: Transform::from_xyz(0.0, 4.49, 0.09).with_rotation(Quat::from_rotation_x(-0.55)),
+                tag: None,
+            });
+            p.push(bx(0.05, 0.3, 0.05, Black, Vec3::new(0.0, 4.32, 0.06)));
+            p.push(bx(0.2, 0.3, 0.14, Black, Vec3::new(0.0, 3.55, 0.09)));
+            p.push(bx(0.04, 0.04, 0.2, Black, Vec3::new(0.0, 3.95, -0.1)));
+            p.push(Part {
+                shape: Shape::Box(110, 120, 190),
+                mat: CameraGrey,
+                t: Transform::from_xyz(0.0, 3.9, -0.24).with_rotation(Quat::from_rotation_x(0.12)),
+                tag: None,
+            });
+            p.push(Part {
+                shape: Shape::Box(130, 12, 220),
+                mat: CameraGrey,
+                t: Transform::from_xyz(0.0, 3.97, -0.26).with_rotation(Quat::from_rotation_x(0.12)),
+                tag: None,
+            });
+            p.push(Part {
+                shape: Shape::Cyl(32, 20),
+                mat: Glass,
+                t: Transform::from_xyz(0.0, 3.89, -0.34).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2 + 0.12)),
+                tag: None,
+            });
+        }
+        PropKind::MileMarker { .. } => {
+            p.push(bx(0.05, 1.5, 0.03, Galvanized, Vec3::new(0.0, 0.75, 0.02)));
+        }
+        PropKind::Crossbuck { lights } => {
+            p.push(cyl(0.07, 3.9, White, Vec3::new(0.0, 1.95, 0.0)));
+            if *lights {
+                p.push(bx(1.5, 0.1, 0.1, Black, Vec3::new(0.0, 2.6, 0.0)));
+                for x in [-0.6f32, 0.6] {
+                    p.push(cyl(0.3, 0.02, Black, Vec3::new(x, 2.6, -0.06)).rot_x());
+                    p.push(cyl(0.15, 0.06, Red, Vec3::new(x, 2.6, -0.1)).rot_x());
+                    p.push(bx(0.34, 0.08, 0.2, Black, Vec3::new(x, 2.78, -0.14)));
+                }
+            }
+        }
+        PropKind::Gantry { span, .. } => {
+            let span = *span;
+            for x in [-span * 0.5, span * 0.5] {
+                p.push(cyl(0.25, 7.9, Galvanized, Vec3::new(x, 3.95, 0.0)));
+                p.push(cyl(0.45, 0.6, Concrete, Vec3::new(x, 0.1, 0.0)));
+            }
+            // A box truss: two chords with cross members.
+            for z in [-0.35f32, 0.35] {
+                for y in [6.95f32, 7.75] {
+                    p.push(bx(span, 0.1, 0.1, Galvanized, Vec3::new(0.0, y, z)));
+                }
+            }
+            let n = (span / 1.6).round().max(2.0) as i32;
+            for k in 0..=n {
+                let x = -span * 0.5 + k as f32 * span / n as f32;
+                p.push(bx(0.06, 0.8, 0.06, Galvanized, Vec3::new(x, 7.35, -0.35)));
+                p.push(bx(0.06, 0.8, 0.06, Galvanized, Vec3::new(x, 7.35, 0.35)));
+            }
+            p.push(bx(4.3, 2.3, 0.06, SignBack, Vec3::new(-(span * 0.5 - 3.2).max(0.0), 6.6, -0.42)));
+        }
+        PropKind::OverpassSign { .. } => {
+            p.push(bx(4.3, 2.3, 0.06, SignBack, Vec3::new(0.0, 0.6, 0.04)));
+            for x in [-1.5f32, 1.5] {
+                p.push(bx(0.1, 2.0, 0.12, Steel, Vec3::new(x, 0.6, 0.1)));
+            }
         }
         PropKind::UtilityPole => {
             p.push(cyl(0.15, 11.0, Wood, Vec3::new(0.0, 5.5, 0.0)));
@@ -493,6 +607,22 @@ pub fn spawn(
         PropKind::Yield => std_face(StdSign::Yield, 2.2, &mut children, assets, meshes),
         PropKind::SpeedLimit { mph } => std_face(StdSign::Speed((mph / 5 * 5).clamp(5, 85)), 2.1, &mut children, assets, meshes),
         PropKind::BusStop { .. } => std_face(StdSign::Bus, 2.4, &mut children, assets, meshes),
+        PropKind::Crossbuck { .. } => {
+            // Two blades crossed at 90 degrees, readable from the front.
+            for (k, a) in [(0u8, 0.785f32), (1, -0.785)] {
+                if let Some((m, w, h)) = std(StdSign::Rail(k), assets) {
+                    let rot = Quat::from_rotation_z(a);
+                    children.push((
+                        m,
+                        assets.std_mat.clone(),
+                        Transform::from_xyz(0.0, 3.35, -0.08 - k as f32 * 0.01).with_rotation(rot),
+                        None,
+                    ));
+                    let bm = assets.mesh(meshes, Shape::Box(mm(w * 0.98), mm(h * 0.98), 4));
+                    children.push((bm, back.clone(), Transform::from_xyz(0.0, 3.35, -0.07 + k as f32 * 0.01).with_rotation(rot), None));
+                }
+            }
+        }
         _ => {}
     }
     if let Some(am) = atlas_mat {
@@ -518,6 +648,24 @@ pub fn spawn(
             PropKind::ExitSign { .. } => {
                 if let Some(&(r, w, h)) = faces.first() {
                     children.push((meshes.add(face_mesh(w, h, r, true)), am.clone(), Transform::from_xyz(0.0, 4.0, 0.0), None));
+                }
+            }
+            PropKind::Gantry { span, .. } => {
+                if let Some(&(r, w, h)) = faces.first() {
+                    let x = -(span * 0.5 - 3.2).max(0.0);
+                    children.push((meshes.add(face_mesh(w, h, r, true)), am.clone(), Transform::from_xyz(x, 6.6, -0.46), None));
+                }
+            }
+            PropKind::OverpassSign { .. } => {
+                if let Some(&(r, w, h)) = faces.first() {
+                    children.push((meshes.add(face_mesh(w, h, r, true)), am.clone(), Transform::from_xyz(0.0, 0.6, 0.0), None));
+                }
+            }
+            PropKind::MileMarker { .. } => {
+                if let Some(&(r, w, h)) = faces.first() {
+                    children.push((meshes.add(face_mesh(w, h, r, true)), am.clone(), Transform::from_xyz(0.0, 1.2, 0.0), None));
+                    let bm = assets.mesh(meshes, Shape::Box(mm(w), mm(h), 4));
+                    children.push((bm, back.clone(), Transform::from_xyz(0.0, 1.2, 0.003), None));
                 }
             }
             _ => {}
@@ -599,15 +747,16 @@ pub fn run_signals(
         *last_dark = day.dark;
         let k = 2.0f32.powf(-10.0 * day.dark);
         let on = |c: Color, s: f32| c.to_linear() * (s * k);
-        let cols = [Color::srgb(1.0, 0.1, 0.05), Color::srgb(1.0, 0.6, 0.05), Color::srgb(0.1, 1.0, 0.55)];
-        for (h, c) in assets.lamp_on.iter().zip(cols) {
+        // About as bright as a real LED head: well above a sunlit wall, but not so far
+        // above that the tone mapper bleaches the colour to white.
+        for (h, c) in assets.lamp_on.iter().zip(SIGNAL_COLOURS) {
             if let Some(mut m) = mats.get_mut(h) {
-                m.emissive = on(c, 60_000.0);
+                m.emissive = on(c, 9_000.0);
             }
         }
-        for (h, c) in assets.ped_on.iter().zip([Color::srgb(1.0, 0.45, 0.05), Color::srgb(0.95, 0.95, 0.92)]) {
+        for (h, c) in assets.ped_on.iter().zip(PED_COLOURS) {
             if let Some(mut m) = mats.get_mut(h) {
-                m.emissive = on(c, 30_000.0);
+                m.emissive = on(c, 6_000.0);
             }
         }
     }
@@ -662,10 +811,10 @@ pub fn run_signals(
 pub struct LampLight;
 
 pub fn setup_lamp_lights(mut commands: Commands) {
-    for _ in 0..10 {
+    for _ in 0..24 {
         commands.spawn((
             LampLight,
-            PointLight { intensity: 0.0, range: 32.0, radius: 0.2, color: Color::srgb(1.0, 0.86, 0.68), ..default() },
+            PointLight { intensity: 0.0, range: 45.0, radius: 0.2, color: Color::srgb(1.0, 0.86, 0.68), ..default() },
             Transform::default(),
             Visibility::Hidden,
         ));
@@ -700,7 +849,7 @@ pub fn run_lamps(
     *timer = 0.4;
     let Some(cam) = cams.iter().next().map(|c| c.translation()) else { return };
     let mut near: Vec<(f32, Vec3)> = if on > 0.0 {
-        sources.iter().map(|g| (g.translation().distance_squared(cam), g.translation())).filter(|(d, _)| *d < 160.0 * 160.0).collect()
+        sources.iter().map(|g| (g.translation().distance_squared(cam), g.translation())).filter(|(d, _)| *d < 260.0 * 260.0).collect()
     } else {
         Vec::new()
     };
@@ -711,7 +860,7 @@ pub fn run_lamps(
             Some((_, p)) => {
                 t.translation = p - Vec3::Y * 0.3;
                 // Lumens; the exposure system takes care of day vs night.
-                l.intensity = 9_000.0 * on;
+                l.intensity = 14_000.0 * on;
                 *v = Visibility::Visible;
             }
             None => {

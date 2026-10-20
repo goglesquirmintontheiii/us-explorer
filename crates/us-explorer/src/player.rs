@@ -273,13 +273,26 @@ fn simulate(
     walk: Res<crate::walkable::Walkables>,
     settings: Res<crate::GameSettings>,
     stats: Res<crate::terrain::TerrainStats>,
+    lakes: Res<crate::roads::InlandWater>,
     mut p: ResMut<Player>,
 ) {
     let dt = time.delta_secs_f64().min(0.1);
     let now = time.elapsed_secs_f64();
     let mut g = p.geo();
     let frame = EnuFrame::at(g);
-    let ground = ground_height(&terrain, &walk, g);
+    // Lakes and rivers: the terrain is their surface (elevation models record water),
+    // so give them a few metres of depth below it to swim in.
+    const LAKE_DEPTH: f64 = 3.0;
+    let ground_at = |g: Geodetic| -> (Option<(f64, u8)>, f64) {
+        let gr = ground_height(&terrain, &walk, g);
+        match gr {
+            Some((h, z)) if lakes.contains(g.lat, g.lon) && walk.surface_below(g.lat, g.lon, g.h + 0.5).is_none_or(|(d, _)| d < h) => {
+                (Some((h - LAKE_DEPTH, z)), h + 0.22)
+            }
+            _ => (gr, SEA_LEVEL),
+        }
+    };
+    let (ground, surface) = ground_at(g);
     p.ground = ground.map(|x| x.0);
 
     // Hold a fixed height over the ground until detailed terrain has arrived.
@@ -292,9 +305,9 @@ fn simulate(
         };
         g.h = h + agl;
         // Over deep water, float at the surface instead of standing on the bottom.
-        p.in_water = h < SEA_LEVEL - 1.2 && g.h < SEA_LEVEL - 0.9;
+        p.in_water = h < surface - 1.2 && g.h < surface - 0.9;
         if p.in_water {
-            g.h = SEA_LEVEL - 1.35;
+            g.h = surface - 1.35;
         }
         p.feet = g.to_ecef();
         let standing = agl < 0.5 && !p.in_water;
@@ -328,7 +341,7 @@ fn simulate(
     let wish = (fwd * intent.move_axis.y as f64 + right * intent.move_axis.x as f64).clamp_length_max(1.0);
 
     // The sea surface is height 0; terrarium tiles carry bathymetry below it.
-    p.in_water = p.mode == Mode::Walk && ground.is_some_and(|(h, _)| h < SEA_LEVEL - 1.2) && g.h < SEA_LEVEL - 0.9;
+    p.in_water = p.mode == Mode::Walk && ground.is_some_and(|(h, _)| h < surface - 1.2) && g.h < surface - 0.9;
     match p.mode {
         Mode::Walk if p.in_water => {
             let speed = if intent.sprint { SWIM_SPRINT } else { SWIM_SPEED };
@@ -337,7 +350,7 @@ fn simulate(
             p.vel.x += (target.x - p.vel.x) * k;
             p.vel.z += (target.z - p.vel.z) * k;
             // Float with the head out; Space swims up, Shift dives.
-            let float_h = SEA_LEVEL - 1.35;
+            let float_h = surface - 1.35;
             let ty = ((float_h - g.h) * 1.5).clamp(-1.5, 1.5) + intent.up as f64 * 1.6;
             p.vel.y += (ty - p.vel.y) * (2.5 * dt).min(1.0);
             p.on_ground = false;
@@ -390,7 +403,7 @@ fn simulate(
             p.feet = g2.to_ecef();
         }
     }
-    if let Some((h, _)) = ground_height(&terrain, &walk, g2) {
+    if let (Some((h, _)), _) = ground_at(g2) {
         p.ground = Some(h);
         if p.mode != Mode::Noclip && g2.h <= h {
             g2.h = h;

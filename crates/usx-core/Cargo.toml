@@ -16,3 +16,4 @@ semver = "1"
 log = "0.4"
 glam = { version = "0.32", default-features = false, features = ["std"] }
 sha2 = "0.10"
+quick-xml = "0.37"

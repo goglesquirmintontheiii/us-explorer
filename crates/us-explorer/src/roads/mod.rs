@@ -66,7 +66,7 @@ fn set_corridors(id: TileId, c: Arc<Vec<Corridor>>) {
     if m.0.insert(id, c).is_none() {
         m.1.push_back(id);
     }
-    while m.1.len() > 96 {
+    while m.1.len() > 400 {
         if let Some(old) = m.1.pop_front() {
             m.0.remove(&old);
         }
@@ -136,6 +136,39 @@ pub struct Roads {
     cursor: usize,
 }
 
+/// Lakes and rivers of the loaded road tiles, for swimming.
+#[derive(Resource, Default)]
+pub struct InlandWater {
+    tiles: HashMap<TileId, Vec<usx_core::osm::Area>>,
+}
+
+fn in_ring(r: &[(f64, f64)], lat: f64, lon: f64) -> bool {
+    let mut c = false;
+    let n = r.len();
+    if n < 3 {
+        return false;
+    }
+    let mut j = n - 1;
+    for i in 0..n {
+        let (a, b) = (r[i], r[j]);
+        if (a.0 > lat) != (b.0 > lat) && lon < (b.1 - a.1) * (lat - a.0) / (b.0 - a.0) + a.1 {
+            c = !c;
+        }
+        j = i;
+    }
+    c
+}
+
+impl InlandWater {
+    /// Whether a point is on a lake, reservoir or river area.
+    pub fn contains(&self, lat: f64, lon: f64) -> bool {
+        let (id, _, _) = TileId::containing(lat, lon, osm::ZOOM);
+        self.tiles.get(&id).is_some_and(|areas| {
+            areas.iter().any(|a| a.outer.iter().any(|r| in_ring(r, lat, lon)) && !a.inner.iter().any(|r| in_ring(r, lat, lon)))
+        })
+    }
+}
+
 /// Numbers for the debug overlay.
 #[derive(Resource, Default, Clone, Copy)]
 pub struct RoadStats {
@@ -162,6 +195,7 @@ impl Plugin for RoadsPlugin {
         app.add_plugins(material::RoadMaterialPlugin)
             .init_resource::<RoadStats>()
             .init_resource::<props::Controllers>()
+            .init_resource::<InlandWater>()
             .insert_resource(RoadsHolder(Some((fetch, work))))
             .add_systems(Startup, (setup, props::setup, props::setup_lamp_lights))
             .add_systems(
@@ -251,6 +285,7 @@ fn want_tiles(
     mut commands: Commands,
     mut walk: ResMut<Walkables>,
     mut controllers: ResMut<props::Controllers>,
+    mut water: ResMut<InlandWater>,
 ) {
     let Some(roads) = roads.as_deref_mut() else { return };
     roads.enabled = settings.0.roads;
@@ -303,6 +338,7 @@ fn want_tiles(
         .map(|(id, _)| *id)
         .collect();
     for id in far {
+        water.tiles.remove(&id);
         if let Some(t) = roads.tiles.remove(&id) {
             roads.fetch.cancel(id_key(id));
             if let TileState::Ready(p) = &t.state {
@@ -325,7 +361,13 @@ fn id_key(id: TileId) -> u64 {
     ((id.x as u64) << 32) | id.y as u64
 }
 
-fn receive(mut roads: Option<ResMut<Roads>>, time: Res<Time>, mut controllers: ResMut<props::Controllers>, mut parts: DrapeApply) {
+fn receive(
+    mut roads: Option<ResMut<Roads>>,
+    time: Res<Time>,
+    mut controllers: ResMut<props::Controllers>,
+    mut water: ResMut<InlandWater>,
+    mut parts: DrapeApply,
+) {
     let Some(roads) = roads.as_deref_mut() else { return };
     let now = time.elapsed_secs_f64();
     while let Some((id, r)) = roads.fetch.try_recv() {
@@ -359,6 +401,9 @@ fn receive(mut roads: Option<ResMut<Roads>>, time: Res<Time>, mut controllers: R
                     p.built.stats.vertices
                 );
                 set_corridors(id, Arc::new(p.built.corridors.clone()));
+                if !p.built.water.is_empty() {
+                    water.tiles.insert(id, p.built.water.clone());
+                }
                 for c in &p.built.controllers {
                     controllers.0.insert(c.id, (c.groups, c.cycle_offset));
                 }
@@ -594,15 +639,16 @@ fn update_material(
     roads: Option<Res<Roads>>,
     day: Res<crate::sun::DayNight>,
     mut mats: ResMut<Assets<RoadMaterial>>,
+    time: Res<Time>,
     mut last: Local<f32>,
 ) {
     let Some(roads) = roads else { return };
-    if (*last - day.dark).abs() < 0.005 {
-        return;
-    }
-    *last = day.dark;
+    // Water ripples move with time; a few updates a second would look steppy.
+    let t = (time.elapsed_secs_f64() % 2000.0) as f32;
+    let _ = &mut last;
     if let Some(mut m) = mats.get_mut(&roads.material) {
         m.extension.params.night = day.dark;
+        m.extension.params.time = t;
     }
 }
 

@@ -47,12 +47,24 @@ pub fn drape(b: &Built, chunk: usize, snap: &HeightSnap) -> Option<Draped> {
     let base_h = snap.ground(cla, clo).map(|x| x.0).unwrap_or(0.0);
     let center = Geodetic::new(cla, clo, base_h).to_ecef();
     let height = |p: Vec2, h: H| -> Option<f64> {
+        let ground = |q: Vec2| {
+            let (la, lo) = b.local.ll(q);
+            snap.ground(la, lo)
+        };
         Some(match h {
             H::Ground { off } => {
-                let (la, lo) = b.local.ll(p);
-                let (g, conformed) = snap.ground(la, lo)?;
+                let (g, conformed) = ground(p)?;
                 g + if conformed { 0.0 } else { off as f64 }
             }
+            H::GroundAt { at, off } => {
+                let (g, conformed) = ground(at)?;
+                g + if conformed { 0.0 } else { off as f64 }
+            }
+            H::Raised { off, fill } => {
+                let (g, conformed) = ground(p)?;
+                g + if conformed { (off - fill) as f64 } else { off as f64 }
+            }
+            H::Terrain => ground(p)?.0,
             H::Deck { a, b: bb, t } => {
                 let (ha, hb) = (decks[a as usize] as f64, decks[bb as usize] as f64);
                 ha + (hb - ha) * t as f64
@@ -146,7 +158,7 @@ pub fn chunk_owner(b: &Built, chunk: usize) -> u64 {
 }
 
 fn place(b: &Built, p: &Prop, height: &dyn Fn(Vec2, H) -> Option<f64>, center: DVec3) -> Option<(Vec3, bevy::math::Quat)> {
-    let h = height(p.p, p.h)?;
+    let h = height(p.p, p.h)? + p.dy as f64;
     let (la, lo) = b.local.ll(p.p);
     let g = Geodetic::new(la, lo, h);
     let e = g.to_ecef();

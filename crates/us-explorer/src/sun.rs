@@ -101,7 +101,9 @@ fn place_sun(
     let night = ((6.0 - elev) / 18.0).clamp(0.0, 1.0);
     let Some(mut ambient) = ambient else { return };
     ambient.color = Color::srgb(0.75 + 0.25 * (1.0 - night), 0.82 + 0.18 * (1.0 - night), 1.0);
-    ambient.brightness = 80.0 * (1.0 - night) + 30.0 * night;
+    // Night is dark: little more than starlight and a moon's worth of fill, so street
+    // lights, headlights and lit windows carry the scene.
+    ambient.brightness = 80.0 * (1.0 - night).powi(2) + 1.6 * night;
 }
 
 /// Camera exposure (EV100) for a sun elevation in degrees.

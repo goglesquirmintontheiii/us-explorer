@@ -44,6 +44,8 @@ fn spawn_camera(mut commands: Commands, settings: Res<crate::GameSettings>) {
         AtmosphereEnvironmentMapLight::default(),
         Exposure { ev100: 13.5 },
         Tonemapping::AcesFitted,
+        // A soft glow around bright lights (signals, lamps), most visible at night.
+        bevy::post_process::bloom::Bloom { intensity: 0.12, low_frequency_boost: 0.5, ..bevy::post_process::bloom::Bloom::NATURAL },
         Msaa::Off,
         Transform::default(),
     ));

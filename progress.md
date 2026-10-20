@@ -1,56 +1,53 @@
-# Progress: Phase 3 (Roads, bridges and roadside objects), v0.3.0
+# Progress: Phase 3.1 (Hotfix: roads, lights and water), v0.3.1-hotfix
 
-**Status:** complete · released as v0.3.0 on 2026-10-20 · previous phase: [Phase 2](progress/progress_phase_2.md) (released [v0.2.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.2.0))
+**Status:** in progress · previous phase: [Phase 3](progress/progress_phase_3.md) (released [v0.3.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.0))
 
-Goal: every road in the US drawn from OpenStreetMap, sitting properly on the terrain, with bridges, tunnels, interchanges and the things along the roadside.
+Goal: fix what testing of 0.3.0 turned up and add the requested road, sign, light and water features. Linux AppImage only for this release.
 
 Open GitHub issues checked at the start of this phase: none.
 
 ## Tasks
 
-- [x] OSM data per ~2 km tile from Overpass (three public servers, fallback between them), cached on disk in a compact binary form (about 13x smaller than the JSON)
-- [x] Road surfaces from OSM ways: width from lanes, shoulders and highway class (or the `width` tag)
-- [x] Terrain levelled under every road with smoothed cut and fill, blending back to the natural slope beside it; road meshes re-drape whenever the ground under them gets more detailed
-- [x] Junctions merged into one surface with curb returns; roads trimmed back to them, so nothing overlaps or flickers
-- [x] Lane markings from `lanes`, `lanes:forward/backward`, `oneway` and `turn:lanes`: centre lines (double yellow / dashed), lane lines, edge lines, turn arrows; crosswalks and stop lines
-- [x] Sidewalks and curbs from tags, or on urban streets where sidewalks aren't mapped separately, with corners that follow the curb returns
-- [x] Bridges: decks, parapets, undersides and piers; deck heights interpolated between where they meet the ground, kept clear of the roads and railways they cross (`layer`)
-- [x] Approach ramps: roads climb to overpasses and dip into underpasses at a 5% grade, with the terrain filled or cut to match
-- [x] Tunnels: walls, lit ceilings, portal headwalls; the hillside opens up at the portals; walkable inside
-- [x] Interchanges: ramps and viaducts grouped into networks and stacked by layer
-- [x] Street name signs at intersections with the real names (USPS abbreviations); route shields for Interstate, US and state routes with real numbers; exit signs at motorway junctions
-- [x] Traffic signals on mast arms with working cycles (each junction phased by approach), pedestrian signals; stop and yield signs; all from OSM, or inferred at untagged junctions
-- [x] Streetlights from OSM, or spaced along urban roads; they light up at night
-- [x] Guardrails from OSM, and along bridge approaches and high embankments
-- [x] Cones and barrels at construction zones
-- [x] ALPR camera posts where mapped
-- [x] Utility poles, fire hydrants, mailboxes, bus stops (with shelters and benches when tagged), benches, bollards, speed limit signs
-- [x] Potholes, patches and wear, more on roads tagged rough and on minor rural roads; potholes fill with water in rain (the same positions are available to the game for vehicles later)
-- [x] Railways (ballast, sleepers, rails); surfaces from the `surface` tag: asphalt, concrete, pavers, gravel, dirt, wood, metal
-- [x] Roadside objects are separate entities made of parts, ready to be knocked down in Phase 18; you collide with poles, posts and hydrants
-- [x] Settings → Roads switch; draw ranges follow the graphics preset
-- [x] From the v0.1.0 notes: sun shadows (terrain, bridges, objects, player), by preset, with a Settings switch
-- [x] From the v0.1.0 notes: sea shading (waves, sun glint, sky reflection, depth colour, whitecaps, shore foam)
-- [x] From the v0.1.0 notes: faster streaming (lidar fetched per zoom-17 block, imagery and elevation in parallel, more workers)
-- [x] From the v0.1.0 notes: hardware stats in F3 (CPU, cores, RAM, GPU, usage, download and disk speeds)
-- [x] Offline downloads include lidar blocks and road data
-- [x] Fix: road loading timed out on dense city tiles (longer Overpass limit, requests spread over all servers)
-- [x] Fix: re-draped road chunks replaced their mesh while the renderer was still using it
-- [x] Fix: terrain turned black (and the sea red) because the water data was multiplied into the imagery colour
-- [x] Fix: arriving at a bridge puts you on the deck instead of the ground or water under it
-- [x] Fix: sidewalk corners filled out to where the sidewalks meet (a gap showed the ground behind the curb)
-- [x] Screenshots from CI reviewed
-- [x] v0.3.0 release with AppImage and Windows .exe
+### Loading
+- [x] Road data in ~1 km tiles (zoom 15) instead of ~2 km, nearest first
+- [x] Overpass servers raced against each other: the next one starts if the first hasn't answered in 8 s, and the first good answer wins
+- [x] Falls back to the main OpenStreetMap API when every Overpass server fails
+- [x] Water areas, freeway exits, mile markers, level crossings and power lines added to the map query (cache format v2)
+
+### Roads
+- [x] Roads are built from denser rows and several columns across, and the levelled corridor under them includes the sidewalks, so the terrain no longer pokes through
+- [x] Curbs on city streets wherever there are sidewalks, also where sidewalks are mapped as separate ways (and `kerb=*`)
+- [x] Smooth width tapers where a road gains or loses lanes
+- [x] Junctions joined by very short links (divided roads crossing) merge into one intersection: one paved surface, one signal controller, phases by direction
+- [x] Sidewalks sit level with the road edge on slopes; inferred only on town streets (not fast, rural or unpaved roads)
+- [x] Raised roads in cities stand on retaining walls with at most a metre of fill, instead of raising the ground; cuts and underpasses unchanged
+- [x] Bridge parapets open where ramps merge; guardrails stop near side roads and ramps
+- [x] Construction-zone roads look like the road they connect to; cones and barrels stand on the road surface
+
+### Markings and lights
+- [x] Turn arrows drawn in metres at real proportions (5 m long)
+- [x] Signal lamps show red, amber and green instead of white
+- [x] Pedestrian signals with the raised hand and walking person symbols
+- [x] Pools of light under inferred streetlights, visible at any distance; 24 real lights near you instead of 10, with a longer reach
+- [x] Darker nights (much less ambient light); bloom around bright lights
+
+### Bridges, signs and objects
+- [x] Bridge types from `bridge:structure`: girder bridges on pier bents with girders under the deck, truss, through arch, suspension (towers, main cables, suspenders) and cable-stayed (pylons and stays); painted with the `colour` tag
+- [x] Overhead guide signs about 250 m before freeway exits, on a gantry or on the side of an overpass when one crosses there
+- [x] Mile markers: from mapped `highway=milestone`, or worked out from exit numbers where they run at a mile per mile
+- [x] Street name sign poles end under the blades
+- [x] Flock-style ALPR cameras (slim pole, solar panel, battery box, camera on an arm)
+- [x] Utility poles with sagging wires along streets (and mapped power lines), fire hydrants at the curb, where the map has none
+- [x] Streetlights, bus stops and other mapped objects face the street; pedestrian signals face the people crossing
+- [x] Level crossings: rails flush with the road in concrete panels, crossbuck signs (with lights where tagged)
+
+### Water
+- [x] Lakes, reservoirs and river areas from OSM drawn as water with moving ripples, and you can swim in them
+
+### Release
+- [ ] Screenshots reviewed
+- [ ] v0.3.1-hotfix released (AppImage)
 
 ## Screenshots
 
-From the CI screenshot run (software rendering, so frame rates in the overlay are meaningless; some shots were taken while far roads were still loading).
-
-| | |
-|---|---|
-| ![Times Square from above](docs/screenshots/phase3/roads-times-square.jpg) | ![The I-25 / I-70 Mousetrap interchange in Denver](docs/screenshots/phase3/roads-mousetrap.jpg) |
-| Times Square: merged junctions, crosswalks, turn arrows, signals | I-25 / I-70 "Mousetrap", Denver: stacked ramps and viaducts |
-| ![A downtown Denver corner](docs/screenshots/phase3/roads-corner-denver.jpg) | ![Under the Golden Gate approach](docs/screenshots/phase3/roads-golden-gate-deck.jpg) |
-| Downtown Denver at street level: signals, street signs, lamps, shadows | Bridge piers down to the water |
-| ![Swimming off Waikiki](docs/screenshots/phase3/swim-waikiki.jpg) | ![Grand Canyon with shadows](docs/screenshots/phase3/grand-canyon.jpg) |
-| The sea: waves, sky reflection, reef showing through | Sun shadows across the Grand Canyon |
+To come from the CI screenshot run.

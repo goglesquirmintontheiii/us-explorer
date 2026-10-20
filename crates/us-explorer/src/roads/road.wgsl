@@ -1,6 +1,7 @@
 // Road surfaces and markings, all procedural from per-vertex data (see roads/build.rs):
 //   uv    = (lateral metres from the centre line, positive right of travel; metres along)
-//   uv_b  = (segment length; element + 8 * seed + 32768 * high flags)
+//   uv_b  = (segment length, or -(RGB565 + 1) paint for structures;
+//            element + 8 * seed (8 bits) + 2048 * street-light layout (4 bits) + 32768 * high flags)
 //   color = (half width; packed lanes and shoulders; low flags; packed turn arrows)
 // Every packed value stays below 2^20 so interpolation can't corrupt it (we round).
 
@@ -39,8 +40,8 @@ const STRUCTURE: u32 = 524288u;
 // High flags (bit 20 up) arrive shifted down by 20.
 const DECK: u32 = 1u;
 const TUNNEL_LIGHT: u32 = 2u;
-const CONSTRUCTION: u32 = 4u;
 const STEPS: u32 = 8u;
+const WATER: u32 = 16u;
 
 const E_ROAD: u32 = 0u;
 const E_JUNCTION: u32 = 1u;
@@ -81,32 +82,60 @@ fn dashes(v: f32, on: f32, period: f32) -> f32 {
     return band(v - period * floor(v / period), 0.0, on);
 }
 
-// Arrow glyph in lane space (x across -1..1, y along 0..1, pointing +y).
+// One turn arrow: a stem, a quarter-circle bend toward side `s`, a sideways head.
+fn turn_arrow(p: vec2<f32>, s: f32) -> f32 {
+    var a = band(p.x, -0.13, 0.13) * band(p.y, 0.0, 2.6);
+    let c = vec2(s * 0.75, 2.6);
+    let r = length(p - c);
+    a = max(a, band(r, 0.62, 0.88) * select(0.0, 1.0, (p.x - c.x) * s < 0.0 && p.y > 2.6));
+    // Head pointing sideways from x = 0.75 to 2.15 (in the turn direction).
+    let hx = (p.x * s - 0.75) / 1.4;
+    a = max(a, band(hx, 0.0, 1.0) * band(abs(p.y - 3.35), -1.0, 0.6 * (1.0 - hx)));
+    return a;
+}
+
+// Lane-use arrow glyph in metres at MUTCD-like proportions: x across the lane centre,
+// y along from the tail (0) to the tip (~5 m), pointing +y.
 fn arrow(p: vec2<f32>, bits: u32) -> f32 {
     var a = 0.0;
-    let shaft = band(p.x, -0.07, 0.07) * band(p.y, 0.0, 0.55);
     if (bits & 2u) != 0u {
-        a = max(a, shaft);
-        // Head: triangle from y 0.55 to 0.95.
-        let t = (p.y - 0.55) / 0.4;
-        a = max(a, band(p.y, 0.55, 0.95) * band(abs(p.x), -1.0, 0.28 * (1.0 - t)));
+        a = max(a, band(p.x, -0.13, 0.13) * band(p.y, 0.0, 3.3));
+        // Head: triangle from y 3.3 to 5.0, 1.0 m wide at its base.
+        let t = (p.y - 3.3) / 1.7;
+        a = max(a, band(p.y, 3.3, 5.0) * band(abs(p.x), -1.0, 0.5 * (1.0 - t)));
     }
-    if (bits & 1u) != 0u || (bits & 4u) != 0u {
-        let s = select(1.0, -1.0, (bits & 1u) != 0u);
-        // Curved stem then a sideways head.
-        a = max(a, band(p.x, -0.07, 0.07) * band(p.y, 0.0, 0.45));
-        let c = vec2(s * 0.3, 0.45);
-        let r = length(p - c);
-        let ang = (p.x - c.x) * s;
-        a = max(a, band(r, 0.23, 0.37) * select(0.0, 1.0, ang < 0.0 && p.y > 0.45));
-        let hx = (p.x * s - 0.3) / 0.35;
-        a = max(a, band(p.y, 0.6, 1.0) * band(abs(p.y - 0.8), -1.0, 0.2 * (1.0 - hx)) * band(hx, 0.0, 1.0));
-        if (bits & 1u) != 0u && (bits & 4u) != 0u {
-            let c2 = vec2(-s * 0.3, 0.45);
-            a = max(a, band(length(p - c2), 0.23, 0.37) * select(0.0, 1.0, (p.x - c2.x) * -s < 0.0 && p.y > 0.45));
-        }
+    if (bits & 1u) != 0u {
+        a = max(a, turn_arrow(p, -1.0));
+    }
+    if (bits & 4u) != 0u {
+        a = max(a, turn_arrow(p, 1.0));
     }
     return a;
+}
+
+// Pools of light from the inferred street lamps (layout as build::lamp_layout).
+fn lamp_pool(s: f32, v: f32, hw: f32, len: f32, glow: u32) -> f32 {
+    if (glow & 1u) == 0u {
+        return 0.0;
+    }
+    let major = (glow & 2u) != 0u;
+    let spacing = select(45.0, 36.0, major);
+    let first = spacing * (0.5 + 0.125 * f32((glow >> 2u) & 3u));
+    let arm = clamp(hw * 0.5, 1.2, 3.5);
+    let reach = hw + 0.9 + select(0.0, 1.0, major) - arm;
+    var total = 0.0;
+    let k0 = floor((v - first) / spacing);
+    for (var dk = 0.0; dk <= 1.0; dk += 1.0) {
+        let k = k0 + dk;
+        let lv = first + k * spacing;
+        if k < 0.0 || lv >= len - 5.0 {
+            continue;
+        }
+        let side = select(1.0, -1.0, major && (i32(k) % 2) == 1);
+        let d = vec2(s - side * reach, v - lv);
+        total += exp(-dot(d, d) / (2.0 * 7.5 * 7.5));
+    }
+    return total;
 }
 
 @fragment
@@ -118,7 +147,8 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let len = in.uv_b.x;
     let code = u32(round(in.uv_b.y));
     let elem = code & 7u;
-    let seed = f32((code >> 3u) & 0xfffu);
+    let seed = f32((code >> 3u) & 0xffu);
+    let glow = (code >> 11u) & 15u;
     let hi = code >> 15u;
 #ifdef VERTEX_COLORS
     let hw = in.color.x;
@@ -197,6 +227,14 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         // Weathering streaks.
         base *= 1.0 - 0.18 * smoothstep(0.55, 0.9, vnoise(vec2(p.x * 3.0, 0.0) + seed));
         rough = 0.85;
+        // Painted steel (truss, towers, cables): colour carried in uv_b.x.
+        if len < -0.5 {
+            let c = u32(round(-len - 1.0));
+            let rgb = vec3(f32((c >> 11u) & 31u) / 31.0, f32((c >> 5u) & 63u) / 63.0, f32(c & 31u) / 31.0);
+            base = rgb * rgb * (0.92 + 0.08 * grain);
+            rough = 0.55;
+            pbr_input.material.metallic = 0.3;
+        }
         if elem == E_TUNNEL {
             // Tiled walls, a light strip along the ceiling.
             base = vec3(0.78, 0.77, 0.72) * (0.92 + 0.08 * grain);
@@ -303,25 +341,24 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         // Turn arrows, 6 m long, 9 m before the stop line, in each arriving lane.
         let tf = turns & 0x1ffu;
         let tb = (turns >> 9u) & 0x1ffu;
-        if tf != 0u && to_end > 6.0 && to_end < 16.0 {
+        // Arrows are 5 m long, their tips 8 m before the stop line.
+        if tf != 0u && to_end > 7.5 && to_end < 13.5 {
             for (var k = 0u; k < 3u; k++) {
                 let bits = (tf >> (k * 3u)) & 7u;
                 if bits != 0u && k < nf {
                     let cx = centre + (f32(k) + 0.5) * lw;
-                    let p = vec2((s - cx) / (lw * 0.5), (16.0 - to_end - 0.5) / 6.0);
-                    let a = arrow(vec2(p.x * 1.8, p.y), bits);
+                    let a = arrow(vec2(s - cx, 13.0 - to_end), bits);
                     if a > 0.0 { paint = max(paint, a); paint_col = vec3(0.93); }
                 }
             }
         }
-        if tb != 0u && v > 6.0 && v < 16.0 {
+        if tb != 0u && v > 7.5 && v < 13.5 {
             for (var k = 0u; k < 3u; k++) {
                 let bits = (tb >> (k * 3u)) & 7u;
                 if bits != 0u && k < nb {
                     // Backward lanes are numbered from their own left (our right of centre).
                     let cx = centre - (f32(k) + 0.5) * lw;
-                    let p = vec2(-(s - cx) / (lw * 0.5), (16.0 - v - 0.5) / 6.0);
-                    let a = arrow(vec2(p.x * 1.8, p.y), bits);
+                    let a = arrow(vec2(-(s - cx), 13.0 - v), bits);
                     if a > 0.0 { paint = max(paint, a); paint_col = vec3(0.93); }
                 }
             }
@@ -366,9 +403,6 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
                 base = mix(base, base * 0.7, box_ * 0.8);
             }
         }
-        if (hi & CONSTRUCTION) != 0u {
-            base = mix(base, vec3(0.38, 0.34, 0.3), 0.5 * fbm(q * 0.6));
-        }
     }
     // Plain paths: a little darker at the edges.
     if elem == E_ROAD && (flags & PATH) != 0u {
@@ -383,7 +417,29 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     base *= 1.0 - 0.45 * wet;
     rough = mix(rough, 0.25, wet * 0.8);
 
-    let painted = mix(base, paint_col * (0.85 + 0.15 * grain), clamp(paint, 0.0, 1.0));
+    var painted = mix(base, paint_col * (0.85 + 0.15 * grain), clamp(paint, 0.0, 1.0));
+
+    // ---------------------------------------------------------------- inland water
+    if (hi & WATER) != 0u {
+        let t = road.time;
+        let w = in.uv;
+        // Two drifting ripple layers for the normal; deeper colour away from the light.
+        let r1 = vec2(vnoise(w * 0.35 + vec2(t * 0.21, t * 0.13)), vnoise(w.yx * 0.35 - vec2(t * 0.17, t * 0.09)));
+        let r2 = vec2(vnoise(w * 1.7 + vec2(-t * 0.5, t * 0.37)), vnoise(w.yx * 1.7 + vec2(t * 0.41, -t * 0.29)));
+        let slope = (r1 - 0.5) * 0.35 + (r2 - 0.5) * 0.18 * (0.3 + 0.7 * near);
+        let tn = normalize(cross(pbr_input.N, vec3(0.0, 0.0, 1.0)) + vec3(1e-4));
+        let bn = cross(pbr_input.N, tn);
+        pbr_input.N = normalize(pbr_input.N + tn * slope.x + bn * slope.y);
+        painted = vec3(0.025, 0.07, 0.08) * (0.85 + 0.3 * fbm(w * 0.02));
+        pbr_input.material.base_color = vec4(painted, 1.0);
+        pbr_input.material.perceptual_roughness = 0.07 + 0.15 * road.wet;
+        pbr_input.material.metallic = 0.0;
+        pbr_input.material.emissive = vec4(0.0, 0.0, 0.0, 1.0);
+        var wout: FragmentOutput;
+        wout.color = apply_pbr_lighting(pbr_input);
+        wout.color = main_pass_post_lighting_processing(pbr_input, wout.color);
+        return wout;
+    }
 
     // Bumpy surface catches the light up close.
     if near > 0.0 {
@@ -398,6 +454,11 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
 
     pbr_input.material.base_color = vec4(painted, 1.0);
     pbr_input.material.perceptual_roughness = mix(rough, 0.6, paint * 0.5);
+    // Street lights light the road and sidewalk below them, seen from any distance.
+    if road.night > 0.01 && (elem == E_ROAD || elem == E_SIDEWALK || elem == E_CURB) {
+        let pool = lamp_pool(s, v, hw, len, glow);
+        emissive += painted * vec3(1.0, 0.78, 0.52) * pool * 9000.0 * road.night;
+    }
     // Lights are in daytime units; exposure opens up ~10 stops at night, so scale down.
     pbr_input.material.emissive = vec4(emissive * exp2(-10.0 * road.night), 1.0);
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
