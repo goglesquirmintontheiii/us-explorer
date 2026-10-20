@@ -96,10 +96,18 @@ fn agent() -> &'static ureq::Agent {
     A.get_or_init(|| {
         ureq::Agent::config_builder()
             .user_agent(crate::user_agent())
+            // The system's certificate store, so proxies with their own CA work too.
+            .tls_config(
+                ureq::tls::TlsConfig::builder()
+                    .root_certs(ureq::tls::RootCerts::PlatformVerifier)
+                    .build(),
+            )
             .timeout_connect(Some(Duration::from_secs(10)))
             .timeout_global(Some(Duration::from_secs(60)))
             .http_status_as_error(false)
             .max_idle_connections_per_host(16)
+            // Redirects are followed by hand (see get_with) without reading their bodies.
+            .max_redirects(0)
             .build()
             .into()
     })
@@ -115,11 +123,36 @@ pub fn get_with(
     st.requests.fetch_add(1, AO::Relaxed);
     st.in_flight.fetch_add(1, AO::Relaxed);
     let r = (|| {
-        let resp = agent()
-            .get(url)
-            .header("Accept", accept)
-            .call()
-            .map_err(|e| NetError::Io(e.to_string()))?;
+        let mut url = url.to_string();
+        let mut hops = 0;
+        let resp = loop {
+            let resp = agent()
+                .get(&url)
+                .header("Accept", accept)
+                .call()
+                .map_err(|e| NetError::Io(e.to_string()))?;
+            let code = resp.status().as_u16();
+            if (300..400).contains(&code) && code != 304 {
+                let loc = resp
+                    .headers()
+                    .get("location")
+                    .and_then(|v| v.to_str().ok())
+                    .ok_or(NetError::Http(code))?
+                    .to_string();
+                drop(resp);
+                hops += 1;
+                if hops > 6 {
+                    return Err(NetError::Http(code));
+                }
+                url = if loc.starts_with("http") {
+                    loc
+                } else {
+                    format!("{}{}", origin_of(&url), loc)
+                };
+                continue;
+            }
+            break resp;
+        };
         let code = resp.status().as_u16();
         if code == 404 || code == 410 {
             return Err(NetError::NotFound);
@@ -155,6 +188,16 @@ pub fn get_with(
         st.errors.fetch_add(1, AO::Relaxed);
     }
     r
+}
+
+/// `https://host` part of a URL, for relative redirects.
+fn origin_of(url: &str) -> &str {
+    let after = url.find("://").map(|i| i + 3).unwrap_or(0);
+    let end = url[after..]
+        .find('/')
+        .map(|i| i + after)
+        .unwrap_or(url.len());
+    &url[..end]
 }
 
 pub fn get(url: &str) -> Result<Vec<u8>, NetError> {
@@ -309,6 +352,11 @@ impl<J: Send + 'static, R: Send + 'static> WorkPool<J, R> {
         self.busy.load(AO::Relaxed) as usize
     }
 
+    /// Finished results not yet collected with [`try_recv`](Self::try_recv).
+    pub fn finished(&self) -> usize {
+        self.results.len()
+    }
+
     pub fn try_recv(&self) -> Option<R> {
         self.results.try_recv().ok()
     }
@@ -350,5 +398,21 @@ mod tests {
             }
         }
         assert_eq!(got, vec![100, 1, 2]);
+    }
+}
+
+#[cfg(test)]
+mod live_tests {
+    #[test]
+    #[ignore]
+    fn github_release_asset() {
+        let u = "https://github.com/goglesquirmintontheiii/us-explorer/releases/download/v0.0.0/US_Explorer-0.0.0-x86_64.AppImage.sha256";
+        let r = super::get(u);
+        eprintln!(
+            "{:?}",
+            r.as_ref().map(|b| String::from_utf8_lossy(b).to_string())
+        );
+        let r2 = super::get_with(u, "application/octet-stream", |_, _| {});
+        eprintln!("octet: {:?}", r2.as_ref().map(|b| b.len()));
     }
 }

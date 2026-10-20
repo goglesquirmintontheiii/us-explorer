@@ -51,12 +51,14 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let up = normalize(in.world_position.xyz + vec3(0.0, 6371000.0, 0.0));
     let slope = 1.0 - clamp(dot(normalize(in.world_normal), up), 0.0, 1.0);
     let dist = distance(in.world_position.xyz, view.world_position);
-    let p = in.uv_b;
+    // Skirts (crack fillers hanging under tile edges) carry a large offset in uv_b.x.
+    let skirt = in.uv_b.x > 500000.0;
+    let p = in.uv_b - vec2(select(0.0, 1048576.0, skirt), 0.0);
     let lum = dot(base, vec3(0.299, 0.587, 0.114));
 
     // Rock on steep ground: imagery taken from above smears on cliffs.
     let steep = smoothstep(0.28, 0.55, slope);
-    if steep > 0.0 {
+    if steep > 0.0 && !skirt {
         let strata = vnoise(vec2(p.x + p.y, dot(in.world_position.xyz, up) * 4.0), 16.0);
         let rock = vec3(lum) * vec3(1.06, 1.0, 0.93) * (0.72 + 0.5 * fbm(p, 8.0)) * (0.85 + 0.3 * strata);
         base = mix(base, mix(rock, base, 0.2), steep);
@@ -90,6 +92,11 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         let strength = near * mix(0.35, 0.12, grey) * (1.0 - steep);
         let bump = vec3((hx - hc) / e, 0.0, (hy - hc) / e) * strength * 0.25;
         pbr_input.N = normalize(pbr_input.N - bump);
+    }
+
+    // Darken skirts so any crack they fill reads as shadow, not a pale flap.
+    if skirt {
+        base = base * 0.45;
     }
 
     // Shadows baked into the imagery double up with real lighting; lift them a little.

@@ -16,6 +16,8 @@ pub const GRID: usize = 33;
 pub const TEX: usize = 256;
 /// Repeat period of the procedural ground detail, metres (must match terrain.wgsl).
 pub const DETAIL_PERIOD: f64 = 4096.0;
+/// Added to skirt vertices' detail x (256 periods); terrain.wgsl tests for it.
+const SKIRT_MARK: f32 = 1_048_576.0;
 
 /// Terrain heights for one tile on a GRID x GRID lattice (row 0 = north edge),
 /// metres above sea level.
@@ -464,7 +466,8 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             positions.push((p - center).as_vec3().to_array());
             normals.push(normals[k]);
             uvs.push(uvs[k]);
-            detail_uvs.push(detail_uvs[k]);
+            // Skirt marker for the shader: a whole number of detail periods, so noise is unchanged.
+            detail_uvs.push([detail_uvs[k][0] + SKIRT_MARK, detail_uvs[k][1]]);
         }
         for w in 0..n {
             let (top0, top1) = (edge[w] as u16, edge[w + 1] as u16);

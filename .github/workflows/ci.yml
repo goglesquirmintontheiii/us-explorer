@@ -66,7 +66,8 @@ jobs:
           done < packaging/shots.txt
           export XDG_RUNTIME_DIR=$(mktemp -d)
           timeout 45m xvfb-run -a -s "-screen 0 1600x900x24" dist/*.AppImage --appimage-extract-and-run \
-            --window 1600x900 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | tail -80
+            --window 1600x900 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | sed "s/\x1b\[[0-9;]*m//g" | grep -v XSETTINGS > shots/log.txt || true
+          tail -40 shots/log.txt
           ls -l shots
       - name: Publish to the screenshots branch
         run: |
@@ -80,7 +81,7 @@ jobs:
           else
             git worktree add --detach ../shots-branch && cd ../shots-branch && git checkout --orphan screenshots && git rm -rfq .
           fi
-          mkdir -p "runs/$SHA" && cp "$GITHUB_WORKSPACE"/shots/*.png "runs/$SHA/"
+          mkdir -p "runs/$SHA" && cp "$GITHUB_WORKSPACE"/shots/*.png "$GITHUB_WORKSPACE"/shots/log.txt "runs/$SHA/"
           # Keep only the 12 most recent runs so the branch stays small.
           ls -1dt runs/*/ | tail -n +13 | xargs -r git rm -rq
           echo "$SHA" > latest.txt

@@ -489,7 +489,7 @@ fn select(
     };
 
     // Adapt detail to how well streaming and rendering keep up.
-    let pending = terrain.pool.waiting() + terrain.pool.busy();
+    let pending = terrain.pool.waiting() + terrain.pool.busy() + terrain.pool.finished();
     let frame_ms = time.delta_secs() * 1000.0;
     let budget_ms = if settings.0.vsync { 34.0 } else { 20.0 };
     let frame_slow = args.shots.is_empty() && frame_ms > budget_ms * 1.5;

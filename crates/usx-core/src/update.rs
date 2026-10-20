@@ -44,6 +44,11 @@ pub fn current() -> semver::Version {
 
 /// The newest published release, if it is newer than this build.
 pub fn check() -> Result<Option<Release>, NetError> {
+    check_against(&current())
+}
+
+/// The newest published release newer than `have`.
+pub fn check_against(have: &semver::Version) -> Result<Option<Release>, NetError> {
     let url = format!(
         "{}/repos/{}/releases?per_page=10",
         crate::sources::GITHUB_API,
@@ -62,7 +67,7 @@ pub fn check() -> Result<Option<Release>, NetError> {
     let Some((version, r)) = best else {
         return Ok(None);
     };
-    if version <= current() {
+    if version <= *have {
         return Ok(None);
     }
     let app = r
@@ -146,4 +151,60 @@ pub fn relaunch(path: &std::path::Path) -> ! {
         .env_remove("APPIMAGE")
         .spawn();
     std::process::exit(0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Talks to GitHub; run with `cargo test -- --ignored`.
+    #[test]
+    #[ignore]
+    fn finds_published_appimage() {
+        let r = check_against(&semver::Version::parse("0.0.0-alpha").unwrap())
+            .unwrap()
+            .expect("a release");
+        assert!(
+            r.appimage_url
+                .as_deref()
+                .unwrap()
+                .ends_with("x86_64.AppImage")
+        );
+        assert!(r.sha256_url.is_some() && r.appimage_size > 1_000_000);
+        assert!(
+            check_against(&semver::Version::new(999, 0, 0))
+                .unwrap()
+                .is_none()
+        );
+    }
+}
+
+#[cfg(test)]
+mod install_tests {
+    use super::*;
+
+    /// Downloads a real release over a dummy "running AppImage" and checks the swap.
+    #[test]
+    #[ignore]
+    fn installs_over_running_appimage() {
+        let dir = std::env::temp_dir().join(format!("usx-update-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let fake = dir.join("US_Explorer.AppImage");
+        std::fs::write(&fake, b"old").unwrap();
+        // SAFETY: test-only; nothing else reads the environment concurrently here.
+        unsafe { std::env::set_var("APPIMAGE", &fake) };
+        let rel = check_against(&semver::Version::parse("0.0.0-alpha").unwrap())
+            .unwrap()
+            .unwrap();
+        let path = install(&rel, |_, _| {}).expect("install");
+        assert_eq!(path, fake);
+        let md = std::fs::metadata(&fake).unwrap();
+        assert_eq!(md.len(), rel.appimage_size);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(md.permissions().mode() & 0o111, 0o111);
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }
