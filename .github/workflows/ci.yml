@@ -15,7 +15,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Screenshot runs get their own group so ordinary pushes never cancel them.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]') }}
   cancel-in-progress: true
 
 env:

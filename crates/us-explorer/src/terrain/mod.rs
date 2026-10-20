@@ -135,14 +135,23 @@ impl Terrain {
         self.height_and_zoom(lat, lon).map(|h| h.0)
     }
 
-    /// Ground height plus the zoom of the tile it came from.
+    /// Visible ground height (sea surface over the sea) plus the zoom of the tile it came from.
     pub fn height_and_zoom(&self, lat: f64, lon: f64) -> Option<(f64, u8)> {
+        self.lookup(lat, lon, |h, u, v| h.sample(u, v))
+    }
+
+    /// Ground you stand on: the sea floor under water.
+    pub fn floor_and_zoom(&self, lat: f64, lon: f64) -> Option<(f64, u8)> {
+        self.lookup(lat, lon, |h, u, v| h.sample_floor(u, v))
+    }
+
+    fn lookup(&self, lat: f64, lon: f64, f: impl Fn(&load::HeightGrid, f64, f64) -> f64) -> Option<(f64, u8)> {
         for z in (0..=self.max_zoom).rev() {
             let (id, u, v) = TileId::containing(lat, lon, z);
             if let Some(t) = self.tiles.get(&id)
                 && let Some(h) = &t.heights
             {
-                return Some((h.sample(u, v), z));
+                return Some((f(h, u, v), z));
             }
         }
         None

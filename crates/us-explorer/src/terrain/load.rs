@@ -22,20 +22,32 @@ const SKIRT_MARK: f32 = 1_048_576.0;
 /// Terrain heights for one tile on a GRID x GRID lattice (row 0 = north edge),
 /// metres above sea level.
 pub struct HeightGrid {
+    /// The visible surface: the sea is drawn at sea level.
     pub h: Vec<f32>,
     pub min: f32,
     pub max: f32,
+    /// The real ground where it dips below the sea surface (sea floor), for wading and swimming.
+    pub floor: Option<Box<[f32]>>,
 }
 
 impl HeightGrid {
     /// Height at tile-local (u, v), interpolated on the same triangles the mesh uses
     /// so the ground you stand on is exactly the ground you see.
     pub fn sample(&self, u: f64, v: f64) -> f64 {
+        Self::sample_in(&self.h, u, v)
+    }
+
+    /// Like [`sample`](Self::sample) but under water it gives the sea floor.
+    pub fn sample_floor(&self, u: f64, v: f64) -> f64 {
+        Self::sample_in(self.floor.as_deref().unwrap_or(&self.h), u, v)
+    }
+
+    fn sample_in(h: &[f32], u: f64, v: f64) -> f64 {
         let n = (GRID - 1) as f64;
         let (fx, fy) = ((u * n).clamp(0.0, n - 1e-9), (v * n).clamp(0.0, n - 1e-9));
         let (ix, iy) = (fx as usize, fy as usize);
         let (tx, ty) = (fx - ix as f64, fy - iy as f64);
-        let at = |x: usize, y: usize| self.h[y * GRID + x] as f64;
+        let at = |x: usize, y: usize| h[y * GRID + x] as f64;
         let (a, b, c, d) = (at(ix, iy), at(ix + 1, iy), at(ix, iy + 1), at(ix + 1, iy + 1));
         // Quads are split along the a-d diagonal.
         if tx >= ty { a + (b - a) * tx + (d - b) * ty } else { a + (d - c) * tx + (c - a) * ty }
@@ -177,10 +189,10 @@ fn heights(job: &LoadJob) -> Result<(HeightGrid, &'static str), String> {
             let u = u0 + s * i as f64 / (GRID - 1) as f64;
             let v = v0 + s * j as f64 / (GRID - 1) as f64;
             // Ocean depths are kept out of the visible surface until water exists (Phase 5).
-            h.push(bilinear(&dem, TEX, u * TEX as f64, v * TEX as f64).max(0.0));
+            h.push(bilinear(&dem, TEX, u * TEX as f64, v * TEX as f64));
         }
     }
-    Ok((grid_from(h), "terrain tiles (3DEP 10 m / SRTM)"))
+    Ok((surface_grid(id, h), "terrain tiles (3DEP 10 m / SRTM)"))
 }
 
 fn grid_from(h: Vec<f32>) -> HeightGrid {
@@ -189,7 +201,19 @@ fn grid_from(h: Vec<f32>) -> HeightGrid {
         min = min.min(v);
         max = max.max(v);
     }
-    HeightGrid { h, min, max }
+    HeightGrid { h, min, max, floor: None }
+}
+
+/// Raw heights to a grid. Below sea level is sea (drawn at the surface, floor kept for
+/// collision) except in the few US basins that really are dry land below sea level.
+fn surface_grid(id: TileId, raw: Vec<f32>) -> HeightGrid {
+    let (w, s, e, n) = id.bounds();
+    if usx_core::geo::dry_below_sea_level(s, w, n, e) || raw.iter().all(|&x| x >= 0.0) {
+        return grid_from(raw);
+    }
+    let mut g = grid_from(raw.iter().map(|x| x.max(0.0)).collect());
+    g.floor = Some(raw.into_boxed_slice());
+    g
 }
 
 /// Rough box around the US states and territories with 3DEP coverage.
@@ -214,7 +238,7 @@ fn lidar_heights(id: TileId) -> Option<HeightGrid> {
     if v.len() != GRID * GRID || v.iter().any(|x| !x.is_finite() || *x < -500.0) {
         return None;
     }
-    Some(grid_from(v.into_iter().map(|x| x.max(0.0)).collect()))
+    Some(surface_grid(id, v))
 }
 
 // ------------------------------------------------------------------- imagery

@@ -159,3 +159,11 @@ mod tests {
         assert_eq!(parse_lat_lon("Denver"), None);
     }
 }
+
+/// Dry land below sea level in the US: Death Valley, the Salton trough and Imperial
+/// Valley, and New Orleans behind its levees. Elsewhere, ground below 0 m is sea.
+/// Takes a box (south, west, north, east) and says whether it touches one of them.
+pub fn dry_below_sea_level(s: f64, w: f64, n: f64, e: f64) -> bool {
+    const BASINS: [(f64, f64, f64, f64); 3] = [(35.6, -117.6, 37.0, -116.3), (32.4, -116.4, 33.8, -115.0), (29.85, -90.3, 30.1, -89.85)];
+    BASINS.iter().any(|&(bs, bw, bn, be)| n > bs && s < bn && e > bw && w < be)
+}

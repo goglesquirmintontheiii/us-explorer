@@ -254,7 +254,7 @@ const SWIM_SPEED: f64 = 1.2;
 const SWIM_SPRINT: f64 = 2.2;
 
 pub fn ground_height(terrain: &Terrain, walk: &crate::walkable::Walkables, g: Geodetic) -> Option<(f64, u8)> {
-    let t = terrain.height_and_zoom(g.lat, g.lon);
+    let t = terrain.floor_and_zoom(g.lat, g.lon);
     let w = walk.surface_below(g.lat, g.lon, g.h + 0.6);
     match (t, w) {
         (Some((th, z)), Some(wh)) => Some((th.max(wh), z)),
