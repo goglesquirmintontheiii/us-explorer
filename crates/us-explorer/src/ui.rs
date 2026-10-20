@@ -251,9 +251,14 @@ fn draw(
                 ));
                 if let Some(si) = &sysinfo {
                     ui.label(format!("CPU {} ({} cores)", si.cpu.trim(), si.core_count));
-                    let cpu = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_CPU_USAGE).and_then(|d| d.smoothed());
-                    let mem = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE).and_then(|d| d.smoothed());
-                    let sys_mem = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::SYSTEM_MEM_USAGE).and_then(|d| d.smoothed());
+                    let cpu = diagnostics
+                        .get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_CPU_USAGE)
+                        .and_then(|d| d.smoothed());
+                    let mem = diagnostics
+                        .get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE)
+                        .and_then(|d| d.smoothed());
+                    let sys_mem =
+                        diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::SYSTEM_MEM_USAGE).and_then(|d| d.smoothed());
                     ui.label(format!(
                         "RAM {} · game CPU {} · game RAM {} · system RAM {}",
                         si.memory.trim(),

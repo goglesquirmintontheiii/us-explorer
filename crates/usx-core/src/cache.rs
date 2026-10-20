@@ -59,7 +59,13 @@ impl DiskCache {
                 }
             }
         }
-        let c = Self { root, limit: Mutex::new(limit_bytes), index: Mutex::new(idx), read_bytes: Default::default(), read_ns: Default::default() };
+        let c = Self {
+            root,
+            limit: Mutex::new(limit_bytes),
+            index: Mutex::new(idx),
+            read_bytes: Default::default(),
+            read_ns: Default::default(),
+        };
         c.evict();
         c
     }

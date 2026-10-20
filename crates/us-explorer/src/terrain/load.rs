@@ -271,7 +271,8 @@ fn lidar_block(b: TileId) -> Option<Arc<Vec<f32>>> {
         }
         if m.len() > 48 {
             // Drop the oldest finished blocks.
-            let mut v: Vec<(TileId, std::time::Instant)> = m.iter().filter(|(_, (c, _))| c.get().is_some()).map(|(k, (_, t))| (*k, *t)).collect();
+            let mut v: Vec<(TileId, std::time::Instant)> =
+                m.iter().filter(|(_, (c, _))| c.get().is_some()).map(|(k, (_, t))| (*k, *t)).collect();
             v.sort_by_key(|x| x.1);
             for (k, _) in v.into_iter().take(16) {
                 m.remove(&k);
@@ -528,32 +529,32 @@ pub fn load(job: LoadJob) -> Loaded {
     let result = (|| {
         // Imagery downloads while the elevation is fetched and the mesh is built.
         std::thread::scope(|scope| {
-        let img_task = scope.spawn(|| imagery(&job));
-        // The coarse globe must always exist, even offline: fall back to sea level.
-        let (mut raw, elevation_source, mut degraded) = match heights(&job) {
-            Ok((g, s)) => (g, s, false),
-            Err(_) if id.z <= 4 => (vec![0.0; GRID * GRID], "none (offline)", true),
-            Err(e) => return Err(e),
-        };
-        // Level the ground under roads (when this area's roads are known).
-        let corridors = (id.z >= super::conform::CONFORM_ZOOM).then(|| crate::roads::corridors_for(id)).flatten();
-        let holes = corridors.as_ref().map(|c| super::conform::conform(id, &mut raw, c).holes);
-        let g = surface_grid(id, raw);
-        let (mesh, center, radius) = build_mesh(id, &g, holes.as_deref());
-        let img = img_task.join().unwrap_or(None);
-        degraded |= img.is_none();
-        let imagery_zoom = img.as_ref().map(|i| i.1).unwrap_or(0);
-        Ok(TileData {
-            conformed: holes.is_some(),
-            center,
-            radius,
-            heights: Arc::new(g),
-            mesh,
-            image: img.map(|(i, _)| mip_chain(i, job.bc1)),
-            imagery_zoom,
-            elevation_source,
-            degraded,
-        })
+            let img_task = scope.spawn(|| imagery(&job));
+            // The coarse globe must always exist, even offline: fall back to sea level.
+            let (mut raw, elevation_source, mut degraded) = match heights(&job) {
+                Ok((g, s)) => (g, s, false),
+                Err(_) if id.z <= 4 => (vec![0.0; GRID * GRID], "none (offline)", true),
+                Err(e) => return Err(e),
+            };
+            // Level the ground under roads (when this area's roads are known).
+            let corridors = (id.z >= super::conform::CONFORM_ZOOM).then(|| crate::roads::corridors_for(id)).flatten();
+            let holes = corridors.as_ref().map(|c| super::conform::conform(id, &mut raw, c).holes);
+            let g = surface_grid(id, raw);
+            let (mesh, center, radius) = build_mesh(id, &g, holes.as_deref());
+            let img = img_task.join().unwrap_or(None);
+            degraded |= img.is_none();
+            let imagery_zoom = img.as_ref().map(|i| i.1).unwrap_or(0);
+            Ok(TileData {
+                conformed: holes.is_some(),
+                center,
+                radius,
+                heights: Arc::new(g),
+                mesh,
+                image: img.map(|(i, _)| mip_chain(i, job.bc1)),
+                imagery_zoom,
+                elevation_source,
+                degraded,
+            })
         })
     })();
     Loaded { id, result }
