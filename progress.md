@@ -1,6 +1,6 @@
 # Progress: Phase 3 (Roads, bridges and roadside objects), v0.3.0
 
-**Status:** in progress · previous phase: [Phase 2](progress/progress_phase_2.md) (released [v0.2.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.2.0))
+**Status:** complete · released as v0.3.0 on 2026-10-20 · previous phase: [Phase 2](progress/progress_phase_2.md) (released [v0.2.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.2.0))
 
 Goal: every road in the US drawn from OpenStreetMap, sitting properly on the terrain, with bridges, tunnels, interchanges and the things along the roadside.
 
@@ -38,9 +38,19 @@ Open GitHub issues checked at the start of this phase: none.
 - [x] Fix: re-draped road chunks replaced their mesh while the renderer was still using it
 - [x] Fix: terrain turned black (and the sea red) because the water data was multiplied into the imagery colour
 - [x] Fix: arriving at a bridge puts you on the deck instead of the ground or water under it
-- [ ] Screenshots from CI reviewed
-- [ ] v0.3.0 release with AppImage and Windows .exe
+- [x] Fix: sidewalk corners filled out to where the sidewalks meet (a gap showed the ground behind the curb)
+- [x] Screenshots from CI reviewed
+- [x] v0.3.0 release with AppImage and Windows .exe
 
 ## Screenshots
 
-_Added when the CI screenshot run finishes._
+From the CI screenshot run (software rendering, so frame rates in the overlay are meaningless; some shots were taken while far roads were still loading).
+
+| | |
+|---|---|
+| ![Times Square from above](docs/screenshots/phase3/roads-times-square.jpg) | ![The I-25 / I-70 Mousetrap interchange in Denver](docs/screenshots/phase3/roads-mousetrap.jpg) |
+| Times Square: merged junctions, crosswalks, turn arrows, signals | I-25 / I-70 "Mousetrap", Denver: stacked ramps and viaducts |
+| ![A downtown Denver corner](docs/screenshots/phase3/roads-corner-denver.jpg) | ![Under the Golden Gate approach](docs/screenshots/phase3/roads-golden-gate-deck.jpg) |
+| Downtown Denver at street level: signals, street signs, lamps, shadows | Bridge piers down to the water |
+| ![Swimming off Waikiki](docs/screenshots/phase3/swim-waikiki.jpg) | ![Grand Canyon with shadows](docs/screenshots/phase3/grand-canyon.jpg) |
+| The sea: waves, sky reflection, reef showing through | Sun shadows across the Grand Canyon |

@@ -1502,6 +1502,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
             let fl_curb = pack(elem::CURB, 0, flag::SIDEWALK);
             let mut along = 0.0f32;
             let mut prev: Option<(u32, u32, u32, u32)> = None;
+            let mut outer: Vec<u32> = Vec::with_capacity(pts.len());
             for (k, &q) in pts.iter().enumerate() {
                 if k > 0 {
                     along += q.distance(pts[k - 1]);
@@ -1522,6 +1523,26 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                     g.quad(pc0, pc1, c0, c1);
                 }
                 prev = Some((i0, i1, c0, c1));
+                outer.push(i1);
+            }
+            // Fill out to where the two sidewalks' outer edges meet, so the corner is
+            // paved like a real street corner instead of leaving a gap behind the curb.
+            let (da, wa) = (j.arms[*a].2, j.arms[*a].3);
+            let (db, wb) = (j.arms[*b].2, j.arms[*b].3);
+            let pa = right(da) * (wa + width);
+            let pb = -right(db) * (wb + width);
+            let cross = da.perp_dot(db);
+            if cross.abs() > 0.05 && outer.len() >= 2 {
+                let d = pb - pa;
+                let ta = d.perp_dot(db) / cross;
+                let corner = j.p + pa + da * ta;
+                if corner.distance(j.p) < 40.0 && ta > 0.0 {
+                    let ci =
+                        g.push(V { p: corner, h, dy: lift + curb, uv: [width, 0.0], uv2: [0.0, fl_sw.0], col: [0.0, 0.0, fl_sw.1, 0.0] });
+                    for w in outer.windows(2) {
+                        g.tri(ci, w[0], w[1]);
+                    }
+                }
             }
         }
     }
