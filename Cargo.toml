@@ -1,0 +1,25 @@
+[workspace]
+resolver = "3"
+members = ["crates/usx-core", "crates/usx-weather", "crates/us-explorer"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/goglesquirmintontheiii/us-explorer"
+
+[profile.dev]
+opt-level = 1
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true
+panic = "abort"
+
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1

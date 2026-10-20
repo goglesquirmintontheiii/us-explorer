@@ -1,0 +1,35 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the tag matches the crate version
+        run: |
+          V=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          [ "v$V" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME != version $V"; exit 1; }
+      - name: Test
+        run: cargo test --workspace --release
+      - name: Build (fully optimised)
+        run: cargo build --workspace --profile dist
+      - name: AppImage
+        run: packaging/build-appimage.sh target/dist "${GITHUB_REF_NAME#v}" dist
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES=release-notes/${GITHUB_REF_NAME}.md
+          [ -f "$NOTES" ] || echo "US Explorer ${GITHUB_REF_NAME}" > "$NOTES"
+          gh release create "$GITHUB_REF_NAME" dist/* --title "US Explorer ${GITHUB_REF_NAME#v}" --notes-file "$NOTES"

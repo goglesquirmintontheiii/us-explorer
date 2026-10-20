@@ -1,0 +1,18 @@
+[package]
+name = "usx-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+crossbeam-channel = "0.5"
+directories = "6"
+semver = "1"
+log = "0.4"
+glam = { version = "0.32", default-features = false, features = ["std"] }
+sha2 = "0.10"

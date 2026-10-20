@@ -1,0 +1,642 @@
+//! Streaming terrain: a Web Mercator quadtree of tiles with real elevation and
+//! imagery, refined by on-screen texel size and loaded nearest-first.
+//!
+//! Each frame the selection walks the quadtree from the root. A tile splits when its
+//! imagery texels would look too big on screen, but only once all four children are
+//! loaded, so there are never holes: the parent stays visible until they arrive.
+
+pub mod load;
+pub mod region;
+
+use crate::camera::MainCamera;
+use crate::globe::{GeoAnchor, Viewer};
+use bevy::asset::RenderAssetUsages;
+use bevy::image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor};
+use bevy::math::DVec3;
+use bevy::mesh::{Indices, PrimitiveTopology};
+use bevy::prelude::*;
+use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
+use load::{HeightGrid, LoadJob, Loaded};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
+use usx_core::geo::{EARTH_MEAN_RADIUS, Geodetic};
+use usx_core::net::WorkPool;
+use usx_core::sources::ImagerySource;
+use usx_core::tile::TileId;
+
+/// Tiles at or below this zoom are never unloaded (they are the fallback everywhere).
+const KEEP_ZOOM: u8 = 4;
+
+enum State {
+    Loading {
+        since: f64,
+    },
+    Ready {
+        entity: Entity,
+        image: Option<Handle<Image>>,
+        mesh: Handle<Mesh>,
+        material: Handle<StandardMaterial>,
+        gpu_bytes: usize,
+    },
+    Failed {
+        retry_at: f64,
+    },
+}
+
+struct Tile {
+    state: State,
+    heights: Option<Arc<HeightGrid>>,
+    center: DVec3,
+    radius: f64,
+    max_h: f64,
+    last_wanted: f64,
+    visible: bool,
+    elev_src: &'static str,
+    /// Built from fallback data; reload after this time.
+    refresh_at: Option<f64>,
+    refreshing: bool,
+}
+
+#[derive(Resource)]
+pub struct Terrain {
+    tiles: HashMap<TileId, Tile>,
+    pool: WorkPool<LoadJob, Loaded>,
+    /// Multiplier on the target texel size; rises when streaming or rendering falls behind.
+    pub adapt: f32,
+    imagery: ImagerySource,
+    lidar: bool,
+    pub max_zoom: u8,
+    pub extra_detail_zoom: u8,
+    pub error_count: u32,
+    pub last_error: Option<String>,
+}
+
+/// Numbers for the debug overlay and the loading indicator.
+#[derive(Resource, Default)]
+pub struct TerrainStats {
+    pub visible: usize,
+    pub loaded: usize,
+    pub pending: usize,
+    pub gpu_bytes: usize,
+    pub deepest_visible: u8,
+    pub elevation_source: &'static str,
+    pub imagery_zoom_here: u8,
+    /// Seconds since the last teleport until streaming went idle.
+    pub settle: Option<f32>,
+    pub idle_frames: u32,
+}
+
+/// Sent when the viewer jumps somewhere new.
+#[derive(Message)]
+pub struct Teleported;
+
+#[derive(Resource)]
+struct TeleportClock(Instant, bool);
+
+pub struct TerrainPlugin;
+
+impl Plugin for TerrainPlugin {
+    fn build(&self, app: &mut App) {
+        let s = app.world().resource::<crate::GameSettings>().0.clone();
+        let _ = load::CACHE.set(usx_core::cache::DiskCache::open(
+            s.cache_dir(),
+            s.cache_bytes(),
+        ));
+        let threads = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4)
+            .clamp(3, 8)
+            * 2;
+        let pool = WorkPool::new("tile", threads, |_, job| load::load(job));
+        app.insert_resource(Terrain {
+            tiles: HashMap::new(),
+            pool,
+            adapt: 1.0,
+            imagery: s.imagery,
+            lidar: s.lidar_elevation,
+            max_zoom: max_zoom_for(&s),
+            extra_detail_zoom: 0,
+            error_count: 0,
+            last_error: None,
+        })
+        .init_resource::<TerrainStats>()
+        .add_message::<Teleported>()
+        .insert_resource(TeleportClock(Instant::now(), true))
+        .add_plugins(region::RegionPlugin)
+        .add_systems(
+            Update,
+            (on_teleport, receive, select, ground_under_viewer).chain(),
+        );
+    }
+}
+
+fn max_zoom_for(s: &usx_core::settings::Settings) -> u8 {
+    let cap = match s.preset {
+        usx_core::settings::Preset::Low => 17,
+        usx_core::settings::Preset::Medium | usx_core::settings::Preset::High => 18,
+        usx_core::settings::Preset::Ultra => 19,
+    };
+    cap.min(s.imagery.max_zoom().max(17))
+}
+
+impl Terrain {
+    /// Ground height (m above sea level) from the most detailed loaded tile.
+    pub fn height_at(&self, lat: f64, lon: f64) -> Option<f64> {
+        for z in (0..=self.max_zoom).rev() {
+            let (id, u, v) = TileId::containing(lat, lon, z);
+            if let Some(t) = self.tiles.get(&id)
+                && let Some(h) = &t.heights
+            {
+                return Some(h.sample(u, v));
+            }
+        }
+        None
+    }
+
+    pub fn tile_count(&self) -> usize {
+        self.tiles.len()
+    }
+
+    /// Drop every tile (after changing the imagery source or detail settings).
+    pub fn reset(&mut self, commands: &mut Commands, settings: &usx_core::settings::Settings) {
+        for (id, t) in self.tiles.drain() {
+            if let State::Ready { entity, .. } = t.state {
+                commands.entity(entity).despawn();
+            }
+            self.pool.cancel(key(id));
+        }
+        self.imagery = settings.imagery;
+        self.lidar = settings.lidar_elevation;
+        self.max_zoom = max_zoom_for(settings);
+    }
+
+    fn request(&mut self, id: TileId, priority: f32, now: f64) {
+        let t = self.tiles.entry(id).or_insert_with(|| {
+            let (c, r) = rough_bounds(id);
+            Tile {
+                state: State::Failed { retry_at: 0.0 },
+                heights: None,
+                center: c,
+                radius: r,
+                max_h: 4500.0,
+                last_wanted: now,
+                visible: false,
+                elev_src: "",
+                refresh_at: None,
+                refreshing: false,
+            }
+        });
+        t.last_wanted = now;
+        match t.state {
+            State::Loading { .. } => {
+                self.pool.reprioritize(key(id), priority);
+            }
+            State::Failed { retry_at } if now >= retry_at => {
+                t.state = State::Loading { since: now };
+                let job = LoadJob {
+                    id,
+                    imagery: self.imagery,
+                    lidar: self.lidar,
+                    max_imagery_zoom: self.imagery.max_zoom(),
+                };
+                self.pool.submit(key(id), priority, job);
+            }
+            _ => {}
+        }
+    }
+
+    fn ready(&self, id: TileId) -> bool {
+        matches!(
+            self.tiles.get(&id).map(|t| &t.state),
+            Some(State::Ready { .. })
+        )
+    }
+}
+
+fn key(id: TileId) -> u64 {
+    ((id.z as u64) << 58) | ((id.x as u64) << 29) | id.y as u64
+}
+
+/// Bounding sphere before a tile's real heights are known.
+fn rough_bounds(id: TileId) -> (DVec3, f64) {
+    let (lat, lon) = id.lat_lon_at(0.5, 0.5);
+    let c = Geodetic::new(lat, lon, 1500.0).to_ecef();
+    let mut r: f64 = 0.0;
+    for (u, v) in [
+        (0.0, 0.0),
+        (1.0, 0.0),
+        (0.0, 1.0),
+        (1.0, 1.0),
+        (0.5, 0.0),
+        (0.5, 1.0),
+        (0.0, 0.5),
+        (1.0, 0.5),
+    ] {
+        let (la, lo) = id.lat_lon_at(u, v);
+        for h in [-100.0, 4500.0] {
+            r = r.max((Geodetic::new(la, lo, h).to_ecef() - c).length());
+        }
+    }
+    (c, r)
+}
+
+fn on_teleport(
+    mut ev: MessageReader<Teleported>,
+    mut clock: ResMut<TeleportClock>,
+    mut stats: ResMut<TerrainStats>,
+) {
+    if ev.read().last().is_some() {
+        clock.0 = Instant::now();
+        clock.1 = true;
+        stats.settle = None;
+    }
+}
+
+/// Turn finished loads into meshes and textures, a few per frame to avoid hitches.
+#[allow(clippy::too_many_arguments)]
+fn receive(
+    mut commands: Commands,
+    mut terrain: ResMut<Terrain>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut images: ResMut<Assets<Image>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    time: Res<Time>,
+) {
+    let now = time.elapsed_secs_f64();
+    let start = Instant::now();
+    let mut n = 0;
+    while n < 24 && start.elapsed().as_secs_f32() < 0.004 {
+        let Some(Loaded { id, result }) = terrain.pool.try_recv() else {
+            break;
+        };
+        n += 1;
+        let Some(tile) = terrain.tiles.get(&id) else {
+            continue;
+        };
+        if !matches!(tile.state, State::Loading { .. }) && !tile.refreshing {
+            continue;
+        }
+        let refreshing = tile.refreshing;
+        match result {
+            Err(e) => {
+                terrain.error_count += 1;
+                terrain.last_error = Some(e);
+                let t = terrain.tiles.get_mut(&id).unwrap();
+                if refreshing {
+                    t.refreshing = false;
+                    t.refresh_at = Some(now + 30.0);
+                } else {
+                    t.state = State::Failed {
+                        retry_at: now + 8.0,
+                    };
+                }
+            }
+            Ok(data) => {
+                let mut mesh = Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::RENDER_WORLD,
+                );
+                let gpu_mesh = data.mesh.positions.len() * 32 + data.mesh.indices.len() * 2;
+                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.mesh.positions);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.mesh.normals);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, data.mesh.uvs);
+                mesh.insert_indices(Indices::U16(data.mesh.indices));
+                let mesh = meshes.add(mesh);
+                let (image, gpu_img) = match data.image {
+                    Some(img) => {
+                        let bytes = img.data.len();
+                        let mut im = Image::new(
+                            Extent3d {
+                                width: load::TEX as u32,
+                                height: load::TEX as u32,
+                                depth_or_array_layers: 1,
+                            },
+                            TextureDimension::D2,
+                            img.data,
+                            TextureFormat::Rgba8UnormSrgb,
+                            RenderAssetUsages::RENDER_WORLD,
+                        );
+                        im.texture_descriptor.mip_level_count = img.levels;
+                        im.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+                            address_mode_u: ImageAddressMode::ClampToEdge,
+                            address_mode_v: ImageAddressMode::ClampToEdge,
+                            mag_filter: ImageFilterMode::Linear,
+                            min_filter: ImageFilterMode::Linear,
+                            mipmap_filter: ImageFilterMode::Linear,
+                            anisotropy_clamp: 8,
+                            ..default()
+                        });
+                        (Some(images.add(im)), bytes)
+                    }
+                    None => (None, 0),
+                };
+                let material = materials.add(StandardMaterial {
+                    base_color: if image.is_some() {
+                        Color::WHITE
+                    } else {
+                        Color::srgb(0.42, 0.45, 0.38)
+                    },
+                    base_color_texture: image.clone(),
+                    perceptual_roughness: 0.92,
+                    reflectance: 0.25,
+                    cull_mode: None,
+                    ..default()
+                });
+                let entity = commands
+                    .spawn((
+                        Mesh3d(mesh.clone()),
+                        MeshMaterial3d(material.clone()),
+                        GeoAnchor::new(data.center),
+                        Transform::default(),
+                        Visibility::Hidden,
+                        bevy::light::NotShadowCaster,
+                    ))
+                    .id();
+                let t = terrain.tiles.get_mut(&id).unwrap();
+                if let State::Ready { entity: old, .. } = t.state {
+                    commands.entity(old).despawn();
+                }
+                t.refreshing = false;
+                t.refresh_at = data.degraded.then_some(now + 30.0);
+                t.center = data.center;
+                t.radius = data.radius;
+                t.max_h = data.heights.max as f64;
+                t.heights = Some(data.heights);
+                t.elev_src = data.elevation_source;
+                t.state = State::Ready {
+                    entity,
+                    image,
+                    mesh,
+                    material,
+                    gpu_bytes: gpu_mesh + gpu_img,
+                };
+            }
+        }
+    }
+}
+
+struct View {
+    cam: DVec3,
+    fwd: DVec3,
+    cam_h: f64,
+    proj: f64,
+    half_fov: f64,
+}
+
+impl View {
+    /// On-screen size of one imagery texel of this tile, in pixels.
+    fn texel_px(&self, id: TileId, t: &Tile) -> f64 {
+        let d = ((self.cam - t.center).length() - t.radius).max(1.0);
+        (id.width_m() / load::TEX as f64) * self.proj / d
+    }
+    fn over_horizon(&self, t: &Tile) -> bool {
+        let dh = (self.cam_h.max(10.0) * (2.0 * EARTH_MEAN_RADIUS + self.cam_h.max(10.0))).sqrt();
+        let th = t.max_h.max(0.0) + 100.0;
+        let dt = (th * (2.0 * EARTH_MEAN_RADIUS + th)).sqrt();
+        (self.cam - t.center).length() - t.radius > dh + dt
+    }
+    fn in_view(&self, t: &Tile) -> bool {
+        let v = t.center - self.cam;
+        let d = v.length();
+        if d <= t.radius {
+            return true;
+        }
+        let ang = (v / d).dot(self.fwd).clamp(-1.0, 1.0).acos();
+        ang < self.half_fov + (t.radius / d).asin()
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn select(
+    mut terrain: ResMut<Terrain>,
+    mut stats: ResMut<TerrainStats>,
+    viewer: Res<Viewer>,
+    settings: Res<crate::GameSettings>,
+    windows: Query<&Window>,
+    cams: Query<&Projection, With<MainCamera>>,
+    mut vis: Query<&mut Visibility>,
+    mut commands: Commands,
+    time: Res<Time>,
+    mut clock: ResMut<TeleportClock>,
+) {
+    let now = time.elapsed_secs_f64();
+    let preset = settings.0.preset;
+    let height = windows
+        .iter()
+        .next()
+        .map(|w| w.resolution.physical_height())
+        .unwrap_or(900) as f64;
+    let fov = match cams.iter().next() {
+        Some(Projection::Perspective(p)) => p.fov as f64,
+        _ => 70f64.to_radians(),
+    };
+    let aspect = windows
+        .iter()
+        .next()
+        .map(|w| w.width() / w.height().max(1.0))
+        .unwrap_or(1.7) as f64;
+    let (fwd, _, _) = viewer.basis_ecef();
+    let view = View {
+        cam: viewer.ecef,
+        fwd,
+        cam_h: viewer.geo().h - viewer.ground.unwrap_or(0.0).min(viewer.geo().h),
+        proj: height / (2.0 * (fov / 2.0).tan()),
+        half_fov: ((fov / 2.0).tan() * (1.0 + aspect * aspect).sqrt()).atan(),
+    };
+
+    // Adapt detail to how well streaming and rendering keep up.
+    let pending = terrain.pool.waiting() + terrain.pool.busy();
+    let frame_ms = time.delta_secs() * 1000.0;
+    let budget_ms = if settings.0.vsync { 34.0 } else { 20.0 };
+    let behind = pending > 120 || frame_ms > budget_ms * 1.5 || stats.visible > preset.max_tiles();
+    let fine = pending < 24 && frame_ms < budget_ms && stats.visible < preset.max_tiles() * 3 / 4;
+    terrain.adapt = if behind {
+        (terrain.adapt * 1.015).min(3.0)
+    } else if fine {
+        (terrain.adapt * 0.995).max(1.0)
+    } else {
+        terrain.adapt
+    };
+    let target = preset.texel_pixels() as f64 * terrain.adapt as f64;
+    let max_zoom = terrain.max_zoom;
+
+    let mut visible: Vec<TileId> = Vec::new();
+    let mut stack = vec![TileId::ROOT];
+    let mut requests: Vec<(TileId, f32)> = Vec::new();
+    while let Some(id) = stack.pop() {
+        let Some(t) = terrain.tiles.get(&id) else {
+            requests.push((id, -10.0 + id.z as f32));
+            continue;
+        };
+        if id.z > 2 && view.over_horizon(t) {
+            continue;
+        }
+        let in_view = view.in_view(t);
+        let px = view.texel_px(id, t) * if in_view { 1.0 } else { 0.3 };
+        let dist = ((view.cam - t.center).length() - t.radius).max(0.0);
+        let near = dist < preset.detail_radius_m();
+        let want_split = id.z < max_zoom && (px > target || (id.z < 9 && near));
+        if want_split {
+            let kids = id.children();
+            let all_ready = kids.iter().all(|k| terrain.ready(*k));
+            for k in kids {
+                let pr = (dist / id.width_m().max(1.0)) as f32
+                    + if in_view { 0.0 } else { 6.0 }
+                    + k.z as f32 * 0.05;
+                requests.push((k, pr));
+            }
+            if all_ready {
+                stack.extend(kids);
+                continue;
+            }
+        }
+        if terrain.ready(id) {
+            visible.push(id);
+        }
+    }
+    // Prefetch along the direction of travel at lower priority.
+    let speed = viewer.velocity.length();
+    if speed > 8.0 {
+        let ahead = viewer.ecef + viewer.velocity * 3.0;
+        let g = Geodetic::from_ecef(ahead);
+        for z in (10..=max_zoom).step_by(2) {
+            let (id, _, _) = TileId::containing(g.lat, g.lon, z);
+            requests.push((id, 8.0 + z as f32 * 0.1));
+        }
+    }
+    for (id, p) in requests {
+        terrain.request(id, p, now);
+    }
+    let stale: Vec<TileId> = terrain
+        .tiles
+        .iter()
+        .filter(|(_, t)| {
+            !t.refreshing && t.refresh_at.is_some_and(|r| now > r) && now - t.last_wanted < 2.0
+        })
+        .map(|(id, _)| *id)
+        .collect();
+    for id in stale {
+        let job = LoadJob {
+            id,
+            imagery: terrain.imagery,
+            lidar: terrain.lidar,
+            max_imagery_zoom: terrain.imagery.max_zoom(),
+        };
+        terrain.pool.submit(key(id), 20.0, job);
+        if let Some(t) = terrain.tiles.get_mut(&id) {
+            t.refreshing = true;
+        }
+    }
+
+    // Show exactly the selected tiles.
+    let mut gpu = 0;
+    let mut deepest = 0;
+    for t in terrain.tiles.values_mut() {
+        t.visible = false;
+    }
+    for id in &visible {
+        if let Some(t) = terrain.tiles.get_mut(id) {
+            t.visible = true;
+            t.last_wanted = now;
+            deepest = deepest.max(id.z);
+        }
+        // Keep ancestors warm so zooming out is instant.
+        let mut p = id.parent();
+        while let Some(pid) = p {
+            if let Some(pt) = terrain.tiles.get_mut(&pid) {
+                if pt.last_wanted >= now {
+                    break;
+                }
+                pt.last_wanted = now;
+            }
+            p = pid.parent();
+        }
+    }
+    let mut evict = Vec::new();
+    let mut ready_count = 0;
+    let loaded_budget = preset.max_tiles() * 2;
+    let total_ready = terrain
+        .tiles
+        .values()
+        .filter(|t| matches!(t.state, State::Ready { .. }))
+        .count();
+    for (id, t) in terrain.tiles.iter() {
+        match &t.state {
+            State::Ready {
+                entity, gpu_bytes, ..
+            } => {
+                ready_count += 1;
+                gpu += gpu_bytes;
+                if let Ok(mut v) = vis.get_mut(*entity) {
+                    let want = if t.visible {
+                        Visibility::Visible
+                    } else {
+                        Visibility::Hidden
+                    };
+                    if *v != want {
+                        *v = want;
+                    }
+                }
+                let idle = now - t.last_wanted;
+                if id.z > KEEP_ZOOM
+                    && !t.visible
+                    && (idle > 60.0 || (idle > 3.0 && total_ready > loaded_budget))
+                {
+                    evict.push(*id);
+                }
+            }
+            State::Loading { since } => {
+                if now - t.last_wanted > 2.0 && now - since > 0.5 {
+                    evict.push(*id);
+                }
+            }
+            State::Failed { .. } => {
+                if now - t.last_wanted > 30.0 {
+                    evict.push(*id);
+                }
+            }
+        }
+    }
+    for id in evict {
+        if let Some(t) = terrain.tiles.remove(&id) {
+            match t.state {
+                State::Ready { entity, .. } => commands.entity(entity).despawn(),
+                State::Loading { .. } => {
+                    terrain.pool.cancel(key(id));
+                }
+                State::Failed { .. } => {}
+            }
+        }
+    }
+
+    stats.visible = visible.len();
+    stats.loaded = ready_count;
+    stats.pending = pending;
+    stats.gpu_bytes = gpu;
+    stats.deepest_visible = deepest;
+    let g = viewer.geo();
+    let here = (0..=max_zoom)
+        .rev()
+        .map(|z| TileId::containing(g.lat, g.lon, z).0)
+        .find(|id| terrain.ready(*id));
+    stats.imagery_zoom_here = here.map(|id| id.z).unwrap_or(0);
+    stats.elevation_source = here
+        .and_then(|id| terrain.tiles.get(&id))
+        .map(|t| t.elev_src)
+        .unwrap_or("");
+    if pending == 0 {
+        stats.idle_frames += 1;
+    } else {
+        stats.idle_frames = 0;
+    }
+    if clock.1 && stats.idle_frames > 30 && deepest > 8 {
+        stats.settle = Some(clock.0.elapsed().as_secs_f32());
+        clock.1 = false;
+    }
+}
+
+fn ground_under_viewer(terrain: Res<Terrain>, mut viewer: ResMut<Viewer>) {
+    let g = viewer.geo();
+    viewer.ground = terrain.height_at(g.lat, g.lon);
+}

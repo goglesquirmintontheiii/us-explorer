@@ -1,0 +1,9 @@
+[package]
+name = "usx-weather"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+usx-core = { path = "../usx-core" }
+serde_json = "1"

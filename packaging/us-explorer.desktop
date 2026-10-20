@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=US Explorer
+Comment=Explore the real United States under live weather
+Exec=us-explorer
+Icon=us-explorer
+Categories=Game;Simulation;
+Terminal=false

@@ -1,0 +1,9 @@
+# One screenshot per line: name=..;lat=..;lon=..;agl=metres;heading=deg;pitch=deg
+name=denver-front-range;lat=39.7392;lon=-104.9903;agl=450;heading=265;pitch=-6
+name=grand-canyon;lat=36.0572;lon=-112.1400;agl=300;heading=20;pitch=-12
+name=manhattan;lat=40.7000;lon=-74.0200;agl=600;heading=30;pitch=-14
+name=yosemite-valley;lat=37.7250;lon=-119.6600;agl=900;heading=80;pitch=-10
+name=golden-gate;lat=37.8000;lon=-122.4950;agl=350;heading=50;pitch=-10
+name=mount-rainier;lat=46.7600;lon=-121.9000;agl=2500;heading=90;pitch=-8
+name=street-level-boulder;lat=40.0150;lon=-105.2705;agl=2;heading=260;pitch=2
+name=us-overview;lat=38.5;lon=-97.0;agl=1800000;heading=0;pitch=-89

@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: Take progress screenshots
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --workspace --release
+      - name: Build
+        run: cargo build --workspace --release
+      - name: AppImage
+        run: packaging/build-appimage.sh target/release "$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)-dev.${GITHUB_SHA::7}" dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/*
+          retention-days: 7
+
+  screenshots:
+    needs: linux
+    if: github.event_name == 'workflow_dispatch' && inputs.screenshots || contains(github.event.head_commit.message, '[shots]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: appimage
+          path: dist
+      - name: Software Vulkan and a virtual display
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers xvfb libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2
+      - name: Take screenshots
+        run: |
+          chmod +x dist/*.AppImage
+          mkdir -p shots
+          args=()
+          while IFS= read -r line; do
+            [[ -z "$line" || "$line" == \#* ]] && continue
+            args+=(--shot "$line")
+          done < packaging/shots.txt
+          export XDG_RUNTIME_DIR=$(mktemp -d)
+          timeout 45m xvfb-run -a -s "-screen 0 1600x900x24" dist/*.AppImage --appimage-extract-and-run \
+            --window 1600x900 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | tail -80
+          ls -l shots
+      - name: Publish to the screenshots branch
+        run: |
+          SHA=${GITHUB_SHA::7}
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git fetch origin screenshots || true
+          if git rev-parse --verify origin/screenshots >/dev/null 2>&1; then
+            git worktree add ../shots-branch origin/screenshots
+            cd ../shots-branch && git checkout -B screenshots
+          else
+            git worktree add --detach ../shots-branch && cd ../shots-branch && git checkout --orphan screenshots && git rm -rfq .
+          fi
+          mkdir -p "runs/$SHA" && cp "$GITHUB_WORKSPACE"/shots/*.png "runs/$SHA/"
+          # Keep only the 12 most recent runs so the branch stays small.
+          ls -1dt runs/*/ | tail -n +13 | xargs -r git rm -rq
+          echo "$SHA" > latest.txt
+          git add -A && git commit -qm "Screenshots for $SHA" && git push origin screenshots
+
+  windows-check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Check that everything still compiles for Windows
+        run: cargo check --workspace
