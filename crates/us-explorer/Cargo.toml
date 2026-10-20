@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 usx-core = { path = "../usx-core" }
+usx-weather = { path = "../usx-weather" }
 bevy_egui = { version = "=0.42.0", default-features = false, features = ["render", "default_fonts", "open_url", "manage_clipboard"] }
 crossbeam-channel = "0.5"
 serde = { version = "1", features = ["derive"] }

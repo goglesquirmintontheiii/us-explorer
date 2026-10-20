@@ -20,10 +20,7 @@ pub struct SimClock {
 
 impl SimClock {
     pub fn now_real() -> f64 {
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs_f64())
-            .unwrap_or(0.0)
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
     }
     pub fn time(&self) -> f64 {
         self.unix + self.offset
@@ -41,19 +38,10 @@ pub struct SunPlugin;
 impl Plugin for SunPlugin {
     fn build(&self, app: &mut App) {
         let fixed = app.world().resource::<crate::Args>().time;
-        app.insert_resource(SimClock {
-            unix: fixed.unwrap_or_else(SimClock::now_real),
-            offset: 0.0,
-            fixed: fixed.is_some(),
-        })
-        .add_systems(Startup, spawn_sky)
-        .add_systems(Update, tick_clock)
-        .add_systems(
-            PostUpdate,
-            (place_sun, place_planet)
-                .after(GlobeSet)
-                .before(TransformSystems::Propagate),
-        );
+        app.insert_resource(SimClock { unix: fixed.unwrap_or_else(SimClock::now_real), offset: 0.0, fixed: fixed.is_some() })
+            .add_systems(Startup, spawn_sky)
+            .add_systems(Update, tick_clock)
+            .add_systems(PostUpdate, (place_sun, place_planet).after(GlobeSet).before(TransformSystems::Propagate));
     }
 }
 
@@ -62,11 +50,7 @@ fn spawn_sky(mut commands: Commands, mut media: ResMut<Assets<ScatteringMedium>>
     commands.spawn((Planet, Atmosphere::earth(medium), Transform::default()));
     commands.spawn((
         Sun,
-        DirectionalLight {
-            illuminance: lux::RAW_SUNLIGHT,
-            shadow_maps_enabled: false,
-            ..default()
-        },
+        DirectionalLight { illuminance: lux::RAW_SUNLIGHT, shadow_maps_enabled: false, ..default() },
         Transform::default(),
     ));
 }
@@ -84,10 +68,7 @@ fn place_sun(
     mut cams: Query<&mut Exposure, With<crate::camera::MainCamera>>,
     ambient: Option<ResMut<GlobalAmbientLight>>,
 ) {
-    let dir = origin
-        .frame
-        .dir_to_local(sun_dir_ecef(clock.time()))
-        .as_vec3();
+    let dir = origin.frame.dir_to_local(sun_dir_ecef(clock.time())).as_vec3();
     for mut t in &mut q {
         *t = Transform::IDENTITY.looking_to(-dir, Vec3::Y);
     }
@@ -103,11 +84,7 @@ fn place_sun(
     }
     let night = ((6.0 - elev) / 18.0).clamp(0.0, 1.0);
     let Some(mut ambient) = ambient else { return };
-    ambient.color = Color::srgb(
-        0.75 + 0.25 * (1.0 - night),
-        0.82 + 0.18 * (1.0 - night),
-        1.0,
-    );
+    ambient.color = Color::srgb(0.75 + 0.25 * (1.0 - night), 0.82 + 0.18 * (1.0 - night), 1.0);
     ambient.brightness = 80.0 * (1.0 - night) + 30.0 * night;
 }
 
@@ -126,10 +103,7 @@ pub fn night_ev(elev: f32) -> f32 {
 
 /// The atmosphere is a sphere; put its centre so the sphere touches the ground under
 /// the origin. A planet-centre placement would be off by up to 18 km on the ellipsoid.
-fn place_planet(
-    origin: Res<WorldOrigin>,
-    mut q: Query<(&Atmosphere, &mut Transform), With<Planet>>,
-) {
+fn place_planet(origin: Res<WorldOrigin>, mut q: Query<(&Atmosphere, &mut Transform), With<Planet>>) {
     let mut g = origin.geo;
     g.h = 0.0;
     let ground = origin.frame.to_local(g.to_ecef());
@@ -148,9 +122,7 @@ pub fn sun_dir_ecef(unix: f64) -> DVec3 {
     let eps = (23.439 - 0.000_000_4 * n).to_radians();
     let ra = (eps.cos() * lambda.sin()).atan2(lambda.cos());
     let dec = (eps.sin() * lambda.sin()).asin();
-    let gmst = (280.460_618_37 + 360.985_647_366_29 * n)
-        .rem_euclid(360.0)
-        .to_radians();
+    let gmst = (280.460_618_37 + 360.985_647_366_29 * n).rem_euclid(360.0).to_radians();
     let lon = ra - gmst;
     DVec3::new(dec.cos() * lon.cos(), dec.cos() * lon.sin(), dec.sin())
 }
@@ -164,14 +136,8 @@ pub fn sun_elevation(unix: f64, frame: &EnuFrame) -> f64 {
 pub fn parse_utc(s: &str) -> Option<f64> {
     let s = s.trim().trim_end_matches('Z');
     let (date, time) = s.split_once(['T', ' ']).unwrap_or((s, "00:00"));
-    let d: Vec<i64> = date
-        .split('-')
-        .map(|p| p.parse().ok())
-        .collect::<Option<_>>()?;
-    let t: Vec<f64> = time
-        .split(':')
-        .map(|p| p.parse().ok())
-        .collect::<Option<_>>()?;
+    let d: Vec<i64> = date.split('-').map(|p| p.parse().ok()).collect::<Option<_>>()?;
+    let t: Vec<f64> = time.split(':').map(|p| p.parse().ok()).collect::<Option<_>>()?;
     if d.len() != 3 || t.len() < 2 {
         return None;
     }
@@ -203,11 +169,7 @@ pub fn format_utc(unix: f64) -> String {
     let d = doy - (153 * mp + 2) / 5 + 1;
     let m = if mp < 10 { mp + 3 } else { mp - 9 };
     let y = yoe + era * 400 + if m <= 2 { 1 } else { 0 };
-    format!(
-        "{y:04}-{m:02}-{d:02} {:02}:{:02} UTC",
-        (secs / 3600.0) as u32,
-        ((secs % 3600.0) / 60.0) as u32
-    )
+    format!("{y:04}-{m:02}-{d:02} {:02}:{:02} UTC", (secs / 3600.0) as u32, ((secs % 3600.0) / 60.0) as u32)
 }
 
 #[cfg(test)]
@@ -221,10 +183,7 @@ mod tests {
         let t = parse_utc("2026-06-21T19:00:00Z").unwrap();
         let e = sun_elevation(t, &EnuFrame::at(Geodetic::new(39.74, -104.99, 0.0)));
         assert!((e - 73.5).abs() < 1.5, "{e}");
-        let night = sun_elevation(
-            parse_utc("2026-06-21T07:00Z").unwrap(),
-            &EnuFrame::at(Geodetic::new(39.74, -104.99, 0.0)),
-        );
+        let night = sun_elevation(parse_utc("2026-06-21T07:00Z").unwrap(), &EnuFrame::at(Geodetic::new(39.74, -104.99, 0.0)));
         assert!(night < -10.0);
         assert_eq!(format_utc(t), "2026-06-21 19:00 UTC");
     }

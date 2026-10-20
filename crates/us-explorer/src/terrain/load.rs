@@ -36,18 +36,9 @@ impl HeightGrid {
         let (ix, iy) = (fx as usize, fy as usize);
         let (tx, ty) = (fx - ix as f64, fy - iy as f64);
         let at = |x: usize, y: usize| self.h[y * GRID + x] as f64;
-        let (a, b, c, d) = (
-            at(ix, iy),
-            at(ix + 1, iy),
-            at(ix, iy + 1),
-            at(ix + 1, iy + 1),
-        );
+        let (a, b, c, d) = (at(ix, iy), at(ix + 1, iy), at(ix, iy + 1), at(ix + 1, iy + 1));
         // Quads are split along the a-d diagonal.
-        if tx >= ty {
-            a + (b - a) * tx + (d - b) * ty
-        } else {
-            a + (d - c) * tx + (c - a) * ty
-        }
+        if tx >= ty { a + (b - a) * tx + (d - b) * ty } else { a + (d - c) * tx + (c - a) * ty }
     }
 }
 
@@ -103,11 +94,7 @@ pub static CACHE: OnceLock<DiskCache> = OnceLock::new();
 pub fn fetch(key: &str, url: &str) -> Result<Vec<u8>, NetError> {
     let c = cache();
     if let Some(b) = c.get(key) {
-        return if b == MISSING {
-            Err(NetError::NotFound)
-        } else {
-            Ok(b)
-        };
+        return if b == MISSING { Err(NetError::NotFound) } else { Ok(b) };
     }
     match net::get(url) {
         Ok(b) => {
@@ -135,21 +122,13 @@ fn terrarium(id: TileId) -> Result<Arc<Vec<f32>>, String> {
     if let Some(d) = dem_lru().lock().unwrap().0.get(&id).cloned() {
         return Ok(d);
     }
-    let bytes = fetch(
-        &format!("dem/terrarium/{}.png", id.path()),
-        &sources::terrarium_url(id),
-    )
-    .map_err(|e| format!("elevation {}: {e}", id.path()))?;
-    let img = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)
-        .map_err(|e| format!("elevation decode: {e}"))?
-        .to_rgb8();
+    let bytes = fetch(&format!("dem/terrarium/{}.png", id.path()), &sources::terrarium_url(id))
+        .map_err(|e| format!("elevation {}: {e}", id.path()))?;
+    let img = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png).map_err(|e| format!("elevation decode: {e}"))?.to_rgb8();
     if img.width() as usize != TEX || img.height() as usize != TEX {
         return Err("elevation tile has an unexpected size".into());
     }
-    let h: Vec<f32> = img
-        .pixels()
-        .map(|p| p[0] as f32 * 256.0 + p[1] as f32 + p[2] as f32 / 256.0 - 32768.0)
-        .collect();
+    let h: Vec<f32> = img.pixels().map(|p| p[0] as f32 * 256.0 + p[1] as f32 + p[2] as f32 / 256.0 - 32768.0).collect();
     let h = Arc::new(h);
     let mut l = dem_lru().lock().unwrap();
     l.0.insert(id, h.clone());
@@ -216,24 +195,13 @@ fn grid_from(h: Vec<f32>) -> HeightGrid {
 /// Rough box around the US states and territories with 3DEP coverage.
 fn in_us(id: TileId) -> bool {
     let (w, s, e, n) = id.bounds();
-    let boxes = [
-        (-125.0, 24.0, -66.0, 49.5),
-        (-170.0, 51.0, -129.0, 71.5),
-        (-161.0, 18.5, -154.5, 22.5),
-        (-68.0, 17.5, -64.5, 18.6),
-    ];
-    boxes
-        .iter()
-        .any(|&(bw, bs, be, bn)| e > bw && w < be && n > bs && s < bn)
+    let boxes = [(-125.0, 24.0, -66.0, 49.5), (-170.0, 51.0, -129.0, 71.5), (-161.0, 18.5, -154.5, 22.5), (-68.0, 17.5, -64.5, 18.6)];
+    boxes.iter().any(|&(bw, bs, be, bn)| e > bw && w < be && n > bs && s < bn)
 }
 
 /// Exact-size lattice from the 3DEP dynamic service, as a 32-bit float TIFF.
 fn lidar_heights(id: TileId) -> Option<HeightGrid> {
-    let bytes = fetch(
-        &format!("dem/3dep/{}.tif", id.path()),
-        &sources::usgs_3dep_url(id, GRID as u32),
-    )
-    .ok()?;
+    let bytes = fetch(&format!("dem/3dep/{}.tif", id.path()), &sources::usgs_3dep_url(id, GRID as u32)).ok()?;
     let mut dec = tiff::decoder::Decoder::new(std::io::Cursor::new(bytes)).ok()?;
     let (w, hgt) = dec.dimensions().ok()?;
     if w as usize != GRID || hgt as usize != GRID {
@@ -292,21 +260,9 @@ fn imagery(job: &LoadJob) -> Option<(image::RgbaImage, u8)> {
             return Some((img, z));
         }
         let (u0, v0, s) = id.rect_in_ancestor(z);
-        let (x, y, w) = (
-            (u0 * TEX as f64) as u32,
-            (v0 * TEX as f64) as u32,
-            ((s * TEX as f64) as u32).max(1),
-        );
+        let (x, y, w) = ((u0 * TEX as f64) as u32, (v0 * TEX as f64) as u32, ((s * TEX as f64) as u32).max(1));
         let crop = image::imageops::crop_imm(&img, x, y, w, w).to_image();
-        return Some((
-            image::imageops::resize(
-                &crop,
-                TEX as u32,
-                TEX as u32,
-                image::imageops::FilterType::Triangle,
-            ),
-            z,
-        ));
+        return Some((image::imageops::resize(&crop, TEX as u32, TEX as u32, image::imageops::FilterType::Triangle), z));
     }
     None
 }
@@ -334,43 +290,20 @@ fn mip_chain(img: image::RgbaImage, bc1: bool) -> ImageData {
     }
     let n = levels.len() as u32;
     if !bc1 {
-        let data = levels
-            .iter()
-            .flat_map(|l| l.as_raw().iter().copied())
-            .collect();
-        return ImageData {
-            data,
-            levels: n,
-            bc1,
-        };
+        let data = levels.iter().flat_map(|l| l.as_raw().iter().copied()).collect();
+        return ImageData { data, levels: n, bc1 };
     }
     let fmt = texpresso::Format::Bc1;
-    let params = texpresso::Params {
-        algorithm: texpresso::Algorithm::RangeFit,
-        ..Default::default()
-    };
-    let total: usize = levels
-        .iter()
-        .map(|l| fmt.compressed_size(l.width() as usize, l.height() as usize))
-        .sum();
+    let params = texpresso::Params { algorithm: texpresso::Algorithm::RangeFit, ..Default::default() };
+    let total: usize = levels.iter().map(|l| fmt.compressed_size(l.width() as usize, l.height() as usize)).sum();
     let mut data = vec![0u8; total];
     let mut off = 0;
     for l in &levels {
         let sz = fmt.compressed_size(l.width() as usize, l.height() as usize);
-        fmt.compress(
-            l.as_raw(),
-            l.width() as usize,
-            l.height() as usize,
-            params,
-            &mut data[off..off + sz],
-        );
+        fmt.compress(l.as_raw(), l.width() as usize, l.height() as usize, params, &mut data[off..off + sz]);
         off += sz;
     }
-    ImageData {
-        data,
-        levels: n,
-        bc1,
-    }
+    ImageData { data, levels: n, bc1 }
 }
 
 // ---------------------------------------------------------------------- mesh
@@ -394,16 +327,10 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
     let merc = |lat: f64, lon: f64| {
         let r = usx_core::geo::WGS84_A;
         let lat = lat.clamp(-85.0, 85.0).to_radians();
-        (
-            r * lon.to_radians(),
-            -r * (std::f64::consts::FRAC_PI_4 + lat / 2.0).tan().ln(),
-        )
+        (r * lon.to_radians(), -r * (std::f64::consts::FRAC_PI_4 + lat / 2.0).tan().ln())
     };
     let (cx, cy) = merc(clat, clon);
-    let (sx, sy) = (
-        (cx / DETAIL_PERIOD).floor() * DETAIL_PERIOD,
-        (cy / DETAIL_PERIOD).floor() * DETAIL_PERIOD,
-    );
+    let (sx, sy) = ((cx / DETAIL_PERIOD).floor() * DETAIL_PERIOD, (cy / DETAIL_PERIOD).floor() * DETAIL_PERIOD);
     let mut detail_uvs = Vec::with_capacity(GRID * GRID + 4 * GRID);
     let mut radius: f64 = 0.0;
     let mut positions = Vec::with_capacity(GRID * GRID + 4 * GRID);
@@ -414,14 +341,8 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             let k = j * GRID + i;
             let p = ecef[k];
             radius = radius.max((p - center).length());
-            let (l, r) = (
-                ecef[j * GRID + i.saturating_sub(1)],
-                ecef[j * GRID + (i + 1).min(n)],
-            );
-            let (t, b) = (
-                ecef[j.saturating_sub(1) * GRID + i],
-                ecef[(j + 1).min(n) * GRID + i],
-            );
+            let (l, r) = (ecef[j * GRID + i.saturating_sub(1)], ecef[j * GRID + (i + 1).min(n)]);
+            let (t, b) = (ecef[j.saturating_sub(1) * GRID + i], ecef[(j + 1).min(n) * GRID + i]);
             // East x south points down; south x east points up.
             let mut nrm = (b - t).cross(r - l).normalize_or_zero();
             if nrm.dot(ups[k]) < 0.0 {
@@ -481,17 +402,7 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             indices.extend_from_slice(&[top0, bot0, bot1, top0, bot1, top1]);
         }
     }
-    (
-        MeshData {
-            positions,
-            normals,
-            uvs,
-            detail_uvs,
-            indices,
-        },
-        center,
-        radius + depth,
-    )
+    (MeshData { positions, normals, uvs, detail_uvs, indices }, center, radius + depth)
 }
 
 pub fn load(job: LoadJob) -> Loaded {
@@ -538,16 +449,12 @@ mod tests {
 
     #[test]
     fn bc1_chain_sizes() {
-        let img =
-            image::RgbaImage::from_fn(256, 256, |x, y| image::Rgba([x as u8, y as u8, 90, 255]));
+        let img = image::RgbaImage::from_fn(256, 256, |x, y| image::Rgba([x as u8, y as u8, 90, 255]));
         let t = std::time::Instant::now();
         let d = mip_chain(img.clone(), true);
         eprintln!("bc1 mip chain: {:?}", t.elapsed());
         assert_eq!(d.levels, 7);
-        assert_eq!(
-            d.data.len(),
-            (256 * 256 + 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 64 + 16) / 2
-        );
+        assert_eq!(d.data.len(), (256 * 256 + 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 64 + 16) / 2);
         assert_eq!(mip_chain(img, false).levels, 9);
     }
 

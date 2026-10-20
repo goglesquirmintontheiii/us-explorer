@@ -29,11 +29,7 @@ impl Geodetic {
         let (sl, cl) = self.lat.to_radians().sin_cos();
         let (so, co) = self.lon.to_radians().sin_cos();
         let n = WGS84_A / (1.0 - WGS84_E2 * sl * sl).sqrt();
-        DVec3::new(
-            (n + self.h) * cl * co,
-            (n + self.h) * cl * so,
-            (n * (1.0 - WGS84_E2) + self.h) * sl,
-        )
+        DVec3::new((n + self.h) * cl * co, (n + self.h) * cl * so, (n * (1.0 - WGS84_E2) + self.h) * sl)
     }
 
     /// Bowring's method, accurate to well under a millimetre near the surface.
@@ -46,16 +42,8 @@ impl Geodetic {
         let lat = (p.z + ep2 * WGS84_B * st * st * st).atan2(r - WGS84_E2 * WGS84_A * ct * ct * ct);
         let sl = lat.sin();
         let n = WGS84_A / (1.0 - WGS84_E2 * sl * sl).sqrt();
-        let h = if lat.cos().abs() > 1e-9 {
-            r / lat.cos() - n
-        } else {
-            p.z.abs() - WGS84_B
-        };
-        Self {
-            lat: lat.to_degrees(),
-            lon: lon.to_degrees(),
-            h,
-        }
+        let h = if lat.cos().abs() > 1e-9 { r / lat.cos() - n } else { p.z.abs() - WGS84_B };
+        Self { lat: lat.to_degrees(), lon: lon.to_degrees(), h }
     }
 
     /// Unit normal to the ellipsoid ("up") at this point.
@@ -94,10 +82,7 @@ impl EnuFrame {
         let up = DVec3::new(cl * co, cl * so, sl);
         // Rows are the local axes expressed in ECEF: x = east, y = up, z = -north.
         let ecef_to_local = DMat3::from_cols(east, up, -north).transpose();
-        Self {
-            origin,
-            ecef_to_local,
-        }
+        Self { origin, ecef_to_local }
     }
 
     pub fn to_local(&self, ecef: DVec3) -> DVec3 {
@@ -121,10 +106,7 @@ impl EnuFrame {
 /// Parse "lat, lon" (decimal degrees, optional N/S/E/W) into a position.
 pub fn parse_lat_lon(s: &str) -> Option<(f64, f64)> {
     let cleaned = s.replace('°', " ");
-    let parts: Vec<&str> = cleaned
-        .split([',', ' ', ';'])
-        .filter(|p| !p.is_empty())
-        .collect();
+    let parts: Vec<&str> = cleaned.split([',', ' ', ';']).filter(|p| !p.is_empty()).collect();
     let mut nums = Vec::new();
     for p in parts {
         let up = p.to_ascii_uppercase();
@@ -153,18 +135,9 @@ mod tests {
 
     #[test]
     fn ecef_round_trip() {
-        for g in [
-            Geodetic::new(39.7392, -104.9903, 1609.0),
-            Geodetic::new(-33.9, 151.2, 5.0),
-            Geodetic::new(64.8, -147.7, 130.0),
-        ] {
+        for g in [Geodetic::new(39.7392, -104.9903, 1609.0), Geodetic::new(-33.9, 151.2, 5.0), Geodetic::new(64.8, -147.7, 130.0)] {
             let b = Geodetic::from_ecef(g.to_ecef());
-            assert!(
-                (b.lat - g.lat).abs() < 1e-9
-                    && (b.lon - g.lon).abs() < 1e-9
-                    && (b.h - g.h).abs() < 1e-4,
-                "{b:?}"
-            );
+            assert!((b.lat - g.lat).abs() < 1e-9 && (b.lon - g.lon).abs() < 1e-9 && (b.h - g.h).abs() < 1e-4, "{b:?}");
         }
     }
 

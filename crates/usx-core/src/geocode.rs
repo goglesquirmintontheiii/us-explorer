@@ -25,9 +25,7 @@ struct NomHit {
 fn encode(s: &str) -> String {
     s.bytes()
         .map(|b| match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                (b as char).to_string()
-            }
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
             b' ' => "+".into(),
             _ => format!("%{b:02X}"),
         })
@@ -47,21 +45,32 @@ pub fn search(query: &str) -> Result<Vec<Place>, NetError> {
         }
         *l = Some(Instant::now());
     }
-    let url = format!(
-        "{}?q={}&format=jsonv2&limit=8&countrycodes=us",
-        crate::sources::NOMINATIM,
-        encode(query.trim())
-    );
+    let url = format!("{}?q={}&format=jsonv2&limit=8&countrycodes=us", crate::sources::NOMINATIM, encode(query.trim()));
     let hits: Vec<NomHit> = net::get_json(&url)?;
     Ok(hits
         .into_iter()
-        .filter_map(|h| {
-            Some(Place {
-                lat: h.lat.parse().ok()?,
-                lon: h.lon.parse().ok()?,
-                name: h.display_name,
-                kind: h.r#type,
-            })
-        })
+        .filter_map(|h| Some(Place { lat: h.lat.parse().ok()?, lon: h.lon.parse().ok()?, name: h.display_name, kind: h.r#type }))
         .collect())
+}
+
+#[derive(serde::Deserialize)]
+struct NomReverse {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    display_name: String,
+}
+
+/// A short name for a point ("Coors Field, Denver"), or None when nothing is known.
+pub fn reverse(lat: f64, lon: f64) -> Result<Option<String>, NetError> {
+    let url = format!("{}?lat={lat:.6}&lon={lon:.6}&format=jsonv2&zoom=16", crate::sources::NOMINATIM.replace("/search", "/reverse"));
+    let r: NomReverse = net::get_json(&url)?;
+    let parts: Vec<&str> = r.display_name.split(", ").collect();
+    let short = if !r.name.is_empty() {
+        let place = parts.iter().skip(1).find(|p| !p.chars().next().is_some_and(|c| c.is_ascii_digit())).copied().unwrap_or("");
+        if place.is_empty() { r.name.clone() } else { format!("{}, {}", r.name, place) }
+    } else {
+        parts.iter().take(2).copied().collect::<Vec<_>>().join(", ")
+    };
+    Ok((!short.is_empty()).then_some(short))
 }

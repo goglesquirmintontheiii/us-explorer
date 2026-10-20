@@ -43,10 +43,7 @@ impl Updater {
             return;
         };
         let rel = rel.clone();
-        let (done, total) = (
-            Arc::new(AtomicU64::new(0)),
-            Arc::new(AtomicU64::new(rel.appimage_size)),
-        );
+        let (done, total) = (Arc::new(AtomicU64::new(0)), Arc::new(AtomicU64::new(rel.appimage_size)));
         let (d2, t2, r2) = (done.clone(), total.clone(), rel.clone());
         let (tx, rx) = crossbeam_channel::bounded(1);
         std::thread::spawn(move || {
@@ -58,12 +55,7 @@ impl Updater {
             });
             let _ = tx.send(r);
         });
-        self.state = UpdateState::Downloading {
-            rel,
-            done,
-            total,
-            rx,
-        };
+        self.state = UpdateState::Downloading { rel, done, total, rx };
     }
 }
 
@@ -71,17 +63,9 @@ pub struct UpdaterPlugin;
 
 impl Plugin for UpdaterPlugin {
     fn build(&self, app: &mut App) {
-        let enabled = app
-            .world()
-            .resource::<crate::GameSettings>()
-            .0
-            .check_updates
-            && app.world().resource::<crate::Args>().shots.is_empty();
-        let mut u = Updater {
-            state: UpdateState::Idle,
-            dismissed: false,
-            last_check: None,
-        };
+        let enabled =
+            app.world().resource::<crate::GameSettings>().0.check_updates && app.world().resource::<crate::Args>().shots.is_empty();
+        let mut u = Updater { state: UpdateState::Idle, dismissed: false, last_check: None };
         if enabled {
             u.check_now();
         }
@@ -93,13 +77,8 @@ fn poll(mut u: ResMut<Updater>, settings: Res<crate::GameSettings>) {
     let next = match &u.state {
         UpdateState::Checking(rx) => rx.try_recv().ok().map(|r| match r {
             Ok(Some(rel)) => {
-                let skipped =
-                    settings.0.skipped_version.as_deref() == Some(rel.version.to_string().as_str());
-                if skipped {
-                    UpdateState::UpToDate
-                } else {
-                    UpdateState::Available(rel)
-                }
+                let skipped = settings.0.skipped_version.as_deref() == Some(rel.version.to_string().as_str());
+                if skipped { UpdateState::UpToDate } else { UpdateState::Available(rel) }
             }
             Ok(None) => UpdateState::UpToDate,
             Err(e) => UpdateState::Failed(format!("Couldn't check for updates: {e}")),
@@ -119,8 +98,7 @@ fn poll(mut u: ResMut<Updater>, settings: Res<crate::GameSettings>) {
     // Look again every six hours during long sessions.
     if settings.0.check_updates
         && matches!(u.state, UpdateState::UpToDate | UpdateState::Failed(_))
-        && u.last_check
-            .is_some_and(|t| t.elapsed() > Duration::from_secs(6 * 3600))
+        && u.last_check.is_some_and(|t| t.elapsed() > Duration::from_secs(6 * 3600))
     {
         u.check_now();
     }

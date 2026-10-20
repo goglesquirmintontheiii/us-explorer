@@ -31,16 +31,9 @@ pub enum ToService {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum FromService {
-    Hello {
-        service_version: String,
-        protocol: u32,
-    },
-    Pong {
-        t: u64,
-    },
-    Status {
-        text: String,
-    },
+    Hello { service_version: String, protocol: u32 },
+    Pong { t: u64 },
+    Status { text: String },
 }
 
 pub fn encode<T: serde::Serialize>(m: &T) -> String {

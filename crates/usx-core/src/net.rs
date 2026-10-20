@@ -36,15 +36,11 @@ pub struct Limiter {
 
 impl Limiter {
     fn new(bps: u64) -> Self {
-        Self {
-            bytes_per_sec: AtomicU64::new(bps),
-            bucket: Mutex::new((Instant::now(), 0.0)),
-        }
+        Self { bytes_per_sec: AtomicU64::new(bps), bucket: Mutex::new((Instant::now(), 0.0)) }
     }
 
     pub fn set_mbps(&self, mbps: f64) {
-        self.bytes_per_sec
-            .store((mbps.max(0.0) * 1_000_000.0 / 8.0) as u64, AO::Relaxed);
+        self.bytes_per_sec.store((mbps.max(0.0) * 1_000_000.0 / 8.0) as u64, AO::Relaxed);
     }
 
     pub fn mbps(&self) -> f64 {
@@ -97,11 +93,7 @@ fn agent() -> &'static ureq::Agent {
         ureq::Agent::config_builder()
             .user_agent(crate::user_agent())
             // The system's certificate store, so proxies with their own CA work too.
-            .tls_config(
-                ureq::tls::TlsConfig::builder()
-                    .root_certs(ureq::tls::RootCerts::PlatformVerifier)
-                    .build(),
-            )
+            .tls_config(ureq::tls::TlsConfig::builder().root_certs(ureq::tls::RootCerts::PlatformVerifier).build())
             .timeout_connect(Some(Duration::from_secs(10)))
             .timeout_global(Some(Duration::from_secs(60)))
             .http_status_as_error(false)
@@ -114,11 +106,7 @@ fn agent() -> &'static ureq::Agent {
 }
 
 /// Download a URL fully, honouring the bandwidth cap. `progress` gets bytes so far.
-pub fn get_with(
-    url: &str,
-    accept: &str,
-    mut progress: impl FnMut(u64, Option<u64>),
-) -> Result<Vec<u8>, NetError> {
+pub fn get_with(url: &str, accept: &str, mut progress: impl FnMut(u64, Option<u64>)) -> Result<Vec<u8>, NetError> {
     let st = stats();
     st.requests.fetch_add(1, AO::Relaxed);
     st.in_flight.fetch_add(1, AO::Relaxed);
@@ -126,29 +114,16 @@ pub fn get_with(
         let mut url = url.to_string();
         let mut hops = 0;
         let resp = loop {
-            let resp = agent()
-                .get(&url)
-                .header("Accept", accept)
-                .call()
-                .map_err(|e| NetError::Io(e.to_string()))?;
+            let resp = agent().get(&url).header("Accept", accept).call().map_err(|e| NetError::Io(e.to_string()))?;
             let code = resp.status().as_u16();
             if (300..400).contains(&code) && code != 304 {
-                let loc = resp
-                    .headers()
-                    .get("location")
-                    .and_then(|v| v.to_str().ok())
-                    .ok_or(NetError::Http(code))?
-                    .to_string();
+                let loc = resp.headers().get("location").and_then(|v| v.to_str().ok()).ok_or(NetError::Http(code))?.to_string();
                 drop(resp);
                 hops += 1;
                 if hops > 6 {
                     return Err(NetError::Http(code));
                 }
-                url = if loc.starts_with("http") {
-                    loc
-                } else {
-                    format!("{}{}", origin_of(&url), loc)
-                };
+                url = if loc.starts_with("http") { loc } else { format!("{}{}", origin_of(&url), loc) };
                 continue;
             }
             break resp;
@@ -160,19 +135,13 @@ pub fn get_with(
         if code >= 400 {
             return Err(NetError::Http(code));
         }
-        let len = resp
-            .headers()
-            .get("content-length")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.parse().ok());
+        let len = resp.headers().get("content-length").and_then(|v| v.to_str().ok()).and_then(|v| v.parse().ok());
         let mut body = resp.into_body();
         let mut reader = body.as_reader();
         let mut out = Vec::with_capacity(len.unwrap_or(32 * 1024) as usize);
         let mut buf = [0u8; 16 * 1024];
         loop {
-            let n = reader
-                .read(&mut buf)
-                .map_err(|e| NetError::Io(e.to_string()))?;
+            let n = reader.read(&mut buf).map_err(|e| NetError::Io(e.to_string()))?;
             if n == 0 {
                 break;
             }
@@ -193,10 +162,7 @@ pub fn get_with(
 /// `https://host` part of a URL, for relative redirects.
 fn origin_of(url: &str) -> &str {
     let after = url.find("://").map(|i| i + 3).unwrap_or(0);
-    let end = url[after..]
-        .find('/')
-        .map(|i| i + after)
-        .unwrap_or(url.len());
+    let end = url[after..].find('/').map(|i| i + after).unwrap_or(url.len());
     &url[..end]
 }
 
@@ -230,9 +196,7 @@ impl PartialOrd for Entry {
 impl Ord for Entry {
     // BinaryHeap is a max-heap; lower priority value = more urgent.
     fn cmp(&self, o: &Self) -> Ordering {
-        o.priority
-            .total_cmp(&self.priority)
-            .then(o.seq.cmp(&self.seq))
+        o.priority.total_cmp(&self.priority).then(o.seq.cmp(&self.seq))
     }
 }
 
@@ -252,20 +216,8 @@ pub struct WorkPool<J: Send + 'static, R: Send + 'static> {
 }
 
 impl<J: Send + 'static, R: Send + 'static> WorkPool<J, R> {
-    pub fn new(
-        name: &str,
-        threads: usize,
-        handler: impl Fn(u64, J) -> R + Send + Sync + 'static,
-    ) -> Self {
-        let q = Arc::new((
-            Mutex::new(Queue {
-                heap: BinaryHeap::new(),
-                jobs: HashMap::new(),
-                seq: 0,
-                closed: false,
-            }),
-            Condvar::new(),
-        ));
+    pub fn new(name: &str, threads: usize, handler: impl Fn(u64, J) -> R + Send + Sync + 'static) -> Self {
+        let q = Arc::new((Mutex::new(Queue { heap: BinaryHeap::new(), jobs: HashMap::new(), seq: 0, closed: false }), Condvar::new()));
         let (tx, rx) = crossbeam_channel::unbounded();
         let handler = Arc::new(handler);
         let busy = Arc::new(AtomicU64::new(0));
@@ -303,11 +255,7 @@ impl<J: Send + 'static, R: Send + 'static> WorkPool<J, R> {
                 })
                 .expect("spawn worker");
         }
-        Self {
-            q,
-            results: rx,
-            busy,
-        }
+        Self { q, results: rx, busy }
     }
 
     /// Queue a job, or update the priority of one already waiting under `key`.
@@ -408,10 +356,7 @@ mod live_tests {
     fn github_release_asset() {
         let u = "https://github.com/goglesquirmintontheiii/us-explorer/releases/download/v0.0.0/US_Explorer-0.0.0-x86_64.AppImage.sha256";
         let r = super::get(u);
-        eprintln!(
-            "{:?}",
-            r.as_ref().map(|b| String::from_utf8_lossy(b).to_string())
-        );
+        eprintln!("{:?}", r.as_ref().map(|b| String::from_utf8_lossy(b).to_string()));
         let r2 = super::get_with(u, "application/octet-stream", |_, _| {});
         eprintln!("octet: {:?}", r2.as_ref().map(|b| b.len()));
     }

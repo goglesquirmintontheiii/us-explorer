@@ -1,8 +1,9 @@
 //! Self-update from GitHub releases.
 //!
-//! Each release carries `US_Explorer-<ver>-x86_64.AppImage` and a matching `.sha256`.
-//! When the game runs as an AppImage (`$APPIMAGE` is set), [`install`] downloads the
-//! new file next to the current one, verifies it, swaps it in and the game restarts.
+//! Each release carries `US_Explorer-<ver>-x86_64.AppImage` (Linux) and, for some
+//! phases, `US_Explorer-<ver>-windows-x86_64.exe`, each with a matching `.sha256`.
+//! On Linux the running AppImage (`$APPIMAGE`) is replaced; on Windows the running
+//! exe is renamed to `.old` (allowed while it runs) and the new one put in its place.
 
 use crate::net::{self, NetError};
 use sha2::{Digest, Sha256};
@@ -49,20 +50,12 @@ pub fn check() -> Result<Option<Release>, NetError> {
 
 /// The newest published release newer than `have`.
 pub fn check_against(have: &semver::Version) -> Result<Option<Release>, NetError> {
-    let url = format!(
-        "{}/repos/{}/releases?per_page=10",
-        crate::sources::GITHUB_API,
-        crate::REPO
-    );
+    let url = format!("{}/repos/{}/releases?per_page=10", crate::sources::GITHUB_API, crate::REPO);
     let list: Vec<GhRelease> = net::get_json(&url)?;
     let best = list
         .into_iter()
         .filter(|r| !r.draft && !r.prerelease)
-        .filter_map(|r| {
-            semver::Version::parse(r.tag_name.trim_start_matches('v'))
-                .ok()
-                .map(|v| (v, r))
-        })
+        .filter_map(|r| semver::Version::parse(r.tag_name.trim_start_matches('v')).ok().map(|v| (v, r)))
         .max_by(|a, b| a.0.cmp(&b.0));
     let Some((version, r)) = best else {
         return Ok(None);
@@ -70,15 +63,8 @@ pub fn check_against(have: &semver::Version) -> Result<Option<Release>, NetError
     if version <= *have {
         return Ok(None);
     }
-    let app = r
-        .assets
-        .iter()
-        .find(|a| a.name.ends_with("x86_64.AppImage"));
-    let sha = app.and_then(|a| {
-        r.assets
-            .iter()
-            .find(|s| s.name == format!("{}.sha256", a.name))
-    });
+    let app = r.assets.iter().find(|a| a.name.ends_with(ASSET_SUFFIX));
+    let sha = app.and_then(|a| r.assets.iter().find(|s| s.name == format!("{}.sha256", a.name)));
     Ok(Some(Release {
         version,
         tag: r.tag_name.clone(),
@@ -91,39 +77,43 @@ pub fn check_against(have: &semver::Version) -> Result<Option<Release>, NetError
     }))
 }
 
+/// The release asset this platform installs.
+#[cfg(windows)]
+pub const ASSET_SUFFIX: &str = "windows-x86_64.exe";
+#[cfg(not(windows))]
+pub const ASSET_SUFFIX: &str = "x86_64.AppImage";
+
 /// Path of the running AppImage, when the game was launched as one.
 pub fn appimage_path() -> Option<PathBuf> {
-    std::env::var_os("APPIMAGE")
-        .map(PathBuf::from)
-        .filter(|p| p.is_file())
+    std::env::var_os("APPIMAGE").map(PathBuf::from).filter(|p| p.is_file())
+}
+
+/// The file an update replaces: the AppImage on Linux, the exe on Windows.
+pub fn install_target() -> Option<PathBuf> {
+    if cfg!(windows) { std::env::current_exe().ok().filter(|p| p.is_file()) } else { appimage_path() }
 }
 
 /// Whether one-click install is possible on this platform/launch.
 pub fn can_self_install() -> bool {
-    cfg!(target_os = "linux") && appimage_path().is_some()
+    (cfg!(target_os = "linux") || cfg!(windows)) && install_target().is_some()
 }
 
-/// Download, verify and swap in the new AppImage. Returns the path to relaunch.
+/// Remove the previous exe left behind by a Windows update (it can't be deleted while running).
+pub fn cleanup_old() {
+    if let Ok(exe) = std::env::current_exe() {
+        let _ = std::fs::remove_file(exe.with_extension("old"));
+    }
+}
+
+/// Download, verify and swap in the new build. Returns the path to relaunch.
 pub fn install(rel: &Release, progress: impl FnMut(u64, Option<u64>)) -> Result<PathBuf, String> {
-    let target = appimage_path()
-        .ok_or("Not running from an AppImage; download the new version from the release page.")?;
-    let url = rel
-        .appimage_url
-        .as_ref()
-        .ok_or("This release has no Linux AppImage.")?;
-    let data = net::get_with(url, "application/octet-stream", progress)
-        .map_err(|e| format!("Download failed: {e}"))?;
+    let target = install_target().ok_or("This copy can't update itself; download the new version from the release page.")?;
+    let url = rel.appimage_url.as_ref().ok_or("This release has no build for your system yet.")?;
+    let data = net::get_with(url, "application/octet-stream", progress).map_err(|e| format!("Download failed: {e}"))?;
     if let Some(su) = &rel.sha256_url {
         let want = net::get(su).map_err(|e| format!("Checksum download failed: {e}"))?;
-        let want = String::from_utf8_lossy(&want)
-            .split_whitespace()
-            .next()
-            .unwrap_or("")
-            .to_ascii_lowercase();
-        let got = Sha256::digest(&data)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect::<String>();
+        let want = String::from_utf8_lossy(&want).split_whitespace().next().unwrap_or("").to_ascii_lowercase();
+        let got = Sha256::digest(&data).iter().map(|b| format!("{b:02x}")).collect::<String>();
         if want != got {
             return Err("The download was corrupted (checksum mismatch). Try again.".into());
         }
@@ -135,6 +125,17 @@ pub fn install(rel: &Release, progress: impl FnMut(u64, Option<u64>)) -> Result<
         use std::os::unix::fs::PermissionsExt;
         let _ = std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755));
     }
+    // Windows can't overwrite a running exe but can rename it out of the way.
+    if cfg!(windows) {
+        let old = target.with_extension("old");
+        let _ = std::fs::remove_file(&old);
+        std::fs::rename(&target, &old).map_err(|e| format!("Couldn't move the old game file: {e}"))?;
+        if let Err(e) = std::fs::rename(&tmp, &target) {
+            let _ = std::fs::rename(&old, &target);
+            return Err(format!("Couldn't replace the game file: {e}"));
+        }
+        return Ok(target);
+    }
     // Renaming over a running AppImage is safe on Linux: the old inode stays mounted.
     std::fs::rename(&tmp, &target).map_err(|e| format!("Couldn't replace the game file: {e}"))?;
     Ok(target)
@@ -142,14 +143,8 @@ pub fn install(rel: &Release, progress: impl FnMut(u64, Option<u64>)) -> Result<
 
 /// Start the given executable and exit this process.
 pub fn relaunch(path: &std::path::Path) -> ! {
-    let args: Vec<String> = std::env::args()
-        .skip(1)
-        .filter(|a| !a.starts_with("--screenshot"))
-        .collect();
-    let _ = std::process::Command::new(path)
-        .args(args)
-        .env_remove("APPIMAGE")
-        .spawn();
+    let args: Vec<String> = std::env::args().skip(1).filter(|a| !a.starts_with("--screenshot")).collect();
+    let _ = std::process::Command::new(path).args(args).env_remove("APPIMAGE").spawn();
     std::process::exit(0);
 }
 
@@ -161,21 +156,10 @@ mod tests {
     #[test]
     #[ignore]
     fn finds_published_appimage() {
-        let r = check_against(&semver::Version::parse("0.0.0-alpha").unwrap())
-            .unwrap()
-            .expect("a release");
-        assert!(
-            r.appimage_url
-                .as_deref()
-                .unwrap()
-                .ends_with("x86_64.AppImage")
-        );
+        let r = check_against(&semver::Version::parse("0.0.0-alpha").unwrap()).unwrap().expect("a release");
+        assert!(r.appimage_url.as_deref().unwrap().ends_with("x86_64.AppImage"));
         assert!(r.sha256_url.is_some() && r.appimage_size > 1_000_000);
-        assert!(
-            check_against(&semver::Version::new(999, 0, 0))
-                .unwrap()
-                .is_none()
-        );
+        assert!(check_against(&semver::Version::new(999, 0, 0)).unwrap().is_none());
     }
 }
 
@@ -193,9 +177,7 @@ mod install_tests {
         std::fs::write(&fake, b"old").unwrap();
         // SAFETY: test-only; nothing else reads the environment concurrently here.
         unsafe { std::env::set_var("APPIMAGE", &fake) };
-        let rel = check_against(&semver::Version::parse("0.0.0-alpha").unwrap())
-            .unwrap()
-            .unwrap();
+        let rel = check_against(&semver::Version::parse("0.0.0-alpha").unwrap()).unwrap().unwrap();
         let path = install(&rel, |_, _| {}).expect("install");
         assert_eq!(path, fake);
         let md = std::fs::metadata(&fake).unwrap();

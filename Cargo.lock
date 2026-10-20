@@ -5217,7 +5217,7 @@ dependencies = [
 
 [[package]]
 name = "us-explorer"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bevy",
  "bevy_egui",
@@ -5227,11 +5227,12 @@ dependencies = [
  "texpresso",
  "tiff",
  "usx-core",
+ "usx-weather",
 ]
 
 [[package]]
 name = "usx-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "crossbeam-channel",
  "directories",
@@ -5248,7 +5249,7 @@ dependencies = [
 
 [[package]]
 name = "usx-weather"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
  "usx-core",

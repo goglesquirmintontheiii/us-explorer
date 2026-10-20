@@ -33,14 +33,12 @@ impl ImagerySource {
     }
     pub fn url(self, t: TileId) -> String {
         match self {
-            Self::Esri => format!(
-                "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{}/{}/{}",
-                t.z, t.y, t.x
-            ),
-            Self::Usgs => format!(
-                "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{}/{}/{}",
-                t.z, t.y, t.x
-            ),
+            Self::Esri => {
+                format!("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{}/{}/{}", t.z, t.y, t.x)
+            }
+            Self::Usgs => {
+                format!("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{}/{}/{}", t.z, t.y, t.x)
+            }
         }
     }
 }
@@ -49,10 +47,7 @@ impl ImagerySource {
 /// SRTM/ETOPO elsewhere, bathymetry offshore). Height = R*256 + G + B/256 - 32768.
 pub const TERRARIUM_MAX_ZOOM: u8 = 15;
 pub fn terrarium_url(t: TileId) -> String {
-    format!(
-        "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{}/{}/{}.png",
-        t.z, t.x, t.y
-    )
+    format!("https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{}/{}/{}.png", t.z, t.x, t.y)
 }
 
 /// USGS 3DEP dynamic elevation service; serves the best available DEM (down to 1 m
@@ -73,6 +68,11 @@ pub fn merc_bounds_m(t: TileId) -> (f64, f64, f64, f64) {
     (w, n - size, w + size, n)
 }
 
+/// Esri World Street Map, used for the minimap and full map.
+pub fn street_map_url(t: TileId) -> String {
+    format!("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{}/{}/{}", t.z, t.y, t.x)
+}
+
 pub const NOMINATIM: &str = "https://nominatim.openstreetmap.org/search";
 pub const GITHUB_API: &str = "https://api.github.com";
 
@@ -89,6 +89,12 @@ pub const CREDITS: &[Credit] = &[
         used_for: "Ground imagery (default)",
         attribution: "Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community",
         url: "https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9",
+    },
+    Credit {
+        name: "Esri World Street Map",
+        used_for: "Minimap and full map",
+        attribution: "Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, (c) OpenStreetMap contributors, and the GIS User Community",
+        url: "https://www.arcgis.com/home/item.html?id=3b93337983e9436f8db950e38a8629af",
     },
     Credit {
         name: "USGS The National Map: Imagery Only",
@@ -114,12 +120,7 @@ pub const CREDITS: &[Credit] = &[
         attribution: "© OpenStreetMap contributors, ODbL",
         url: "https://www.openstreetmap.org/copyright",
     },
-    Credit {
-        name: "Bevy Engine",
-        used_for: "Game engine",
-        attribution: "Bevy contributors, MIT / Apache-2.0",
-        url: "https://bevy.org",
-    },
+    Credit { name: "Bevy Engine", used_for: "Game engine", attribution: "Bevy contributors, MIT / Apache-2.0", url: "https://bevy.org" },
     Credit {
         name: "egui",
         used_for: "Menus and overlays",

@@ -27,10 +27,7 @@ pub struct DiskCache {
 }
 
 fn now_ms() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
 }
 
 impl DiskCache {
@@ -38,11 +35,7 @@ impl DiskCache {
     pub fn open(root: impl Into<PathBuf>, limit_bytes: u64) -> Self {
         let root = root.into();
         let _ = fs::create_dir_all(&root);
-        let mut idx = Index {
-            files: HashMap::new(),
-            order: BTreeSet::new(),
-            total: 0,
-        };
+        let mut idx = Index { files: HashMap::new(), order: BTreeSet::new(), total: 0 };
         let mut stack = vec![root.clone()];
         while let Some(dir) = stack.pop() {
             let Ok(rd) = fs::read_dir(&dir) else { continue };
@@ -56,23 +49,14 @@ impl DiskCache {
                         let _ = fs::remove_file(e.path());
                         continue;
                     }
-                    let t = md
-                        .modified()
-                        .ok()
-                        .and_then(|m| m.duration_since(UNIX_EPOCH).ok())
-                        .map(|d| d.as_millis() as u64)
-                        .unwrap_or(0);
+                    let t = md.modified().ok().and_then(|m| m.duration_since(UNIX_EPOCH).ok()).map(|d| d.as_millis() as u64).unwrap_or(0);
                     idx.total += md.len();
                     idx.order.insert((t, key.clone()));
                     idx.files.insert(key, (md.len(), t));
                 }
             }
         }
-        let c = Self {
-            root,
-            limit: Mutex::new(limit_bytes),
-            index: Mutex::new(idx),
-        };
+        let c = Self { root, limit: Mutex::new(limit_bytes), index: Mutex::new(idx) };
         c.evict();
         c
     }

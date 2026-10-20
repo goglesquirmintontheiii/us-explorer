@@ -20,11 +20,7 @@ pub struct WorldOrigin {
 
 impl WorldOrigin {
     pub fn at(geo: Geodetic) -> Self {
-        Self {
-            frame: EnuFrame::at(geo),
-            geo,
-            generation: 1,
-        }
+        Self { frame: EnuFrame::at(geo), geo, generation: 1 }
     }
     pub fn local(&self, ecef: DVec3) -> Vec3 {
         self.frame.to_local(ecef).as_vec3()
@@ -43,10 +39,7 @@ pub struct GeoAnchor {
 
 impl GeoAnchor {
     pub fn new(ecef: DVec3) -> Self {
-        Self {
-            ecef,
-            placed_generation: 0,
-        }
+        Self { ecef, placed_generation: 0 }
     }
 }
 
@@ -75,19 +68,14 @@ impl Viewer {
     }
     /// The view rotation in the viewer's own local frame (Y up, -Z north).
     pub fn local_rotation(&self) -> DQuat {
-        DQuat::from_rotation_y(-self.heading.to_radians())
-            * DQuat::from_rotation_x(self.pitch.to_radians())
+        DQuat::from_rotation_y(-self.heading.to_radians()) * DQuat::from_rotation_x(self.pitch.to_radians())
     }
     /// Basis vectors (forward, right, up) in ECEF.
     pub fn basis_ecef(&self) -> (DVec3, DVec3, DVec3) {
         let f = EnuFrame::at(self.geo());
         let to_ecef = f.ecef_to_local.transpose();
         let r = self.local_rotation();
-        (
-            to_ecef * (r * DVec3::NEG_Z),
-            to_ecef * (r * DVec3::X),
-            to_ecef * DVec3::Y,
-        )
+        (to_ecef * (r * DVec3::NEG_Z), to_ecef * (r * DVec3::X), to_ecef * DVec3::Y)
     }
 }
 
@@ -99,42 +87,21 @@ pub struct GlobePlugin;
 
 impl Plugin for GlobePlugin {
     fn build(&self, app: &mut App) {
-        let (args, settings) = (
-            app.world().resource::<crate::Args>().clone(),
-            app.world().resource::<crate::GameSettings>().0.clone(),
-        );
+        let (args, settings) = (app.world().resource::<crate::Args>().clone(), app.world().resource::<crate::GameSettings>().0.clone());
         // Default start: Denver, looking west at the Front Range.
-        let (lat, lon) = args
-            .start
-            .or(settings.last_position.map(|p| (p.lat, p.lon)))
-            .unwrap_or((39.7392, -104.9903));
-        let h = if args.start.is_some() {
-            2000.0
-        } else {
-            settings.last_position.map(|p| p.h).unwrap_or(2000.0)
-        };
+        let (lat, lon) = args.start.or(settings.last_position.map(|p| (p.lat, p.lon))).unwrap_or((39.7392, -104.9903));
+        let h = if args.start.is_some() { 2000.0 } else { settings.last_position.map(|p| p.h).unwrap_or(2000.0) };
         let start = Geodetic::new(lat, lon, h);
         app.insert_resource(WorldOrigin::at(start))
             .insert_resource(Viewer {
                 ecef: start.to_ecef(),
-                heading: if args.start.is_some() {
-                    0.0
-                } else {
-                    settings.last_heading_deg
-                },
+                heading: if args.start.is_some() { 0.0 } else { settings.last_heading_deg },
                 pitch: -12.0,
                 velocity: DVec3::ZERO,
                 ground: None,
-                hold_agl: (args.start.is_some() || settings.last_position.is_none())
-                    .then_some(args.start_agl.unwrap_or(600.0)),
+                hold_agl: (args.start.is_some() || settings.last_position.is_none()).then_some(args.start_agl.unwrap_or(600.0)),
             })
-            .add_systems(
-                PostUpdate,
-                (rebase, place_anchors)
-                    .chain()
-                    .in_set(GlobeSet)
-                    .before(TransformSystems::Propagate),
-            );
+            .add_systems(PostUpdate, (rebase, place_anchors).chain().in_set(GlobeSet).before(TransformSystems::Propagate));
     }
 }
 

@@ -31,19 +31,9 @@ use usx_core::tile::TileId;
 const KEEP_ZOOM: u8 = 4;
 
 enum State {
-    Loading {
-        since: f64,
-    },
-    Ready {
-        entity: Entity,
-        image: Option<Handle<Image>>,
-        mesh: Handle<Mesh>,
-        material: Handle<TerrainMaterial>,
-        gpu_bytes: usize,
-    },
-    Failed {
-        retry_at: f64,
-    },
+    Loading { since: f64 },
+    Ready { entity: Entity, image: Option<Handle<Image>>, mesh: Handle<Mesh>, material: Handle<TerrainMaterial>, gpu_bytes: usize },
+    Failed { retry_at: f64 },
 }
 
 struct Tile {
@@ -105,15 +95,8 @@ pub struct TerrainPlugin;
 impl Plugin for TerrainPlugin {
     fn build(&self, app: &mut App) {
         let s = app.world().resource::<crate::GameSettings>().0.clone();
-        let _ = load::CACHE.set(usx_core::cache::DiskCache::open(
-            s.cache_dir(),
-            s.cache_bytes(),
-        ));
-        let threads = std::thread::available_parallelism()
-            .map(|n| n.get())
-            .unwrap_or(4)
-            .clamp(3, 8)
-            * 2;
+        let _ = load::CACHE.set(usx_core::cache::DiskCache::open(s.cache_dir(), s.cache_bytes()));
+        let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).clamp(3, 8) * 2;
         let pool = WorkPool::new("tile", threads, |_, job| load::load(job));
         app.insert_resource(Terrain {
             tiles: HashMap::new(),
@@ -131,10 +114,8 @@ impl Plugin for TerrainPlugin {
         .add_message::<Teleported>()
         .insert_resource(TeleportClock(Instant::now(), true))
         .add_plugins((region::RegionPlugin, material::TerrainMaterialPlugin))
-        .add_systems(
-            Update,
-            (on_teleport, receive, select, ground_under_viewer).chain(),
-        );
+        .add_systems(Startup, detect_compression)
+        .add_systems(Update, (on_teleport, receive, select).chain());
     }
 }
 
@@ -208,13 +189,8 @@ impl Terrain {
             }
             State::Failed { retry_at } if now >= retry_at => {
                 t.state = State::Loading { since: now };
-                let job = LoadJob {
-                    id,
-                    imagery: self.imagery,
-                    lidar: self.lidar,
-                    max_imagery_zoom: self.imagery.max_zoom(),
-                    bc1: self.bc1,
-                };
+                let job =
+                    LoadJob { id, imagery: self.imagery, lidar: self.lidar, max_imagery_zoom: self.imagery.max_zoom(), bc1: self.bc1 };
                 self.pool.submit(key(id), priority, job);
             }
             _ => {}
@@ -222,10 +198,7 @@ impl Terrain {
     }
 
     fn ready(&self, id: TileId) -> bool {
-        matches!(
-            self.tiles.get(&id).map(|t| &t.state),
-            Some(State::Ready { .. })
-        )
+        matches!(self.tiles.get(&id).map(|t| &t.state), Some(State::Ready { .. }))
     }
 }
 
@@ -238,16 +211,7 @@ fn rough_bounds(id: TileId) -> (DVec3, f64) {
     let (lat, lon) = id.lat_lon_at(0.5, 0.5);
     let c = Geodetic::new(lat, lon, 1500.0).to_ecef();
     let mut r: f64 = 0.0;
-    for (u, v) in [
-        (0.0, 0.0),
-        (1.0, 0.0),
-        (0.0, 1.0),
-        (1.0, 1.0),
-        (0.5, 0.0),
-        (0.5, 1.0),
-        (0.0, 0.5),
-        (1.0, 0.5),
-    ] {
+    for (u, v) in [(0.0, 0.0), (1.0, 0.0), (0.0, 1.0), (1.0, 1.0), (0.5, 0.0), (0.5, 1.0), (0.0, 0.5), (1.0, 0.5)] {
         let (la, lo) = id.lat_lon_at(u, v);
         for h in [-100.0, 4500.0] {
             r = r.max((Geodetic::new(la, lo, h).to_ecef() - c).length());
@@ -256,29 +220,12 @@ fn rough_bounds(id: TileId) -> (DVec3, f64) {
     (c, r)
 }
 
-fn detect_compression(
-    device: Option<Res<bevy::render::renderer::RenderDevice>>,
-    mut terrain: ResMut<Terrain>,
-) {
-    terrain.bc1 = device.is_some_and(|d| {
-        d.features()
-            .contains(bevy::render::render_resource::WgpuFeatures::TEXTURE_COMPRESSION_BC)
-    });
-    info!(
-        "terrain textures: {}",
-        if terrain.bc1 {
-            "BC1 compressed"
-        } else {
-            "uncompressed RGBA"
-        }
-    );
+fn detect_compression(device: Option<Res<bevy::render::renderer::RenderDevice>>, mut terrain: ResMut<Terrain>) {
+    terrain.bc1 = device.is_some_and(|d| d.features().contains(bevy::render::render_resource::WgpuFeatures::TEXTURE_COMPRESSION_BC));
+    info!("terrain textures: {}", if terrain.bc1 { "BC1 compressed" } else { "uncompressed RGBA" });
 }
 
-fn on_teleport(
-    mut ev: MessageReader<Teleported>,
-    mut clock: ResMut<TeleportClock>,
-    mut stats: ResMut<TerrainStats>,
-) {
+fn on_teleport(mut ev: MessageReader<Teleported>, mut clock: ResMut<TeleportClock>, mut stats: ResMut<TerrainStats>) {
     if ev.read().last().is_some() {
         clock.0 = Instant::now();
         clock.1 = true;
@@ -320,16 +267,11 @@ fn receive(
                     t.refreshing = false;
                     t.refresh_at = Some(now + 30.0);
                 } else {
-                    t.state = State::Failed {
-                        retry_at: now + 8.0,
-                    };
+                    t.state = State::Failed { retry_at: now + 8.0 };
                 }
             }
             Ok(data) => {
-                let mut mesh = Mesh::new(
-                    PrimitiveTopology::TriangleList,
-                    RenderAssetUsages::RENDER_WORLD,
-                );
+                let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
                 let gpu_mesh = data.mesh.positions.len() * 32 + data.mesh.indices.len() * 2;
                 mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.mesh.positions);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.mesh.normals);
@@ -341,17 +283,9 @@ fn receive(
                     Some(img) => {
                         let bytes = img.data.len();
                         let mut im = Image::new_uninit(
-                            Extent3d {
-                                width: load::TEX as u32,
-                                height: load::TEX as u32,
-                                depth_or_array_layers: 1,
-                            },
+                            Extent3d { width: load::TEX as u32, height: load::TEX as u32, depth_or_array_layers: 1 },
                             TextureDimension::D2,
-                            if img.bc1 {
-                                TextureFormat::Bc1RgbaUnormSrgb
-                            } else {
-                                TextureFormat::Rgba8UnormSrgb
-                            },
+                            if img.bc1 { TextureFormat::Bc1RgbaUnormSrgb } else { TextureFormat::Rgba8UnormSrgb },
                             RenderAssetUsages::RENDER_WORLD,
                         );
                         im.data = Some(img.data);
@@ -371,11 +305,7 @@ fn receive(
                 };
                 let material = materials.add(TerrainMaterial {
                     base: StandardMaterial {
-                        base_color: if image.is_some() {
-                            Color::WHITE
-                        } else {
-                            Color::srgb(0.42, 0.45, 0.38)
-                        },
+                        base_color: if image.is_some() { Color::WHITE } else { Color::srgb(0.42, 0.45, 0.38) },
                         base_color_texture: image.clone(),
                         perceptual_roughness: 0.92,
                         reflectance: 0.25,
@@ -406,13 +336,7 @@ fn receive(
                 t.heights = Some(data.heights);
                 t.elev_src = data.elevation_source;
                 t.img_zoom = data.imagery_zoom;
-                t.state = State::Ready {
-                    entity,
-                    image,
-                    mesh,
-                    material,
-                    gpu_bytes: gpu_mesh + gpu_img,
-                };
+                t.state = State::Ready { entity, image, mesh, material, gpu_bytes: gpu_mesh + gpu_img };
             }
         }
     }
@@ -465,20 +389,12 @@ fn select(
 ) {
     let now = time.elapsed_secs_f64();
     let preset = settings.0.preset;
-    let height = windows
-        .iter()
-        .next()
-        .map(|w| w.resolution.physical_height())
-        .unwrap_or(900) as f64;
+    let height = windows.iter().next().map(|w| w.resolution.physical_height()).unwrap_or(900) as f64;
     let fov = match cams.iter().next() {
         Some(Projection::Perspective(p)) => p.fov as f64,
         _ => 70f64.to_radians(),
     };
-    let aspect = windows
-        .iter()
-        .next()
-        .map(|w| w.width() / w.height().max(1.0))
-        .unwrap_or(1.7) as f64;
+    let aspect = windows.iter().next().map(|w| w.width() / w.height().max(1.0)).unwrap_or(1.7) as f64;
     let (fwd, _, _) = viewer.basis_ecef();
     let view = View {
         cam: viewer.ecef,
@@ -494,9 +410,7 @@ fn select(
     let budget_ms = if settings.0.vsync { 34.0 } else { 20.0 };
     let frame_slow = args.shots.is_empty() && frame_ms > budget_ms * 1.5;
     let behind = pending > 120 || frame_slow || stats.visible > preset.max_tiles();
-    let fine = pending < 24
-        && (frame_ms < budget_ms || !args.shots.is_empty())
-        && stats.visible < preset.max_tiles() * 3 / 4;
+    let fine = pending < 24 && (frame_ms < budget_ms || !args.shots.is_empty()) && stats.visible < preset.max_tiles() * 3 / 4;
     terrain.adapt = if behind {
         (terrain.adapt * 1.015).min(3.0)
     } else if fine {
@@ -527,9 +441,7 @@ fn select(
             let kids = id.children();
             let all_ready = kids.iter().all(|k| terrain.ready(*k));
             for k in kids {
-                let pr = (dist / id.width_m().max(1.0)) as f32
-                    + if in_view { 0.0 } else { 6.0 }
-                    + k.z as f32 * 0.05;
+                let pr = (dist / id.width_m().max(1.0)) as f32 + if in_view { 0.0 } else { 6.0 } + k.z as f32 * 0.05;
                 requests.push((k, pr));
             }
             if all_ready {
@@ -557,19 +469,12 @@ fn select(
     let stale: Vec<TileId> = terrain
         .tiles
         .iter()
-        .filter(|(_, t)| {
-            !t.refreshing && t.refresh_at.is_some_and(|r| now > r) && now - t.last_wanted < 2.0
-        })
+        .filter(|(_, t)| !t.refreshing && t.refresh_at.is_some_and(|r| now > r) && now - t.last_wanted < 2.0)
         .map(|(id, _)| *id)
         .collect();
     for id in stale {
-        let job = LoadJob {
-            id,
-            imagery: terrain.imagery,
-            lidar: terrain.lidar,
-            max_imagery_zoom: terrain.imagery.max_zoom(),
-            bc1: terrain.bc1,
-        };
+        let job =
+            LoadJob { id, imagery: terrain.imagery, lidar: terrain.lidar, max_imagery_zoom: terrain.imagery.max_zoom(), bc1: terrain.bc1 };
         terrain.pool.submit(key(id), 20.0, job);
         if let Some(t) = terrain.tiles.get_mut(&id) {
             t.refreshing = true;
@@ -603,33 +508,20 @@ fn select(
     let mut evict = Vec::new();
     let mut ready_count = 0;
     let loaded_budget = preset.max_tiles() * 2;
-    let total_ready = terrain
-        .tiles
-        .values()
-        .filter(|t| matches!(t.state, State::Ready { .. }))
-        .count();
+    let total_ready = terrain.tiles.values().filter(|t| matches!(t.state, State::Ready { .. })).count();
     for (id, t) in terrain.tiles.iter() {
         match &t.state {
-            State::Ready {
-                entity, gpu_bytes, ..
-            } => {
+            State::Ready { entity, gpu_bytes, .. } => {
                 ready_count += 1;
                 gpu += gpu_bytes;
                 if let Ok(mut v) = vis.get_mut(*entity) {
-                    let want = if t.visible {
-                        Visibility::Visible
-                    } else {
-                        Visibility::Hidden
-                    };
+                    let want = if t.visible { Visibility::Visible } else { Visibility::Hidden };
                     if *v != want {
                         *v = want;
                     }
                 }
                 let idle = now - t.last_wanted;
-                if id.z > KEEP_ZOOM
-                    && !t.visible
-                    && (idle > 60.0 || (idle > 3.0 && total_ready > loaded_budget))
-                {
+                if id.z > KEEP_ZOOM && !t.visible && (idle > 60.0 || (idle > 3.0 && total_ready > loaded_budget)) {
                     evict.push(*id);
                 }
             }
@@ -663,19 +555,10 @@ fn select(
     stats.gpu_bytes = gpu;
     stats.deepest_visible = deepest;
     let g = viewer.geo();
-    let here = (0..=max_zoom)
-        .rev()
-        .map(|z| TileId::containing(g.lat, g.lon, z).0)
-        .find(|id| terrain.ready(*id));
+    let here = (0..=max_zoom).rev().map(|z| TileId::containing(g.lat, g.lon, z).0).find(|id| terrain.ready(*id));
     stats.imagery_zoom_here = here.map(|id| id.z).unwrap_or(0);
-    stats.imagery_source_zoom = here
-        .and_then(|id| terrain.tiles.get(&id))
-        .map(|t| t.img_zoom)
-        .unwrap_or(0);
-    stats.elevation_source = here
-        .and_then(|id| terrain.tiles.get(&id))
-        .map(|t| t.elev_src)
-        .unwrap_or("");
+    stats.imagery_source_zoom = here.and_then(|id| terrain.tiles.get(&id)).map(|t| t.img_zoom).unwrap_or(0);
+    stats.elevation_source = here.and_then(|id| terrain.tiles.get(&id)).map(|t| t.elev_src).unwrap_or("");
     if pending == 0 {
         stats.idle_frames += 1;
     } else {
@@ -684,18 +567,5 @@ fn select(
     if clock.1 && stats.idle_frames > 30 && deepest > 8 {
         stats.settle = Some(clock.0.elapsed().as_secs_f32());
         clock.1 = false;
-    }
-}
-
-fn ground_under_viewer(terrain: Res<Terrain>, mut viewer: ResMut<Viewer>) {
-    let mut g = viewer.geo();
-    let hz = terrain.height_and_zoom(g.lat, g.lon);
-    viewer.ground = hz.map(|h| h.0);
-    if let (Some(agl), Some((h, z))) = (viewer.hold_agl, hz) {
-        g.h = h + agl;
-        viewer.ecef = g.to_ecef();
-        if z >= 14 {
-            viewer.hold_agl = None;
-        }
     }
 }

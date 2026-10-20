@@ -12,10 +12,7 @@ use usx_core::protocol::{self, FromService, PROTOCOL_VERSION, ToService};
 pub enum LinkState {
     Disabled,
     Starting,
-    Connected {
-        version: String,
-        rtt_ms: Option<f64>,
-    },
+    Connected { version: String, rtt_ms: Option<f64> },
     Failed(String),
 }
 
@@ -43,36 +40,26 @@ impl Drop for WeatherLink {
 }
 
 fn service_path() -> std::path::PathBuf {
-    let name = if cfg!(windows) {
-        "usx-weather.exe"
-    } else {
-        "usx-weather"
-    };
-    std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.join(name)))
-        .unwrap_or_else(|| name.into())
+    std::env::current_exe().unwrap_or_else(|_| "us-explorer".into())
 }
 
 fn launch() -> Result<(Child, TcpStream), String> {
     let path = service_path();
-    let mut child = Command::new(&path)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()
-        .map_err(|e| format!("couldn't start {}: {e}", path.display()))?;
+    let mut child = Command::new(&path);
+    child.arg("--weather-service").stdout(Stdio::piped()).stderr(Stdio::inherit());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // CREATE_NO_WINDOW: no console window for the background service.
+        child.creation_flags(0x0800_0000);
+    }
+    let mut child = child.spawn().map_err(|e| format!("couldn't start {}: {e}", path.display()))?;
     let out = child.stdout.take().ok_or("no stdout")?;
     let mut line = String::new();
-    BufReader::new(out)
-        .read_line(&mut line)
-        .map_err(|e| e.to_string())?;
-    let port: u16 = line
-        .trim()
-        .strip_prefix("USX_WEATHER_PORT=")
-        .and_then(|p| p.parse().ok())
-        .ok_or_else(|| format!("unexpected output: {line:?}"))?;
-    let stream = TcpStream::connect_timeout(&([127, 0, 0, 1], port).into(), Duration::from_secs(5))
-        .map_err(|e| e.to_string())?;
+    BufReader::new(out).read_line(&mut line).map_err(|e| e.to_string())?;
+    let port: u16 =
+        line.trim().strip_prefix("USX_WEATHER_PORT=").and_then(|p| p.parse().ok()).ok_or_else(|| format!("unexpected output: {line:?}"))?;
+    let stream = TcpStream::connect_timeout(&([127, 0, 0, 1], port).into(), Duration::from_secs(5)).map_err(|e| e.to_string())?;
     let _ = stream.set_nodelay(true);
     Ok((child, stream))
 }
@@ -90,11 +77,7 @@ impl Plugin for WeatherLinkPlugin {
             rx
         });
         app.insert_resource(WeatherLink {
-            state: if disabled {
-                LinkState::Disabled
-            } else {
-                LinkState::Starting
-            },
+            state: if disabled { LinkState::Disabled } else { LinkState::Starting },
             child: None,
             stream: None,
             rx: None,
@@ -138,38 +121,16 @@ fn tick(mut link: ResMut<WeatherLink>, viewer: Res<Viewer>, settings: Res<crate:
                 link.child = Some(child);
                 link.stream = Some(stream);
                 link.rx = Some(rx);
-                send(
-                    &mut link,
-                    &ToService::Hello {
-                        game_version: usx_core::VERSION.into(),
-                        protocol: PROTOCOL_VERSION,
-                    },
-                );
-                send(
-                    &mut link,
-                    &ToService::Bandwidth {
-                        mbps: settings.0.bandwidth_mbps * 0.1,
-                    },
-                );
+                send(&mut link, &ToService::Hello { game_version: usx_core::VERSION.into(), protocol: PROTOCOL_VERSION });
+                send(&mut link, &ToService::Bandwidth { mbps: settings.0.bandwidth_mbps * 0.1 });
             }
             Err(e) => link.state = LinkState::Failed(e),
         }
     }
-    let msgs: Vec<FromService> = link
-        .rx
-        .as_ref()
-        .map(|r| r.try_iter().collect())
-        .unwrap_or_default();
+    let msgs: Vec<FromService> = link.rx.as_ref().map(|r| r.try_iter().collect()).unwrap_or_default();
     for m in msgs {
         match m {
-            FromService::Hello {
-                service_version, ..
-            } => {
-                link.state = LinkState::Connected {
-                    version: service_version,
-                    rtt_ms: None,
-                }
-            }
+            FromService::Hello { service_version, .. } => link.state = LinkState::Connected { version: service_version, rtt_ms: None },
             FromService::Pong { t } => {
                 let now = epoch_ms();
                 if let LinkState::Connected { rtt_ms, .. } = &mut link.state {
@@ -186,18 +147,12 @@ fn tick(mut link: ResMut<WeatherLink>, viewer: Res<Viewer>, settings: Res<crate:
         }
         if link.last_pos.elapsed() > Duration::from_secs(1) {
             link.last_pos = Instant::now();
-            let m = ToService::Position {
-                pos: viewer.geo(),
-                speed_mps: viewer.velocity.length(),
-            };
+            let m = ToService::Position { pos: viewer.geo(), speed_mps: viewer.velocity.length() };
             send(&mut link, &m);
         }
     }
 }
 
 fn epoch_ms() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as u64)
-        .unwrap_or(0)
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)
 }

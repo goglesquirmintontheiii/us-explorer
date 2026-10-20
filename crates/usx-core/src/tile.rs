@@ -4,9 +4,7 @@ use std::f64::consts::PI;
 
 pub const MAX_MERCATOR_LAT: f64 = 85.051_128_779_806_59;
 
-#[derive(
-    Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
-)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 pub struct TileId {
     pub z: u8,
     pub x: u32,
@@ -22,12 +20,7 @@ impl TileId {
 
     pub fn children(self) -> [TileId; 4] {
         let (z, x, y) = (self.z + 1, self.x * 2, self.y * 2);
-        [
-            TileId::new(z, x, y),
-            TileId::new(z, x + 1, y),
-            TileId::new(z, x, y + 1),
-            TileId::new(z, x + 1, y + 1),
-        ]
+        [TileId::new(z, x, y), TileId::new(z, x + 1, y), TileId::new(z, x, y + 1), TileId::new(z, x + 1, y + 1)]
     }
 
     pub fn parent(self) -> Option<TileId> {
@@ -60,12 +53,7 @@ impl TileId {
         let n = (1u64 << self.z) as f64;
         let w = self.x as f64 / n * 360.0 - 180.0;
         let e = (self.x + 1) as f64 / n * 360.0 - 180.0;
-        (
-            w,
-            y_to_lat(self.y as f64 + 1.0, n),
-            e,
-            y_to_lat(self.y as f64, n),
-        )
+        (w, y_to_lat(self.y as f64 + 1.0, n), e, y_to_lat(self.y as f64, n))
     }
 
     /// Lat/lon of a point given in tile-local (u, v), with v = 0 at the north edge.
@@ -102,13 +90,7 @@ fn y_to_lat(y: f64, n: f64) -> f64 {
 }
 
 /// All tiles at zoom `z` intersecting a lat/lon box.
-pub fn tiles_in_box(
-    south: f64,
-    west: f64,
-    north: f64,
-    east: f64,
-    z: u8,
-) -> impl Iterator<Item = TileId> {
+pub fn tiles_in_box(south: f64, west: f64, north: f64, east: f64, z: u8) -> impl Iterator<Item = TileId> {
     let (a, _, _) = TileId::containing(north, west, z);
     let (b, _, _) = TileId::containing(south, east, z);
     (a.y..=b.y).flat_map(move |y| (a.x..=b.x).map(move |x| TileId::new(z, x, y)))
@@ -131,15 +113,7 @@ mod tests {
     fn ancestry() {
         let t = TileId::new(10, 300, 400);
         assert_eq!(t.ancestor(8), TileId::new(8, 75, 100));
-        assert_eq!(
-            t.parent()
-                .unwrap()
-                .children()
-                .iter()
-                .filter(|c| **c == t)
-                .count(),
-            1
-        );
+        assert_eq!(t.parent().unwrap().children().iter().filter(|c| **c == t).count(), 1);
         let (u, v, s) = TileId::new(2, 3, 1).rect_in_ancestor(1);
         assert_eq!((u, v, s), (0.5, 0.5, 0.5));
     }

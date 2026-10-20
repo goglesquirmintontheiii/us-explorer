@@ -14,3 +14,7 @@ name=alaska-denali;lat=63.0000;lon=-151.2000;agl=3000;heading=10;pitch=-4
 name=menu-teleport;lat=39.7392;lon=-104.9903;agl=800;heading=265;pitch=-10;menu=teleport
 name=night-denver;lat=39.7392;lon=-104.9903;agl=900;heading=265;pitch=-8;time=2026-06-22T06:00:00Z
 name=dusk-grand-canyon;lat=36.0572;lon=-112.1400;agl=300;heading=270;pitch=-4;time=2026-06-22T03:20:00Z
+name=third-person-park;lat=40.7812;lon=-73.9665;agl=0;heading=20;pitch=-6;camera=third
+name=orbit-yosemite;lat=37.7300;lon=-119.5900;agl=0;heading=80;pitch=-12;camera=orbit
+name=swim-waikiki;lat=21.2690;lon=-157.8320;agl=0;heading=20;pitch=-4;camera=third
+name=map-us;lat=39.7392;lon=-104.9903;agl=2;heading=0;pitch=0;menu=map

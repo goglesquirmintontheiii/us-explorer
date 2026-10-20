@@ -38,29 +38,14 @@ impl RegionDownload {
         let dlon = radius_km / (111.0 * lat.to_radians().cos().max(0.05));
         let mut v = Vec::new();
         for z in 0..=max_zoom {
-            v.extend(tiles_in_box(
-                lat - dlat,
-                lon - dlon,
-                lat + dlat,
-                lon + dlon,
-                z,
-            ));
+            v.extend(tiles_in_box(lat - dlat, lon - dlon, lat + dlat, lon + dlon, z));
         }
         v
     }
 
     /// Rough download size: ~22 KB imagery + ~90 KB elevation (shallow zooms only).
     pub fn estimate_mb(tiles: &[TileId]) -> f64 {
-        tiles
-            .iter()
-            .map(|t| {
-                if t.z <= TERRARIUM_MAX_ZOOM {
-                    0.112
-                } else {
-                    0.022
-                }
-            })
-            .sum()
+        tiles.iter().map(|t| if t.z <= TERRARIUM_MAX_ZOOM { 0.112 } else { 0.022 }).sum()
     }
 
     pub fn start(&mut self, tiles: Vec<TileId>, imagery: ImagerySource, label: String) {
@@ -73,17 +58,9 @@ impl RegionDownload {
                 return;
             }
             let t = job.id;
-            let mut ok = load::fetch(
-                &format!("img/{}/{}.jpg", job.imagery.key(), t.path()),
-                &job.imagery.url(t),
-            )
-            .is_ok();
+            let mut ok = load::fetch(&format!("img/{}/{}.jpg", job.imagery.key(), t.path()), &job.imagery.url(t)).is_ok();
             if t.z <= TERRARIUM_MAX_ZOOM {
-                ok &= load::fetch(
-                    &format!("dem/terrarium/{}.png", t.path()),
-                    &sources::terrarium_url(t),
-                )
-                .is_ok();
+                ok &= load::fetch(&format!("dem/terrarium/{}.png", t.path()), &sources::terrarium_url(t)).is_ok();
             }
             if ok {
                 p2.done.fetch_add(1, Ordering::Relaxed);
@@ -94,15 +71,7 @@ impl RegionDownload {
         self.total = tiles.len() as u64;
         for (i, t) in tiles.into_iter().enumerate() {
             // Shallow zooms first so a half-finished download is still useful.
-            pool.submit(
-                i as u64,
-                t.z as f32,
-                RegionJob {
-                    id: t,
-                    imagery,
-                    cancel: cancel.clone(),
-                },
-            );
+            pool.submit(i as u64, t.z as f32, RegionJob { id: t, imagery, cancel: cancel.clone() });
         }
         self.pool = Some(pool);
         self.progress = progress;
@@ -129,8 +98,7 @@ pub struct RegionPlugin;
 
 impl Plugin for RegionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<RegionDownload>()
-            .add_systems(Update, drain);
+        app.init_resource::<RegionDownload>().add_systems(Update, drain);
     }
 }
 

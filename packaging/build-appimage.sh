@@ -7,7 +7,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 WORK=$(mktemp -d)
 APPDIR=$WORK/AppDir
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" "$APPDIR/usr/share/icons/hicolor/scalable/apps" "$OUT"
-install -m755 "$BIN_DIR/us-explorer" "$BIN_DIR/usx-weather" "$APPDIR/usr/bin/"
+install -m755 "$BIN_DIR/us-explorer" "$APPDIR/usr/bin/"
 cp "$HERE/us-explorer.desktop" "$APPDIR/" && cp "$HERE/us-explorer.desktop" "$APPDIR/usr/share/applications/"
 cp "$HERE/us-explorer.svg" "$APPDIR/us-explorer.svg" && cp "$HERE/us-explorer.svg" "$APPDIR/usr/share/icons/hicolor/scalable/apps/"
 cat > "$APPDIR/AppRun" <<'RUN'

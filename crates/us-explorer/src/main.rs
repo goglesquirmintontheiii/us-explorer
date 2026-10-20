@@ -1,12 +1,18 @@
 //! US Explorer: walk, drive and fly the real United States under live weather.
+#![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
+mod body;
 mod camera;
+mod controls;
 mod globe;
+mod map;
+mod player;
 mod shot;
 mod sun;
 mod terrain;
 mod ui;
 mod updater;
+mod walkable;
 mod weather_link;
 
 use bevy::prelude::*;
@@ -68,6 +74,12 @@ fn parse_args() -> Args {
 }
 
 fn main() {
+    // The same executable doubles as the weather service.
+    if std::env::args().nth(1).as_deref() == Some("--weather-service") {
+        usx_weather::run(std::env::args().skip(2));
+        return;
+    }
+    usx_core::update::cleanup_old();
     let args = parse_args();
     let settings = Settings::load();
     usx_core::net::limiter().set_mbps(settings.bandwidth_mbps * 0.9);
@@ -80,19 +92,12 @@ fn main() {
                 primary_window: Some(Window {
                     title: format!("US Explorer {}", usx_core::VERSION),
                     resolution: WindowResolution::new(w, h),
-                    present_mode: if settings.vsync && args.shots.is_empty() {
-                        PresentMode::AutoVsync
-                    } else {
-                        PresentMode::AutoNoVsync
-                    },
+                    present_mode: if settings.vsync && args.shots.is_empty() { PresentMode::AutoVsync } else { PresentMode::AutoNoVsync },
                     ..default()
                 }),
                 ..default()
             })
-            .set(bevy::log::LogPlugin {
-                filter: "wgpu=warn,naga=warn,bevy_render=info,us_explorer=info".into(),
-                ..default()
-            }),
+            .set(bevy::log::LogPlugin { filter: "wgpu=warn,naga=warn,bevy_render=info,us_explorer=info".into(), ..default() }),
     )
     .insert_resource(GameSettings(settings))
     .insert_resource(args)
@@ -101,7 +106,12 @@ fn main() {
         bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
         globe::GlobePlugin,
         sun::SunPlugin,
-        camera::FlyCameraPlugin,
+        camera::CameraPlugin,
+        controls::ControlsPlugin,
+        walkable::WalkablePlugin,
+        player::PlayerPlugin,
+        body::BodyPlugin,
+        map::MapPlugin,
         terrain::TerrainPlugin,
         weather_link::WeatherLinkPlugin,
         updater::UpdaterPlugin,
