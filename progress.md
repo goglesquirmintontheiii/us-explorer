@@ -29,6 +29,13 @@ Open GitHub issues checked at the start of this phase: none.
 - [x] Railways (ballast, sleepers, rails); surfaces from the `surface` tag: asphalt, concrete, pavers, gravel, dirt, wood, metal
 - [x] Roadside objects are separate entities made of parts, ready to be knocked down in Phase 18; you collide with poles, posts and hydrants
 - [x] Settings → Roads switch; draw ranges follow the graphics preset
+- [x] From the v0.1.0 notes: sun shadows (terrain, bridges, objects, player), by preset, with a Settings switch
+- [x] From the v0.1.0 notes: sea shading (waves, sun glint, sky reflection, depth colour, whitecaps, shore foam)
+- [x] From the v0.1.0 notes: faster streaming (lidar fetched per zoom-17 block, imagery and elevation in parallel, more workers)
+- [x] From the v0.1.0 notes: hardware stats in F3 (CPU, cores, RAM, GPU, usage, download and disk speeds)
+- [x] Offline downloads include lidar blocks and road data
+- [x] Fix: road loading timed out on dense city tiles (longer Overpass limit, requests spread over all servers)
+- [x] Fix: re-draped road chunks replaced their mesh while the renderer was still using it
 - [ ] Screenshots from CI reviewed
 - [ ] v0.3.0 release with AppImage and Windows .exe
 

@@ -214,11 +214,12 @@ pub fn download(id: TileId) -> Result<OsmTile, NetError> {
             _ => format!("%{b:02X}"),
         })
         .collect();
-    let start = NEXT_ENDPOINT.load(Ordering::Relaxed);
+    // Spread requests over the servers (each limits how many it runs per client).
+    let start = NEXT_ENDPOINT.fetch_add(1, Ordering::Relaxed);
     let mut last = NetError::Io("no Overpass server answered".into());
     for i in 0..ENDPOINTS.len() {
         let ep = ENDPOINTS[(start + i) % ENDPOINTS.len()];
-        match net::get_with(&format!("{ep}?data={enc}"), "application/json", |_, _| {}) {
+        match net::get_timeout(&format!("{ep}?data={enc}"), "application/json", 150, |_, _| {}) {
             Ok(b) => {
                 // Overpass reports timeouts inside a 200 answer as a "remark".
                 if b.len() < 4096 && String::from_utf8_lossy(&b).contains("\"remark\"") {

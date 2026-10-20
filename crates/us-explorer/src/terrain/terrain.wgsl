@@ -9,7 +9,7 @@
     pbr_fragment::pbr_input_from_standard_material,
     pbr_functions::{alpha_discard, apply_pbr_lighting, main_pass_post_lighting_processing},
     forward_io::{VertexOutput, FragmentOutput},
-    mesh_view_bindings::view,
+    mesh_view_bindings::{view, globals},
 }
 
 const PERIOD: f32 = 4096.0;
@@ -56,8 +56,16 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let p = in.uv_b - vec2(select(0.0, 1048576.0, skirt), 0.0);
     let lum = dot(base, vec3(0.299, 0.587, 0.114));
 
+    // The sea: vertex colour x carries the water depth (0 on land).
+#ifdef VERTEX_COLORS
+    let depth = in.color.x;
+#else
+    let depth = 0.0;
+#endif
+    let water = select(smoothstep(0.03, 0.5, depth), 0.0, skirt);
+
     // Rock on steep ground: imagery taken from above smears on cliffs.
-    let steep = smoothstep(0.28, 0.55, slope);
+    let steep = smoothstep(0.28, 0.55, slope) * (1.0 - water);
     if steep > 0.0 && !skirt {
         let strata = vnoise(vec2(p.x + p.y, dot(in.world_position.xyz, up) * 4.0), 16.0);
         let rock = vec3(lum) * vec3(1.06, 1.0, 0.93) * (0.72 + 0.5 * fbm(p, 8.0)) * (0.85 + 0.3 * strata);
@@ -65,7 +73,7 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     }
 
     // Close-up detail, faded out with distance so it never shimmers far away.
-    let near = 1.0 - smoothstep(40.0, 420.0, dist);
+    let near = (1.0 - smoothstep(40.0, 420.0, dist)) * (1.0 - water);
     if near > 0.001 {
         let green = clamp((base.g - max(base.r, base.b)) * 9.0, 0.0, 1.0);
         let chroma = max(max(base.r, base.g), base.b) - min(min(base.r, base.g), base.b);
@@ -100,8 +108,35 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     }
 
     // Shadows baked into the imagery double up with real lighting; lift them a little.
-    let shadow = 1.0 - smoothstep(0.03, 0.16, lum);
+    let shadow = (1.0 - smoothstep(0.03, 0.16, lum)) * (1.0 - water);
     base = base + (vec3(lum * 1.6 + 0.02) - base) * shadow * 0.35;
+
+    if water > 0.0 {
+        let t = globals.time;
+        // Wind waves: three layers drifting in different directions, as a height field.
+        let wave = (fbm(p + vec2(t * 1.3, t * 0.4), 9.0) * 0.55
+            + vnoise(p + vec2(-t * 0.8, t * 1.1), 3.0) * 0.3
+            + vnoise(p + vec2(t * 0.5, -t * 0.9), 1.1) * 0.15);
+        let e = 0.2;
+        let wx = fbm(p + vec2(e + t * 1.3, t * 0.4), 9.0) * 0.55 + vnoise(p + vec2(e - t * 0.8, t * 1.1), 3.0) * 0.3
+            + vnoise(p + vec2(e + t * 0.5, -t * 0.9), 1.1) * 0.15;
+        let wy = fbm(p + vec2(t * 1.3, e + t * 0.4), 9.0) * 0.55 + vnoise(p + vec2(-t * 0.8, e + t * 1.1), 3.0) * 0.3
+            + vnoise(p + vec2(t * 0.5, e - t * 0.9), 1.1) * 0.15;
+        // Waves flatten out with distance (and in very shallow water).
+        let amp = (1.0 - smoothstep(150.0, 2500.0, dist)) * 0.9 * smoothstep(0.1, 1.5, depth) + 0.08;
+        let wn = vec3((wx - wave) / e, 0.0, (wy - wave) / e) * amp * water;
+        pbr_input.N = normalize(pbr_input.N - wn);
+        // Colour: the imagery (reefs, sand, depth) seen through the water, darker and
+        // bluer with depth; whitecaps on wave crests and foam along the shore.
+        let deep = vec3(0.012, 0.05, 0.075);
+        var wc = mix(base * vec3(0.8, 0.92, 1.0), deep, smoothstep(2.0, 50.0, depth) * 0.75);
+        let crest = smoothstep(0.72, 0.85, wave) * smoothstep(3.0, 15.0, depth) * 0.35;
+        let shore = (1.0 - smoothstep(0.05, 0.9, depth)) * smoothstep(0.45, 0.7, vnoise(p * 1.0 + vec2(t * 0.7, 0.0), 1.5));
+        wc = mix(wc, vec3(0.85, 0.9, 0.92), clamp(crest + shore * 0.8, 0.0, 1.0));
+        base = mix(base, wc, water);
+        pbr_input.material.perceptual_roughness = mix(pbr_input.material.perceptual_roughness, 0.06 + shore * 0.5, water);
+        pbr_input.material.reflectance = mix(pbr_input.material.reflectance, vec3(0.45), water);
+    }
 
     pbr_input.material.base_color = vec4(base, 1.0);
     pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);

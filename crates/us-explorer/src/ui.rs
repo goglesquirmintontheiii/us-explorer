@@ -164,6 +164,8 @@ struct World<'w> {
     terrain: ResMut<'w, Terrain>,
     stats: Res<'w, TerrainStats>,
     roads: Res<'w, crate::roads::RoadStats>,
+    sysinfo: Option<Res<'w, bevy::diagnostic::SystemInfo>>,
+    adapter: Option<Res<'w, bevy::render::renderer::RenderAdapterInfo>>,
     link: Res<'w, WeatherLink>,
     region: ResMut<'w, RegionDownload>,
     clock: ResMut<'w, SimClock>,
@@ -189,7 +191,7 @@ fn draw(
     o: Out,
     mut commands: Commands,
 ) -> Result {
-    let World { viewer, player, mut terrain, stats, roads, link, mut region, mut clock, diagnostics, map } = w;
+    let World { viewer, player, mut terrain, stats, roads, sysinfo, adapter, link, mut region, mut clock, diagnostics, map } = w;
     let Out { mut blocked, mut lock, mut tp, mut exit } = o;
     let ctx = contexts.ctx_mut()?;
     let units = settings.0.units;
@@ -241,6 +243,28 @@ fn draw(
                     usx_core::net::limiter().mbps()
                 ));
                 ui.label(format!("cache {:.2} / {:.0} GB ({} files)", cache.size() as f64 / 1e9, cache.limit() as f64 / 1e9, cache.len()));
+                // Hardware and how fast it's going.
+                let (net_mbps, disk_mbs, disk_speed) = rates(net.bytes.load(Ordering::Relaxed), cache.read_stats());
+                ui.label(format!(
+                    "download {net_mbps:.0} Mbps now · disk {disk_mbs:.1} MB/s now{}",
+                    disk_speed.map(|s| format!(" (reads at {s:.0} MB/s)")).unwrap_or_default()
+                ));
+                if let Some(si) = &sysinfo {
+                    ui.label(format!("CPU {} ({} cores)", si.cpu.trim(), si.core_count));
+                    let cpu = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_CPU_USAGE).and_then(|d| d.smoothed());
+                    let mem = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::PROCESS_MEM_USAGE).and_then(|d| d.smoothed());
+                    let sys_mem = diagnostics.get(&bevy::diagnostic::SystemInformationDiagnosticsPlugin::SYSTEM_MEM_USAGE).and_then(|d| d.smoothed());
+                    ui.label(format!(
+                        "RAM {} · game CPU {} · game RAM {} · system RAM {}",
+                        si.memory.trim(),
+                        cpu.map(|c| format!("{c:.0}%")).unwrap_or("…".into()),
+                        mem.map(|m| format!("{m:.2} GiB")).unwrap_or("…".into()),
+                        sys_mem.map(|m| format!("{m:.0}%")).unwrap_or("…".into())
+                    ));
+                }
+                if let Some(a) = &adapter {
+                    ui.label(format!("GPU {} ({:?}, {:?})", a.0.name, a.0.backend, a.0.device_type));
+                }
                 let r = &*roads;
                 if r.tiles_ready + r.tiles_loading > 0 {
                     ui.label(format!(
@@ -464,6 +488,9 @@ fn draw(
                             "Use USGS 3DEP lidar where available",
                         );
                         ui.end_row();
+                        ui.label("Shadows");
+                        ui.checkbox(&mut draft.shadows, "Sun shadows (distance follows the preset)");
+                        ui.end_row();
                         ui.label("Roads");
                         ui.checkbox(&mut draft.roads, "Roads, bridges and street furniture (OpenStreetMap)");
                         ui.end_row();
@@ -640,7 +667,7 @@ fn draw(
             .default_pos(ctx.content_rect().center())
             .default_width(380.0)
             .show(ctx, |ui| {
-                ui.label("Save the area around you to the cache so it works without a connection.");
+                ui.label("Save the area around you to the cache so it works without a connection: imagery, elevation (lidar from detail 17) and roads.");
                 ui.add(egui::Slider::new(&mut menus.region_radius_km, 1.0..=60.0).text("radius (km)"));
                 ui.add(egui::Slider::new(&mut menus.region_zoom, 12..=19).text("detail (zoom level)"));
                 let plan = RegionDownload::plan(geo.lat, geo.lon, menus.region_radius_km, menus.region_zoom);
@@ -740,4 +767,34 @@ fn draw(
         lock.0 = false;
     }
     Ok(())
+}
+
+/// Download (Mbps) and cache-read (MB/s) rates over the last second, plus the disk's
+/// raw read speed while reading.
+fn rates(net_bytes: u64, (disk_bytes, disk_secs): (u64, f64)) -> (f64, f64, Option<f64>) {
+    use std::sync::Mutex;
+    static S: Mutex<Option<(std::time::Instant, u64, u64, f64, (f64, f64, Option<f64>))>> = Mutex::new(None);
+    let mut s = S.lock().unwrap();
+    let now = std::time::Instant::now();
+    match &mut *s {
+        Some((t, nb, db, ds, out)) => {
+            let dt = now.duration_since(*t).as_secs_f64();
+            if dt >= 1.0 {
+                let net = (net_bytes - *nb) as f64 * 8.0 / 1e6 / dt;
+                let disk = (disk_bytes - *db) as f64 / 1e6 / dt;
+                let busy = disk_secs - *ds;
+                let speed = (busy > 0.002).then(|| (disk_bytes - *db) as f64 / 1e6 / busy);
+                *out = (net, disk, speed.or(out.2));
+                *t = now;
+                *nb = net_bytes;
+                *db = disk_bytes;
+                *ds = disk_secs;
+            }
+            *out
+        }
+        None => {
+            *s = Some((now, net_bytes, disk_bytes, disk_secs, (0.0, 0.0, None)));
+            (0.0, 0.0, None)
+        }
+    }
 }

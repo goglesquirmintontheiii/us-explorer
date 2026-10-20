@@ -118,6 +118,8 @@ enum TileState {
 
 struct RoadTile {
     state: TileState,
+    /// Within a kilometre of the viewer (screenshots wait for these).
+    near: bool,
     chunks: Vec<ChunkState>,
     last_wanted: f64,
 }
@@ -148,7 +150,7 @@ pub struct RoadsPlugin;
 
 impl Plugin for RoadsPlugin {
     fn build(&self, app: &mut App) {
-        let fetch = WorkPool::new("osm", 2, |_, id: TileId| {
+        let fetch = WorkPool::new("osm", 3, |_, id: TileId| {
             let r = osm::load(id, crate::terrain::load::cache()).map_err(|e| e.to_string());
             (id, r)
         });
@@ -277,10 +279,12 @@ fn want_tiles(
         for (d, id) in want {
             let t = roads.tiles.entry(id).or_insert_with(|| RoadTile {
                 state: TileState::Failed { retry_at: 0.0 },
+                near: false,
                 chunks: Vec::new(),
                 last_wanted: now,
             });
             t.last_wanted = now;
+            t.near = d < 1_000.0;
             if let TileState::Failed { retry_at } = t.state
                 && now >= retry_at
             {
@@ -394,8 +398,12 @@ impl DrapeApply<'_, '_> {
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, d.color);
         mesh.insert_indices(Indices::U32(d.indices));
         match (&c.mesh, c.root) {
-            (Some(h), Some(root)) => {
-                let _ = self.meshes.insert(h.id(), mesh);
+            (Some(old), Some(root)) => {
+                // A fresh mesh each time: the renderer may still be using the old one.
+                let h = self.meshes.add(mesh);
+                self.meshes.remove(old.id());
+                self.commands.entity(root).insert(Mesh3d(h.clone()));
+                c.mesh = Some(h);
                 if let Ok(mut a) = self.anchors.get_mut(root) {
                     a.ecef = d.center;
                     a.placed_generation = 0;
@@ -411,7 +419,6 @@ impl DrapeApply<'_, '_> {
                         GeoAnchor::new(d.center),
                         Transform::default(),
                         Visibility::Visible,
-                        bevy::light::NotShadowCaster,
                     ))
                     .id();
                 c.mesh = Some(h);
@@ -608,7 +615,8 @@ pub fn settled(roads: Option<&Roads>) -> bool {
     if !r.enabled {
         return true;
     }
-    r.fetch.waiting() + r.fetch.busy() + r.work.waiting() + r.work.busy() == 0
-        && r.tiles.values().all(|t| !matches!(t.state, TileState::Fetching | TileState::Building))
-        && r.tiles.values().all(|t| t.chunks.iter().all(|c| c.pending.is_none()))
+    r.tiles
+        .values()
+        .filter(|t| t.near)
+        .all(|t| !matches!(t.state, TileState::Fetching | TileState::Building) && t.chunks.iter().all(|c| c.pending.is_none()))
 }

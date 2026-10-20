@@ -24,6 +24,9 @@ pub struct DiskCache {
     root: PathBuf,
     limit: Mutex<u64>,
     index: Mutex<Index>,
+    /// Bytes read from disk and time spent reading (for the info overlay).
+    read_bytes: std::sync::atomic::AtomicU64,
+    read_ns: std::sync::atomic::AtomicU64,
 }
 
 fn now_ms() -> u64 {
@@ -56,7 +59,7 @@ impl DiskCache {
                 }
             }
         }
-        let c = Self { root, limit: Mutex::new(limit_bytes), index: Mutex::new(idx) };
+        let c = Self { root, limit: Mutex::new(limit_bytes), index: Mutex::new(idx), read_bytes: Default::default(), read_ns: Default::default() };
         c.evict();
         c
     }
@@ -91,9 +94,17 @@ impl DiskCache {
     }
 
     /// Read an entry and mark it as recently used.
+    /// Total bytes read from the cache and the seconds spent reading them.
+    pub fn read_stats(&self) -> (u64, f64) {
+        (self.read_bytes.load(std::sync::atomic::Ordering::Relaxed), self.read_ns.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e9)
+    }
+
     pub fn get(&self, key: &str) -> Option<Vec<u8>> {
         let path = self.root.join(key);
+        let started = std::time::Instant::now();
         let data = fs::read(&path).ok()?;
+        self.read_ns.fetch_add(started.elapsed().as_nanos() as u64, std::sync::atomic::Ordering::Relaxed);
+        self.read_bytes.fetch_add(data.len() as u64, std::sync::atomic::Ordering::Relaxed);
         let t = now_ms();
         {
             let mut idx = self.index.lock().unwrap();

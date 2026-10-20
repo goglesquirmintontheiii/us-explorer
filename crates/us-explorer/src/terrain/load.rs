@@ -60,6 +60,8 @@ pub struct MeshData {
     pub uvs: Vec<[f32; 2]>,
     /// Web Mercator metres, wrapped to [`DETAIL_PERIOD`], for the detail shader.
     pub detail_uvs: Vec<[f32; 2]>,
+    /// Water depth in metres (x) under the sea surface, for the water shading.
+    pub water: Vec<[f32; 4]>,
     pub indices: Vec<u16>,
 }
 
@@ -243,25 +245,84 @@ fn surface_grid(id: TileId, raw: Vec<f32>) -> HeightGrid {
 }
 
 /// Rough box around the US states and territories with 3DEP coverage.
-fn in_us(id: TileId) -> bool {
+pub fn in_us(id: TileId) -> bool {
     let (w, s, e, n) = id.bounds();
     let boxes = [(-125.0, 24.0, -66.0, 49.5), (-170.0, 51.0, -129.0, 71.5), (-161.0, 18.5, -154.5, 22.5), (-68.0, 17.5, -64.5, 18.6)];
     boxes.iter().any(|&(bw, bs, be, bn)| e > bw && w < be && n > bs && s < bn)
 }
 
 /// Exact-size lattice from the 3DEP dynamic service, as a 32-bit float TIFF.
-fn lidar_heights(id: TileId) -> Option<Vec<f32>> {
-    let bytes = fetch(&format!("dem/3dep/{}.tif", id.path()), &sources::usgs_3dep_url(id, GRID as u32)).ok()?;
+/// Lidar comes in blocks: one request for a zoom-17 area at 129 x 129 samples serves
+/// that tile and its 4 zoom-18 and 16 zoom-19 children (21 slow requests become 1).
+pub const LIDAR_BLOCK_ZOOM: u8 = 17;
+const LIDAR_BLOCK: usize = (GRID - 1) * 4 + 1;
+
+type BlockCell = Arc<OnceLock<Option<Arc<Vec<f32>>>>>;
+
+/// Decoded lidar blocks (and failures, retried after 30 s), shared by concurrent loads:
+/// the first tile to need a block downloads it, the others wait for it.
+fn lidar_block(b: TileId) -> Option<Arc<Vec<f32>>> {
+    static BLOCKS: OnceLock<Mutex<HashMap<TileId, (BlockCell, std::time::Instant)>>> = OnceLock::new();
+    let cell = {
+        let mut m = BLOCKS.get_or_init(Default::default).lock().unwrap();
+        let stale = m.get(&b).is_some_and(|(c, t)| matches!(c.get(), Some(None)) && t.elapsed().as_secs() > 30);
+        if stale {
+            m.remove(&b);
+        }
+        if m.len() > 48 {
+            // Drop the oldest finished blocks.
+            let mut v: Vec<(TileId, std::time::Instant)> = m.iter().filter(|(_, (c, _))| c.get().is_some()).map(|(k, (_, t))| (*k, *t)).collect();
+            v.sort_by_key(|x| x.1);
+            for (k, _) in v.into_iter().take(16) {
+                m.remove(&k);
+            }
+        }
+        m.entry(b).or_insert_with(|| (Arc::new(OnceLock::new()), std::time::Instant::now())).0.clone()
+    };
+    cell.get_or_init(|| {
+        let bytes = fetch(&format!("dem/3dep{LIDAR_BLOCK}/{}.tif", b.path()), &sources::usgs_3dep_url(b, LIDAR_BLOCK as u32)).ok()?;
+        decode_f32_tiff(&bytes, LIDAR_BLOCK).map(Arc::new)
+    })
+    .clone()
+}
+
+fn decode_f32_tiff(bytes: &[u8], n: usize) -> Option<Vec<f32>> {
     let mut dec = tiff::decoder::Decoder::new(std::io::Cursor::new(bytes)).ok()?;
     let (w, hgt) = dec.dimensions().ok()?;
-    if w as usize != GRID || hgt as usize != GRID {
+    if w as usize != n || hgt as usize != n {
         return None;
     }
     let tiff::decoder::DecodingResult::F32(v) = dec.read_image().ok()? else {
         return None;
     };
+    (v.len() == n * n).then_some(v)
+}
+
+/// Prefetch a lidar block into the disk cache (offline downloads).
+pub fn prefetch_lidar_block(b: TileId) -> bool {
+    fetch(&format!("dem/3dep{LIDAR_BLOCK}/{}.tif", b.path()), &sources::usgs_3dep_url(b, LIDAR_BLOCK as u32)).is_ok()
+}
+
+fn lidar_heights(id: TileId) -> Option<Vec<f32>> {
+    let v = if id.z >= LIDAR_BLOCK_ZOOM && id.z <= LIDAR_BLOCK_ZOOM + 2 {
+        let block = lidar_block(id.ancestor(LIDAR_BLOCK_ZOOM))?;
+        let d = id.z - LIDAR_BLOCK_ZOOM;
+        let cells = (LIDAR_BLOCK - 1) >> d;
+        let step = cells / (GRID - 1);
+        let (ox, oy) = ((id.x - (id.ancestor(LIDAR_BLOCK_ZOOM).x << d)) as usize, (id.y - (id.ancestor(LIDAR_BLOCK_ZOOM).y << d)) as usize);
+        let mut v = Vec::with_capacity(GRID * GRID);
+        for j in 0..GRID {
+            for i in 0..GRID {
+                v.push(block[(oy * cells + j * step) * LIDAR_BLOCK + ox * cells + i * step]);
+            }
+        }
+        v
+    } else {
+        let bytes = fetch(&format!("dem/3dep/{}.tif", id.path()), &sources::usgs_3dep_url(id, GRID as u32)).ok()?;
+        decode_f32_tiff(&bytes, GRID)?
+    };
     // Any hole (no lidar, edge of coverage) makes us fall back to the full-coverage DEM.
-    if v.len() != GRID * GRID || v.iter().any(|x| !x.is_finite() || *x < -500.0) {
+    if v.iter().any(|x| !x.is_finite() || *x < -500.0) {
         return None;
     }
     Some(v)
@@ -382,6 +443,7 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
     let (cx, cy) = merc(clat, clon);
     let (sx, sy) = ((cx / DETAIL_PERIOD).floor() * DETAIL_PERIOD, (cy / DETAIL_PERIOD).floor() * DETAIL_PERIOD);
     let mut detail_uvs = Vec::with_capacity(GRID * GRID + 4 * GRID);
+    let mut water: Vec<[f32; 4]> = Vec::with_capacity(GRID * GRID + 4 * GRID);
     let mut radius: f64 = 0.0;
     let mut positions = Vec::with_capacity(GRID * GRID + 4 * GRID);
     let mut normals = Vec::with_capacity(GRID * GRID + 4 * GRID);
@@ -404,6 +466,8 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
             positions.push((p - center).as_vec3().to_array());
             normals.push(nrm.as_vec3().to_array());
             uvs.push([i as f32 / n as f32, j as f32 / n as f32]);
+            let depth = g.floor.as_ref().map(|f| (g.h[k] - f[k]).max(0.0)).unwrap_or(0.0);
+            water.push([depth, 0.0, 0.0, 1.0]);
             detail_uvs.push(if id.z >= 12 {
                 let (lat, lon) = id.lat_lon_at(i as f64 / n as f64, j as f64 / n as f64);
                 let (x, y) = merc(lat, lon);
@@ -448,6 +512,7 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
             uvs.push(uvs[k]);
             // Skirt marker for the shader: a whole number of detail periods, so noise is unchanged.
             detail_uvs.push([detail_uvs[k][0] + SKIRT_MARK, detail_uvs[k][1]]);
+            water.push(water[k]);
         }
         for w in 0..n {
             let (top0, top1) = (edge[w] as u16, edge[w + 1] as u16);
@@ -455,12 +520,15 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
             indices.extend_from_slice(&[top0, bot0, bot1, top0, bot1, top1]);
         }
     }
-    (MeshData { positions, normals, uvs, detail_uvs, indices }, center, radius + depth)
+    (MeshData { positions, normals, uvs, detail_uvs, water, indices }, center, radius + depth)
 }
 
 pub fn load(job: LoadJob) -> Loaded {
     let id = job.id;
     let result = (|| {
+        // Imagery downloads while the elevation is fetched and the mesh is built.
+        std::thread::scope(|scope| {
+        let img_task = scope.spawn(|| imagery(&job));
         // The coarse globe must always exist, even offline: fall back to sea level.
         let (mut raw, elevation_source, mut degraded) = match heights(&job) {
             Ok((g, s)) => (g, s, false),
@@ -472,7 +540,7 @@ pub fn load(job: LoadJob) -> Loaded {
         let holes = corridors.as_ref().map(|c| super::conform::conform(id, &mut raw, c).holes);
         let g = surface_grid(id, raw);
         let (mesh, center, radius) = build_mesh(id, &g, holes.as_deref());
-        let img = imagery(&job);
+        let img = img_task.join().unwrap_or(None);
         degraded |= img.is_none();
         let imagery_zoom = img.as_ref().map(|i| i.1).unwrap_or(0);
         Ok(TileData {
@@ -485,6 +553,7 @@ pub fn load(job: LoadJob) -> Loaded {
             imagery_zoom,
             elevation_source,
             degraded,
+        })
         })
     })();
     Loaded { id, result }

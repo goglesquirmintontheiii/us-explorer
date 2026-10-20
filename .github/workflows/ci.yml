@@ -66,7 +66,8 @@ jobs:
             args+=(--shot "$line")
           done < packaging/shots.txt
           export XDG_RUNTIME_DIR=$(mktemp -d)
-          timeout 45m xvfb-run -a -s "-screen 0 1600x900x24" dist/*.AppImage --appimage-extract-and-run \
+          export USX_SHOT_TIMEOUT=240
+          timeout 110m xvfb-run -a -s "-screen 0 1600x900x24" dist/*.AppImage --appimage-extract-and-run \
             --window 1600x900 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | sed "s/\x1b\[[0-9;]*m//g" | grep -v XSETTINGS > shots/log.txt || true
           tail -40 shots/log.txt
           ls -l shots

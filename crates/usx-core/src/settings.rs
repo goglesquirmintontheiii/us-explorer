@@ -141,6 +141,8 @@ pub struct Settings {
     pub invert_look_y: bool,
     /// Roads, bridges and roadside objects from OpenStreetMap.
     pub roads: bool,
+    /// Sun shadows from terrain and objects.
+    pub shadows: bool,
 }
 
 impl Default for Settings {
@@ -150,6 +152,7 @@ impl Default for Settings {
             units: Units::Imperial,
             imagery: ImagerySource::Esri,
             roads: true,
+            shadows: true,
             lidar_elevation: true,
             cache_dir: None,
             cache_size_gb: 50.0,

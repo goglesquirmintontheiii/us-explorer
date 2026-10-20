@@ -106,7 +106,13 @@ fn agent() -> &'static ureq::Agent {
 }
 
 /// Download a URL fully, honouring the bandwidth cap. `progress` gets bytes so far.
-pub fn get_with(url: &str, accept: &str, mut progress: impl FnMut(u64, Option<u64>)) -> Result<Vec<u8>, NetError> {
+pub fn get_with(url: &str, accept: &str, progress: impl FnMut(u64, Option<u64>)) -> Result<Vec<u8>, NetError> {
+    get_timeout(url, accept, 60, progress)
+}
+
+/// Like [`get_with`] with a longer overall time limit (seconds), for slow servers that
+/// compute their answer (Overpass).
+pub fn get_timeout(url: &str, accept: &str, secs: u64, mut progress: impl FnMut(u64, Option<u64>)) -> Result<Vec<u8>, NetError> {
     let st = stats();
     st.requests.fetch_add(1, AO::Relaxed);
     st.in_flight.fetch_add(1, AO::Relaxed);
@@ -114,7 +120,14 @@ pub fn get_with(url: &str, accept: &str, mut progress: impl FnMut(u64, Option<u6
         let mut url = url.to_string();
         let mut hops = 0;
         let resp = loop {
-            let resp = agent().get(&url).header("Accept", accept).call().map_err(|e| NetError::Io(e.to_string()))?;
+            let resp = agent()
+                .get(&url)
+                .header("Accept", accept)
+                .config()
+                .timeout_global(Some(Duration::from_secs(secs)))
+                .build()
+                .call()
+                .map_err(|e| NetError::Io(e.to_string()))?;
             let code = resp.status().as_u16();
             if (300..400).contains(&code) && code != 304 {
                 let loc = resp.headers().get("location").and_then(|v| v.to_str().ok()).ok_or(NetError::Http(code))?.to_string();

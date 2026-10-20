@@ -41,7 +41,7 @@ impl Plugin for SunPlugin {
         app.init_resource::<DayNight>()
             .insert_resource(SimClock { unix: fixed.unwrap_or_else(SimClock::now_real), offset: 0.0, fixed: fixed.is_some() })
             .add_systems(Startup, spawn_sky)
-            .add_systems(Update, tick_clock)
+            .add_systems(Update, (tick_clock, apply_shadows))
             .add_systems(PostUpdate, (place_sun, place_planet).after(GlobeSet).before(TransformSystems::Propagate));
     }
 }
@@ -52,6 +52,7 @@ fn spawn_sky(mut commands: Commands, mut media: ResMut<Assets<ScatteringMedium>>
     commands.spawn((
         Sun,
         DirectionalLight { illuminance: lux::RAW_SUNLIGHT, shadow_maps_enabled: false, ..default() },
+        bevy::light::CascadeShadowConfig::default(),
         Transform::default(),
     ));
 }
@@ -201,5 +202,45 @@ mod tests {
         let night = sun_elevation(parse_utc("2026-06-21T07:00Z").unwrap(), &EnuFrame::at(Geodetic::new(39.74, -104.99, 0.0)));
         assert!(night < -10.0);
         assert_eq!(format_utc(t), "2026-06-21 19:00 UTC");
+    }
+}
+
+/// Sun shadows (terrain, bridges, roadside objects, you) by graphics preset:
+/// (shadow distance m, cascades, map size).
+pub fn shadow_quality(p: usx_core::settings::Preset) -> (f32, usize, usize) {
+    use usx_core::settings::Preset;
+    match p {
+        Preset::Low => (300.0, 2, 1024),
+        Preset::Medium => (1_500.0, 3, 2048),
+        Preset::High => (4_000.0, 4, 2048),
+        Preset::Ultra => (8_000.0, 4, 4096),
+    }
+}
+
+fn apply_shadows(
+    settings: Res<crate::GameSettings>,
+    mut suns: Query<(&mut DirectionalLight, &mut bevy::light::CascadeShadowConfig), With<Sun>>,
+    mut map: ResMut<bevy::light::DirectionalLightShadowMap>,
+    mut last: Local<Option<(bool, usx_core::settings::Preset)>>,
+) {
+    let want = (settings.0.shadows, settings.0.preset);
+    if *last == Some(want) {
+        return;
+    }
+    *last = Some(want);
+    let (dist, cascades, size) = shadow_quality(settings.0.preset);
+    for (mut l, mut c) in &mut suns {
+        l.shadow_maps_enabled = settings.0.shadows;
+        *c = bevy::light::CascadeShadowConfigBuilder {
+            num_cascades: cascades,
+            minimum_distance: 0.1,
+            first_cascade_far_bound: 18.0,
+            maximum_distance: dist,
+            overlap_proportion: 0.25,
+        }
+        .build();
+    }
+    if map.size != size {
+        map.size = size;
     }
 }

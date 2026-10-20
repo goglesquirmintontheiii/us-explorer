@@ -128,7 +128,7 @@ impl Plugin for TerrainPlugin {
     fn build(&self, app: &mut App) {
         let s = app.world().resource::<crate::GameSettings>().0.clone();
         let _ = load::CACHE.set(usx_core::cache::DiskCache::open(s.cache_dir(), s.cache_bytes()));
-        let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).clamp(3, 8) * 2;
+        let threads = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).clamp(4, 12) * 2;
         let pool = WorkPool::new("tile", threads, |_, job| load::load(job));
         app.insert_resource(Terrain {
             tiles: HashMap::new(),
@@ -366,11 +366,12 @@ fn receive(
             }
             Ok(data) => {
                 let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
-                let gpu_mesh = data.mesh.positions.len() * 32 + data.mesh.indices.len() * 2;
+                let gpu_mesh = data.mesh.positions.len() * 48 + data.mesh.indices.len() * 2;
                 mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.mesh.positions);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.mesh.normals);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, data.mesh.uvs);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, data.mesh.detail_uvs);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, data.mesh.water);
                 mesh.insert_indices(Indices::U16(data.mesh.indices));
                 let mesh = meshes.add(mesh);
                 let (image, gpu_img) = match data.image {
@@ -408,16 +409,18 @@ fn receive(
                     },
                     extension: TerrainExt {},
                 });
-                let entity = commands
-                    .spawn((
-                        Mesh3d(mesh.clone()),
-                        MeshMaterial3d(material.clone()),
-                        GeoAnchor::new(data.center),
-                        Transform::default(),
-                        Visibility::Hidden,
-                        bevy::light::NotShadowCaster,
-                    ))
-                    .id();
+                let mut ec = commands.spawn((
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(material.clone()),
+                    GeoAnchor::new(data.center),
+                    Transform::default(),
+                    Visibility::Hidden,
+                ));
+                // Only tiles near enough to be inside the shadow distance cast shadows.
+                if id.z < 11 {
+                    ec.insert(bevy::light::NotShadowCaster);
+                }
+                let entity = ec.id();
                 terrain.generation += 1;
                 let generation = terrain.generation;
                 let t = terrain.tiles.get_mut(&id).unwrap();

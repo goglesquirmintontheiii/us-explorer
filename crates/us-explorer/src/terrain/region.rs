@@ -40,12 +40,29 @@ impl RegionDownload {
         for z in 0..=max_zoom {
             v.extend(tiles_in_box(lat - dlat, lon - dlon, lat + dlat, lon + dlon, z));
         }
+        // Road data comes in zoom-14 tiles; include them even for coarse downloads.
+        if max_zoom < usx_core::osm::ZOOM {
+            v.extend(tiles_in_box(lat - dlat, lon - dlon, lat + dlat, lon + dlon, usx_core::osm::ZOOM));
+        }
         v
     }
 
-    /// Rough download size: ~22 KB imagery + ~90 KB elevation (shallow zooms only).
+    /// Rough download size: ~22 KB imagery, ~90 KB elevation (shallow zooms), ~70 KB
+    /// lidar per zoom-17 block, ~150 KB of road data per zoom-14 tile.
     pub fn estimate_mb(tiles: &[TileId]) -> f64 {
-        tiles.iter().map(|t| if t.z <= TERRARIUM_MAX_ZOOM { 0.112 } else { 0.022 }).sum()
+        tiles
+            .iter()
+            .map(|t| {
+                let mut mb = if t.z <= TERRARIUM_MAX_ZOOM { 0.112 } else { 0.022 };
+                if t.z == load::LIDAR_BLOCK_ZOOM {
+                    mb += 0.07;
+                }
+                if t.z == usx_core::osm::ZOOM {
+                    mb += 0.15;
+                }
+                mb
+            })
+            .sum()
     }
 
     pub fn start(&mut self, tiles: Vec<TileId>, imagery: ImagerySource, label: String) {
@@ -61,6 +78,14 @@ impl RegionDownload {
             let mut ok = load::fetch(&format!("img/{}/{}.jpg", job.imagery.key(), t.path()), &job.imagery.url(t)).is_ok();
             if t.z <= TERRARIUM_MAX_ZOOM {
                 ok &= load::fetch(&format!("dem/terrarium/{}.png", t.path()), &sources::terrarium_url(t)).is_ok();
+            }
+            // Lidar blocks (a miss outside lidar coverage is fine: terrain falls back).
+            if t.z == load::LIDAR_BLOCK_ZOOM && load::in_us(t) {
+                load::prefetch_lidar_block(t);
+            }
+            // Roads and roadside objects.
+            if t.z == usx_core::osm::ZOOM {
+                ok &= usx_core::osm::load(t, load::cache()).is_ok();
             }
             if ok {
                 p2.done.fetch_add(1, Ordering::Relaxed);

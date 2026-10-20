@@ -119,6 +119,6 @@ fn main() {
         ui::UiPlugin,
         shot::ShotPlugin,
     ));
-    app.add_plugins(roads::RoadsPlugin);
+    app.add_plugins((roads::RoadsPlugin, bevy::diagnostic::SystemInformationDiagnosticsPlugin));
     app.run();
 }
