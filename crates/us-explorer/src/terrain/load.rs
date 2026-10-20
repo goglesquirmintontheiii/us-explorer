@@ -14,6 +14,8 @@ use usx_core::tile::TileId;
 /// Vertices per tile edge. 33 gives 32x32 quads: 4.7 m spacing on a zoom-18 tile.
 pub const GRID: usize = 33;
 pub const TEX: usize = 256;
+/// Repeat period of the procedural ground detail, metres (must match terrain.wgsl).
+pub const DETAIL_PERIOD: f64 = 4096.0;
 
 /// Terrain heights for one tile on a GRID x GRID lattice (row 0 = north edge),
 /// metres above sea level.
@@ -51,13 +53,16 @@ pub struct MeshData {
     pub positions: Vec<[f32; 3]>,
     pub normals: Vec<[f32; 3]>,
     pub uvs: Vec<[f32; 2]>,
+    /// Web Mercator metres, wrapped to [`DETAIL_PERIOD`], for the detail shader.
+    pub detail_uvs: Vec<[f32; 2]>,
     pub indices: Vec<u16>,
 }
 
 pub struct ImageData {
-    /// All mip levels, largest first, RGBA8 sRGB.
+    /// All mip levels, largest first: BC1 blocks when `bc1`, else RGBA8 (both sRGB).
     pub data: Vec<u8>,
     pub levels: u32,
+    pub bc1: bool,
 }
 
 pub struct LoadJob {
@@ -65,6 +70,8 @@ pub struct LoadJob {
     pub imagery: ImagerySource,
     pub lidar: bool,
     pub max_imagery_zoom: u8,
+    /// Compress imagery to BC1 (8x less video memory) when the GPU supports it.
+    pub bc1: bool,
 }
 
 pub struct Loaded {
@@ -302,12 +309,11 @@ fn imagery(job: &LoadJob) -> Option<(image::RgbaImage, u8)> {
     None
 }
 
-/// Box-filtered mip chain in one buffer.
-fn mip_chain(img: image::RgbaImage) -> ImageData {
-    let mut data = img.as_raw().clone();
-    let mut cur = img;
-    let mut levels = 1;
-    while cur.width() > 1 {
+/// Box-filtered mip chain in one buffer, optionally BC1-compressed (levels down to 4x4).
+fn mip_chain(img: image::RgbaImage, bc1: bool) -> ImageData {
+    let mut levels = vec![img];
+    while levels.last().unwrap().width() > if bc1 { 4 } else { 1 } {
+        let cur = levels.last().unwrap();
         let (w, h) = (cur.width() / 2, cur.height() / 2);
         let mut next = image::RgbaImage::new(w, h);
         for y in 0..h {
@@ -322,11 +328,47 @@ fn mip_chain(img: image::RgbaImage) -> ImageData {
                 next.put_pixel(x, y, image::Rgba(acc.map(|v| ((v + 2) / 4) as u8)));
             }
         }
-        data.extend_from_slice(next.as_raw());
-        cur = next;
-        levels += 1;
+        levels.push(next);
     }
-    ImageData { data, levels }
+    let n = levels.len() as u32;
+    if !bc1 {
+        let data = levels
+            .iter()
+            .flat_map(|l| l.as_raw().iter().copied())
+            .collect();
+        return ImageData {
+            data,
+            levels: n,
+            bc1,
+        };
+    }
+    let fmt = texpresso::Format::Bc1;
+    let params = texpresso::Params {
+        algorithm: texpresso::Algorithm::RangeFit,
+        ..Default::default()
+    };
+    let total: usize = levels
+        .iter()
+        .map(|l| fmt.compressed_size(l.width() as usize, l.height() as usize))
+        .sum();
+    let mut data = vec![0u8; total];
+    let mut off = 0;
+    for l in &levels {
+        let sz = fmt.compressed_size(l.width() as usize, l.height() as usize);
+        fmt.compress(
+            l.as_raw(),
+            l.width() as usize,
+            l.height() as usize,
+            params,
+            &mut data[off..off + sz],
+        );
+        off += sz;
+    }
+    ImageData {
+        data,
+        levels: n,
+        bc1,
+    }
 }
 
 // ---------------------------------------------------------------------- mesh
@@ -345,6 +387,22 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             ups.push(geo.up());
         }
     }
+    // Detail coordinates: Mercator metres, shifted by a whole number of periods so the
+    // values stay small; the shader's noise repeats on that period, hiding the shift.
+    let merc = |lat: f64, lon: f64| {
+        let r = usx_core::geo::WGS84_A;
+        let lat = lat.clamp(-85.0, 85.0).to_radians();
+        (
+            r * lon.to_radians(),
+            -r * (std::f64::consts::FRAC_PI_4 + lat / 2.0).tan().ln(),
+        )
+    };
+    let (cx, cy) = merc(clat, clon);
+    let (sx, sy) = (
+        (cx / DETAIL_PERIOD).floor() * DETAIL_PERIOD,
+        (cy / DETAIL_PERIOD).floor() * DETAIL_PERIOD,
+    );
+    let mut detail_uvs = Vec::with_capacity(GRID * GRID + 4 * GRID);
     let mut radius: f64 = 0.0;
     let mut positions = Vec::with_capacity(GRID * GRID + 4 * GRID);
     let mut normals = Vec::with_capacity(GRID * GRID + 4 * GRID);
@@ -373,6 +431,13 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             positions.push((p - center).as_vec3().to_array());
             normals.push(nrm.as_vec3().to_array());
             uvs.push([i as f32 / n as f32, j as f32 / n as f32]);
+            detail_uvs.push(if id.z >= 12 {
+                let (lat, lon) = id.lat_lon_at(i as f64 / n as f64, j as f64 / n as f64);
+                let (x, y) = merc(lat, lon);
+                [(x - sx) as f32, (y - sy) as f32]
+            } else {
+                [0.0, 0.0]
+            });
         }
     }
     let mut indices: Vec<u16> = Vec::with_capacity(n * n * 6 + 4 * n * 6);
@@ -399,6 +464,7 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             positions.push((p - center).as_vec3().to_array());
             normals.push(normals[k]);
             uvs.push(uvs[k]);
+            detail_uvs.push(detail_uvs[k]);
         }
         for w in 0..n {
             let (top0, top1) = (edge[w] as u16, edge[w + 1] as u16);
@@ -411,6 +477,7 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
             positions,
             normals,
             uvs,
+            detail_uvs,
             indices,
         },
         center,
@@ -436,7 +503,7 @@ pub fn load(job: LoadJob) -> Loaded {
             radius,
             heights: Arc::new(g),
             mesh,
-            image: img.map(|(i, _)| mip_chain(i)),
+            image: img.map(|(i, _)| mip_chain(i, job.bc1)),
             imagery_zoom,
             elevation_source,
             degraded,
@@ -458,6 +525,21 @@ mod tests {
         assert!((g.sample(1.0 / n, 1.0 / n) - 10.0).abs() < 1e-6);
         assert!((g.sample(0.5 / n, 0.5 / n) - 5.0).abs() < 1e-6); // on the a-d diagonal
         assert!(g.sample(0.9 / n, 0.1 / n).abs() < 2.0); // lower-right triangle of quad (0,0)
+    }
+
+    #[test]
+    fn bc1_chain_sizes() {
+        let img =
+            image::RgbaImage::from_fn(256, 256, |x, y| image::Rgba([x as u8, y as u8, 90, 255]));
+        let t = std::time::Instant::now();
+        let d = mip_chain(img.clone(), true);
+        eprintln!("bc1 mip chain: {:?}", t.elapsed());
+        assert_eq!(d.levels, 7);
+        assert_eq!(
+            d.data.len(),
+            (256 * 256 + 128 * 128 + 64 * 64 + 32 * 32 + 16 * 16 + 64 + 16) / 2
+        );
+        assert_eq!(mip_chain(img, false).levels, 9);
     }
 
     #[test]

@@ -199,6 +199,7 @@ fn draw(
                     .inner_margin(8.0)
                     .corner_radius(4.0)
                     .show(ui, |ui| {
+                        ui.set_min_width(360.0);
                         ui.style_mut().override_text_style = Some(egui::TextStyle::Monospace);
                         ui.visuals_mut().override_text_color = Some(egui::Color32::from_gray(230));
                         ui.label(format!("{fps:5.0} fps  {ms:5.1} ms"));
@@ -226,8 +227,10 @@ fn draw(
                             terrain.adapt
                         ));
                         ui.label(format!(
-                            "imagery z{} here  elev: {}",
-                            stats.imagery_zoom_here, stats.elevation_source
+                            "tile z{} (imagery z{})  elev: {}",
+                            stats.imagery_zoom_here,
+                            stats.imagery_source_zoom,
+                            stats.elevation_source
                         ));
                         ui.label(format!(
                             "terrain VRAM ~{:.0} MB",

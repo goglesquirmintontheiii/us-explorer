@@ -6,6 +6,7 @@
 //! loaded, so there are never holes: the parent stays visible until they arrive.
 
 pub mod load;
+pub mod material;
 pub mod region;
 
 use crate::camera::MainCamera;
@@ -17,6 +18,7 @@ use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
 use load::{HeightGrid, LoadJob, Loaded};
+use material::{TerrainExt, TerrainMaterial};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Instant;
@@ -36,7 +38,7 @@ enum State {
         entity: Entity,
         image: Option<Handle<Image>>,
         mesh: Handle<Mesh>,
-        material: Handle<StandardMaterial>,
+        material: Handle<TerrainMaterial>,
         gpu_bytes: usize,
     },
     Failed {
@@ -53,6 +55,7 @@ struct Tile {
     last_wanted: f64,
     visible: bool,
     elev_src: &'static str,
+    img_zoom: u8,
     /// Built from fallback data; reload after this time.
     refresh_at: Option<f64>,
     refreshing: bool,
@@ -67,6 +70,8 @@ pub struct Terrain {
     imagery: ImagerySource,
     lidar: bool,
     pub max_zoom: u8,
+    /// GPU supports BC texture compression.
+    pub bc1: bool,
     pub extra_detail_zoom: u8,
     pub error_count: u32,
     pub last_error: Option<String>,
@@ -82,6 +87,7 @@ pub struct TerrainStats {
     pub deepest_visible: u8,
     pub elevation_source: &'static str,
     pub imagery_zoom_here: u8,
+    pub imagery_source_zoom: u8,
     /// Seconds since the last teleport until streaming went idle.
     pub settle: Option<f32>,
     pub idle_frames: u32,
@@ -116,6 +122,7 @@ impl Plugin for TerrainPlugin {
             imagery: s.imagery,
             lidar: s.lidar_elevation,
             max_zoom: max_zoom_for(&s),
+            bc1: false,
             extra_detail_zoom: 0,
             error_count: 0,
             last_error: None,
@@ -123,7 +130,7 @@ impl Plugin for TerrainPlugin {
         .init_resource::<TerrainStats>()
         .add_message::<Teleported>()
         .insert_resource(TeleportClock(Instant::now(), true))
-        .add_plugins(region::RegionPlugin)
+        .add_plugins((region::RegionPlugin, material::TerrainMaterialPlugin))
         .add_systems(
             Update,
             (on_teleport, receive, select, ground_under_viewer).chain(),
@@ -134,7 +141,8 @@ impl Plugin for TerrainPlugin {
 fn max_zoom_for(s: &usx_core::settings::Settings) -> u8 {
     let cap = match s.preset {
         usx_core::settings::Preset::Low => 17,
-        usx_core::settings::Preset::Medium | usx_core::settings::Preset::High => 18,
+        usx_core::settings::Preset::Medium => 18,
+        usx_core::settings::Preset::High => 19,
         usx_core::settings::Preset::Ultra => 19,
     };
     cap.min(s.imagery.max_zoom().max(17))
@@ -183,6 +191,7 @@ impl Terrain {
                 last_wanted: now,
                 visible: false,
                 elev_src: "",
+                img_zoom: 0,
                 refresh_at: None,
                 refreshing: false,
             }
@@ -199,6 +208,7 @@ impl Terrain {
                     imagery: self.imagery,
                     lidar: self.lidar,
                     max_imagery_zoom: self.imagery.max_zoom(),
+                    bc1: self.bc1,
                 };
                 self.pool.submit(key(id), priority, job);
             }
@@ -241,6 +251,24 @@ fn rough_bounds(id: TileId) -> (DVec3, f64) {
     (c, r)
 }
 
+fn detect_compression(
+    device: Option<Res<bevy::render::renderer::RenderDevice>>,
+    mut terrain: ResMut<Terrain>,
+) {
+    terrain.bc1 = device.is_some_and(|d| {
+        d.features()
+            .contains(bevy::render::render_resource::WgpuFeatures::TEXTURE_COMPRESSION_BC)
+    });
+    info!(
+        "terrain textures: {}",
+        if terrain.bc1 {
+            "BC1 compressed"
+        } else {
+            "uncompressed RGBA"
+        }
+    );
+}
+
 fn on_teleport(
     mut ev: MessageReader<Teleported>,
     mut clock: ResMut<TeleportClock>,
@@ -260,7 +288,7 @@ fn receive(
     mut terrain: ResMut<Terrain>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<TerrainMaterial>>,
     time: Res<Time>,
 ) {
     let now = time.elapsed_secs_f64();
@@ -301,22 +329,27 @@ fn receive(
                 mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, data.mesh.positions);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, data.mesh.normals);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, data.mesh.uvs);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_UV_1, data.mesh.detail_uvs);
                 mesh.insert_indices(Indices::U16(data.mesh.indices));
                 let mesh = meshes.add(mesh);
                 let (image, gpu_img) = match data.image {
                     Some(img) => {
                         let bytes = img.data.len();
-                        let mut im = Image::new(
+                        let mut im = Image::new_uninit(
                             Extent3d {
                                 width: load::TEX as u32,
                                 height: load::TEX as u32,
                                 depth_or_array_layers: 1,
                             },
                             TextureDimension::D2,
-                            img.data,
-                            TextureFormat::Rgba8UnormSrgb,
+                            if img.bc1 {
+                                TextureFormat::Bc1RgbaUnormSrgb
+                            } else {
+                                TextureFormat::Rgba8UnormSrgb
+                            },
                             RenderAssetUsages::RENDER_WORLD,
                         );
+                        im.data = Some(img.data);
                         im.texture_descriptor.mip_level_count = img.levels;
                         im.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
                             address_mode_u: ImageAddressMode::ClampToEdge,
@@ -331,17 +364,20 @@ fn receive(
                     }
                     None => (None, 0),
                 };
-                let material = materials.add(StandardMaterial {
-                    base_color: if image.is_some() {
-                        Color::WHITE
-                    } else {
-                        Color::srgb(0.42, 0.45, 0.38)
+                let material = materials.add(TerrainMaterial {
+                    base: StandardMaterial {
+                        base_color: if image.is_some() {
+                            Color::WHITE
+                        } else {
+                            Color::srgb(0.42, 0.45, 0.38)
+                        },
+                        base_color_texture: image.clone(),
+                        perceptual_roughness: 0.92,
+                        reflectance: 0.25,
+                        cull_mode: None,
+                        ..default()
                     },
-                    base_color_texture: image.clone(),
-                    perceptual_roughness: 0.92,
-                    reflectance: 0.25,
-                    cull_mode: None,
-                    ..default()
+                    extension: TerrainExt {},
                 });
                 let entity = commands
                     .spawn((
@@ -364,6 +400,7 @@ fn receive(
                 t.max_h = data.heights.max as f64;
                 t.heights = Some(data.heights);
                 t.elev_src = data.elevation_source;
+                t.img_zoom = data.imagery_zoom;
                 t.state = State::Ready {
                     entity,
                     image,
@@ -419,6 +456,7 @@ fn select(
     mut commands: Commands,
     time: Res<Time>,
     mut clock: ResMut<TeleportClock>,
+    args: Res<crate::Args>,
 ) {
     let now = time.elapsed_secs_f64();
     let preset = settings.0.preset;
@@ -449,8 +487,11 @@ fn select(
     let pending = terrain.pool.waiting() + terrain.pool.busy();
     let frame_ms = time.delta_secs() * 1000.0;
     let budget_ms = if settings.0.vsync { 34.0 } else { 20.0 };
-    let behind = pending > 120 || frame_ms > budget_ms * 1.5 || stats.visible > preset.max_tiles();
-    let fine = pending < 24 && frame_ms < budget_ms && stats.visible < preset.max_tiles() * 3 / 4;
+    let frame_slow = args.shots.is_empty() && frame_ms > budget_ms * 1.5;
+    let behind = pending > 120 || frame_slow || stats.visible > preset.max_tiles();
+    let fine = pending < 24
+        && (frame_ms < budget_ms || !args.shots.is_empty())
+        && stats.visible < preset.max_tiles() * 3 / 4;
     terrain.adapt = if behind {
         (terrain.adapt * 1.015).min(3.0)
     } else if fine {
@@ -522,6 +563,7 @@ fn select(
             imagery: terrain.imagery,
             lidar: terrain.lidar,
             max_imagery_zoom: terrain.imagery.max_zoom(),
+            bc1: terrain.bc1,
         };
         terrain.pool.submit(key(id), 20.0, job);
         if let Some(t) = terrain.tiles.get_mut(&id) {
@@ -621,6 +663,10 @@ fn select(
         .map(|z| TileId::containing(g.lat, g.lon, z).0)
         .find(|id| terrain.ready(*id));
     stats.imagery_zoom_here = here.map(|id| id.z).unwrap_or(0);
+    stats.imagery_source_zoom = here
+        .and_then(|id| terrain.tiles.get(&id))
+        .map(|t| t.img_zoom)
+        .unwrap_or(0);
     stats.elevation_source = here
         .and_then(|id| terrain.tiles.get(&id))
         .map(|t| t.elev_src)
