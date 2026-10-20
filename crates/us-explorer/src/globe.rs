@@ -62,6 +62,8 @@ pub struct Viewer {
     pub velocity: DVec3,
     /// Terrain height under the viewer when known (metres above sea level).
     pub ground: Option<f64>,
+    /// After a teleport: stay this high above the ground until detailed terrain loads.
+    pub hold_agl: Option<f64>,
 }
 
 impl Viewer {
@@ -123,6 +125,8 @@ impl Plugin for GlobePlugin {
                 pitch: -12.0,
                 velocity: DVec3::ZERO,
                 ground: None,
+                hold_agl: (args.start.is_some() || settings.last_position.is_none())
+                    .then_some(args.start_agl.unwrap_or(600.0)),
             })
             .add_systems(
                 PostUpdate,

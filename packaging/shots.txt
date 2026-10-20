@@ -7,3 +7,8 @@ name=golden-gate;lat=37.8000;lon=-122.4950;agl=350;heading=50;pitch=-10
 name=mount-rainier;lat=46.7600;lon=-121.9000;agl=2500;heading=90;pitch=-8
 name=street-level-boulder;lat=40.0150;lon=-105.2705;agl=2;heading=260;pitch=2
 name=us-overview;lat=38.5;lon=-97.0;agl=1800000;heading=0;pitch=-89
+name=el-capitan-close;lat=37.7230;lon=-119.6450;agl=250;heading=330;pitch=-4
+name=park-ground;lat=40.7812;lon=-73.9665;agl=3;heading=0;pitch=-8
+name=hawaii-diamond-head;lat=21.2700;lon=-157.8300;agl=500;heading=60;pitch=-10
+name=alaska-denali;lat=63.0000;lon=-151.2000;agl=3000;heading=10;pitch=-4
+name=menu-teleport;lat=39.7392;lon=-104.9903;agl=800;heading=265;pitch=-10;menu=teleport

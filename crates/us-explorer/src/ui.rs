@@ -111,6 +111,7 @@ pub fn teleport(
     let ground = terrain.height_at(lat, lon).unwrap_or(0.0);
     viewer.ecef = Geodetic::new(lat, lon, ground + 350.0).to_ecef();
     viewer.ground = None;
+    viewer.hold_agl = Some(350.0);
     viewer.pitch = -15.0;
     tp.write(Teleported);
 }
@@ -448,6 +449,8 @@ fn draw(
         egui::Window::new("Settings")
             .open(&mut open)
             .collapsible(false)
+            .pivot(egui::Align2::CENTER_CENTER)
+            .default_pos(ctx.content_rect().center())
             .default_width(380.0)
             .show(ctx, |ui| {
                 egui::Grid::new("settings")
@@ -566,6 +569,8 @@ fn draw(
         egui::Window::new("Credits")
             .open(&mut open)
             .collapsible(false)
+            .pivot(egui::Align2::CENTER_CENTER)
+            .default_pos(ctx.content_rect().center())
             .default_width(460.0)
             .show(ctx, |ui| {
                 ui.label("US Explorer is built on open data and open-source software.");
@@ -590,6 +595,8 @@ fn draw(
         egui::Window::new("Offline download")
             .open(&mut open)
             .collapsible(false)
+            .pivot(egui::Align2::CENTER_CENTER)
+            .default_pos(ctx.content_rect().center())
             .default_width(380.0)
             .show(ctx, |ui| {
                 ui.label("Save the area around you to the cache so it works without a connection.");

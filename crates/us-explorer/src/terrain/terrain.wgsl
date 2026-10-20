@@ -80,6 +80,16 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         detail = mix(detail, asphalt, grey);
         detail = mix(detail, grass, green);
         base = mix(base, detail, near);
+
+        // Small bumps so close ground catches the light instead of looking painted.
+        // Detail x runs east (+X) and detail y runs south (+Z) near the origin.
+        let e = 0.08;
+        let hc = fbm(p, 1.0) + 0.5 * fine;
+        let hx = fbm(p + vec2(e, 0.0), 1.0) + 0.5 * vnoise(p + vec2(e, 0.0), 0.25);
+        let hy = fbm(p + vec2(0.0, e), 1.0) + 0.5 * vnoise(p + vec2(0.0, e), 0.25);
+        let strength = near * mix(0.35, 0.12, grey) * (1.0 - steep);
+        let bump = vec3((hx - hc) / e, 0.0, (hy - hc) / e) * strength * 0.25;
+        pbr_input.N = normalize(pbr_input.N - bump);
     }
 
     // Shadows baked into the imagery double up with real lighting; lift them a little.

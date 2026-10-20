@@ -151,12 +151,17 @@ fn max_zoom_for(s: &usx_core::settings::Settings) -> u8 {
 impl Terrain {
     /// Ground height (m above sea level) from the most detailed loaded tile.
     pub fn height_at(&self, lat: f64, lon: f64) -> Option<f64> {
+        self.height_and_zoom(lat, lon).map(|h| h.0)
+    }
+
+    /// Ground height plus the zoom of the tile it came from.
+    pub fn height_and_zoom(&self, lat: f64, lon: f64) -> Option<(f64, u8)> {
         for z in (0..=self.max_zoom).rev() {
             let (id, u, v) = TileId::containing(lat, lon, z);
             if let Some(t) = self.tiles.get(&id)
                 && let Some(h) = &t.heights
             {
-                return Some(h.sample(u, v));
+                return Some((h.sample(u, v), z));
             }
         }
         None
@@ -683,6 +688,14 @@ fn select(
 }
 
 fn ground_under_viewer(terrain: Res<Terrain>, mut viewer: ResMut<Viewer>) {
-    let g = viewer.geo();
-    viewer.ground = terrain.height_at(g.lat, g.lon);
+    let mut g = viewer.geo();
+    let hz = terrain.height_and_zoom(g.lat, g.lon);
+    viewer.ground = hz.map(|h| h.0);
+    if let (Some(agl), Some((h, z))) = (viewer.hold_agl, hz) {
+        g.h = h + agl;
+        viewer.ecef = g.to_ecef();
+        if z >= 14 {
+            viewer.hold_agl = None;
+        }
+    }
 }

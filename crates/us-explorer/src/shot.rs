@@ -16,6 +16,8 @@ pub struct ShotSpec {
     pub agl: f64,
     pub heading: f64,
     pub pitch: f64,
+    /// Menu to open for the picture: pause, teleport, settings, credits or region.
+    pub menu: Option<String>,
 }
 
 impl ShotSpec {
@@ -28,6 +30,7 @@ impl ShotSpec {
             agl: 300.0,
             heading: 0.0,
             pitch: -10.0,
+            menu: None,
         };
         for kv in s.split(';') {
             let (k, v) = kv.split_once('=')?;
@@ -38,6 +41,7 @@ impl ShotSpec {
                 "agl" => sp.agl = v.parse().ok()?,
                 "heading" => sp.heading = v.parse().ok()?,
                 "pitch" => sp.pitch = v.parse().ok()?,
+                "menu" => sp.menu = Some(v.trim().to_string()),
                 _ => {}
             }
         }
@@ -87,6 +91,7 @@ fn run(
     stats: Res<TerrainStats>,
     mut tp: MessageWriter<Teleported>,
     mut exit: MessageWriter<AppExit>,
+    mut menus: ResMut<crate::ui::Menus>,
 ) {
     r.frame += 1;
     if r.current.is_none() {
@@ -98,7 +103,14 @@ fn run(
         };
         viewer.ecef = Geodetic::new(next.lat, next.lon, 3000.0).to_ecef();
         viewer.ground = None;
+        viewer.hold_agl = None;
         tp.write(Teleported);
+        let m = next.menu.as_deref().unwrap_or("");
+        menus.pause = m == "pause";
+        menus.teleport = m == "teleport";
+        menus.settings = m == "settings";
+        menus.credits = m == "credits";
+        menus.region = m == "region";
         r.current = Some((next, Instant::now()));
         r.captured_at = None;
         return;

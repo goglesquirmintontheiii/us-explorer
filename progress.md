@@ -1,53 +1,37 @@
-# Progress: Phase 0 (Foundations), v0.0.0
+# Progress: Phase 1 (Terrain, imagery and streaming), v0.1.0
 
-**Status:** complete · released as v0.0.0 on 2026-10-20
+**Status:** in progress · started 2026-10-20 · previous phase: [Phase 0](progress/progress_phase_0.md) (released [v0.0.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.0.0))
 
-Goal: an empty but real globe that builds and runs on Linux (and still compiles for Windows), with the plumbing every later phase needs.
+Goal: real ground shape and real imagery everywhere in the US, loading gracefully on slow hardware or connections.
 
-## Engine decision
-
-The plan originally named Unreal Engine 5 + Cesium. The game is built in **Rust with Bevy 0.19.1** instead (Rust was preferred). Bevy 0.20 was released 11 days ago, so the more settled 0.19.1 is used for now. Bevy renders through wgpu, which uses Vulkan on Linux and DX12/Vulkan on Windows. Its built-in physically based atmosphere gives the sky, and egui provides the menus.
+Open GitHub issues checked at the start of this phase: none.
 
 ## Tasks
 
-- [x] Cargo workspace: `usx-core` (no engine code), `usx-weather` (service), `us-explorer` (game)
-- [x] WGS84 globe math (geodetic ⇄ ECEF, local frames) with unit tests
-- [x] Floating origin that rebases every 2 km, so there is no jitter anywhere on Earth
-- [x] Builds on Linux (Vulkan); Windows compile check in CI (no Windows builds yet)
-- [x] Weather service runs as its own process and handshakes over a localhost socket
-- [x] Disk cache with a size limit and least-recently-used eviction
-- [x] Settings file (`~/.config/us-explorer/settings.toml`) and settings menu
-- [x] Debug overlay (F3): FPS, frame time, position, tiles, VRAM estimate, network, cache, weather service
-- [x] Teleport by coordinates or by place/address search (OpenStreetMap Nominatim)
-- [x] Credits screen listing every data source and its attribution
-- [x] Global download cap (default 500 Mbps, adjustable) shared by everything
-- [x] Auto-update: checks GitHub releases, one-click download + checksum + restart
-- [x] Real sun position and physically based sky
-- [x] CI: tests, release build, AppImage, Windows check, screenshots
-- [x] Early terrain streaming (Phase 1 preview): real elevation, lidar and imagery
-- [x] Release v0.0.0 AppImage
+- [x] Elevation tiles: USGS 3DEP lidar (1 m class) from zoom 16 up, 10 m terrain tiles below, sea level fallback offline
+- [x] Full coverage: lower 48, Alaska, Hawaii and Puerto Rico (Web Mercator quadtree)
+- [x] Rock on steep slopes so cliffs don't show stretched imagery
+- [x] Esri World Imagery with a USGS/NAIP switch in Settings
+- [x] Level of detail by on-screen texel size, full detail around you, coarse to the horizon
+- [x] Skirts on every tile edge to hide cracks between zoom levels
+- [x] Ground detail near the camera (grass, asphalt, dirt, rock) with small bumps
+- [x] Collision matches the drawn triangles exactly
+- [x] Lazy loading: nearest tiles first, parents stay until children are ready, never blocks a frame
+- [x] Adaptive streaming: detail backs off when downloads or frames fall behind
+- [x] Prefetch along the direction of travel; optional slow-down while loading
+- [x] Loading indicator
+- [x] Arrival timing in the overlay; visited areas load from the disk cache with no network
+- [x] Shadows baked into imagery lifted slightly
+- [x] Offline area download (Esc → Offline download)
+- [x] BC1-compressed imagery textures (about 8x less video memory) when the GPU supports it
+- [x] Teleport holds you above the ground until detailed terrain arrives
+- [ ] Verify street-level and canyon quality in fresh screenshots
+- [ ] Release v0.1.0
+
+Deferred on purpose:
+- Real lake and coastal depths are already in the data but stay hidden until water exists (Phase 5); today the ground is clamped at sea level.
+- Snow on high peaks follows the season and weather, so it belongs to Phase 7.
 
 ## Screenshots
 
-CI renders these with real data on a software renderer (about 2 fps), so the frame rate in the overlay is not representative.
-
-**Denver, looking west at the Front Range** (USGS 3DEP lidar, Esri imagery)
-![Denver](docs/screenshots/phase0/denver-front-range.jpg)
-
-**Grand Canyon from 300 m above the South Rim**
-![Grand Canyon](docs/screenshots/phase0/grand-canyon.jpg)
-
-**The contiguous US from 1,800 km up**
-![US overview](docs/screenshots/phase0/us-overview.jpg)
-
-**Street level in Boulder.** Ground detail is the weak spot; Phase 1 continues here.
-![Boulder street level](docs/screenshots/phase0/street-level-boulder.jpg)
-
-**Offline fallback globe:** with no network, a plain globe still renders and retries.
-![Offline globe](docs/screenshots/phase0/offline-globe.jpg)
-
-## Notes
-
-- Cold arrival took 50 s in CI because the software renderer runs at 2 fps and tiles are uploaded a few per frame. On real GPUs it should be several times faster; the overlay shows "last arrival loaded in N s" so you can check.
-
-- Heights are metres above sea level placed on the WGS84 ellipsoid (the ~30 m geoid offset is ignored for now).
+_Coming from the next CI run._
