@@ -1,0 +1,145 @@
+2026-10-20T18:10:14.259203Z  INFO bevy_diagnostic::system_information_diagnostics_plugin::internal: SystemInfo { os: "Linux (Ubuntu 24.04)", kernel: "7.0.0-1017-azure", cpu: "INTEL(R) XEON(R) PLATINUM 8573C", core_count: "2", memory: "15.6 GiB" }
+2026-10-20T18:10:18.515094Z  INFO bevy_render::renderer: AdapterInfo { name: "llvmpipe (LLVM 20.1.2, 256 bits)", vendor: 65541, device: 0, device_type: Cpu, device_pci_bus_id: "", driver: "llvmpipe", driver_info: "Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)", backend: Vulkan, subgroup_min_size: 8, subgroup_max_size: 8, transient_saves_memory: false }
+2026-10-20T18:10:18.515185Z  WARN bevy_render::renderer: The selected adapter is using a driver that only supports software rendering. This is likely to be very slow. See https://bevy.org/learn/errors/b0006/
+2026-10-20T18:10:20.192685Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-10-20T18:10:20.192733Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-10-20T18:10:20.193234Z  INFO bevy_egui::render: Using bindless_mode_array_size 16 (Device maximum 1000000)
+2026-10-20T18:10:20.193470Z  INFO bevy_winit::system: Creating new window US Explorer 0.3.0 (63v0)
+2026-10-20T18:10:20.193990Z  WARN winit::platform_impl::linux::x11::util::randr: XRandR reported that the display's 0mm in size, which is certifiably insane
+2026-10-20T18:10:20.194053Z  INFO winit::platform_impl::linux::x11::window: Guessed window scale factor: 1
+2026-10-20T18:10:20.195408Z  INFO us_explorer::terrain: terrain textures: BC1 compressed
+2026-10-20T18:10:54.357875Z  INFO us_explorer::roads: roads 14/3414/6218: 3303 ways, 1331 junctions, 12 bridges, 13 tunnels, 1932 props, 200619 vertices
+2026-10-20T18:11:13.658339Z  INFO us_explorer::roads: roads 14/3413/6218: 3975 ways, 1300 junctions, 65 bridges, 28 tunnels, 2745 props, 285676 vertices
+2026-10-20T18:14:21.607118Z  INFO us_explorer::shot: screenshot shots/denver-front-range.png after 240.8s (settled: false, deepest zoom 18)
+2026-10-20T18:14:25.382412Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/denver-front-range.png
+2026-10-20T18:18:19.345288Z  WARN us_explorer::roads: roads 14/3088/6430: HTTP 502
+2026-10-20T18:18:34.146118Z  INFO us_explorer::shot: screenshot shots/grand-canyon.png after 240.1s (settled: false, deepest zoom 19)
+2026-10-20T18:18:39.183580Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/grand-canyon.png
+2026-10-20T18:22:50.904049Z  INFO us_explorer::shot: screenshot shots/manhattan.png after 240.2s (settled: false, deepest zoom 18)
+2026-10-20T18:22:54.403168Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/manhattan.png
+2026-10-20T18:22:54.404721Z  INFO us_explorer::roads: roads 14/4823/6161: 1286 ways, 112 junctions, 19 bridges, 2 tunnels, 295 props, 71845 vertices
+2026-10-20T18:25:53.608119Z  INFO us_explorer::roads: roads 14/2745/6335: 5 ways, 1 junctions, 0 bridges, 0 tunnels, 5 props, 2834 vertices
+2026-10-20T18:26:29.244970Z  INFO us_explorer::roads: roads 14/2746/6336: 31 ways, 6 junctions, 2 bridges, 0 tunnels, 10 props, 6525 vertices
+2026-10-20T18:26:33.419462Z  INFO us_explorer::roads: roads 14/2746/6334: 1 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 1886 vertices
+2026-10-20T18:27:03.425385Z  INFO us_explorer::shot: screenshot shots/yosemite-valley.png after 241.3s (settled: false, deepest zoom 18)
+2026-10-20T18:27:07.511650Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/yosemite-valley.png
+2026-10-20T18:30:22.803612Z  INFO us_explorer::roads: roads 14/2616/6331: 0 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 0 vertices
+2026-10-20T18:31:10.231222Z  INFO us_explorer::roads: roads 14/2617/6330: 123 ways, 20 junctions, 7 bridges, 2 tunnels, 191 props, 55138 vertices
+2026-10-20T18:31:17.414833Z  INFO us_explorer::shot: screenshot shots/golden-gate.png after 240.4s (settled: false, deepest zoom 18)
+2026-10-20T18:31:21.036560Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/golden-gate.png
+2026-10-20T18:33:27.519139Z  INFO us_explorer::shot: screenshot shots/mount-rainier.png after 118.1s (settled: true, deepest zoom 16)
+2026-10-20T18:33:30.550232Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/mount-rainier.png
+2026-10-20T18:34:27.454200Z  INFO us_explorer::roads: roads 14/3401/6201: 2708 ways, 1308 junctions, 47 bridges, 5 tunnels, 1472 props, 168777 vertices
+2026-10-20T18:36:35.997113Z  INFO us_explorer::roads: roads 14/3400/6202: 1214 ways, 382 junctions, 3 bridges, 0 tunnels, 979 props, 90906 vertices
+2026-10-20T18:36:53.163305Z  INFO us_explorer::roads: roads 14/3401/6202: 2305 ways, 774 junctions, 19 bridges, 0 tunnels, 1219 props, 152600 vertices
+2026-10-20T18:37:09.119206Z  INFO us_explorer::roads: roads 14/3401/6200: 1364 ways, 843 junctions, 25 bridges, 0 tunnels, 728 props, 109157 vertices
+2026-10-20T18:37:38.370712Z  INFO us_explorer::shot: screenshot shots/street-level-boulder.png after 240.9s (settled: false, deepest zoom 19)
+2026-10-20T18:37:42.223027Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/street-level-boulder.png
+2026-10-20T18:39:18.900514Z  INFO us_explorer::shot: screenshot shots/us-overview.png after 87.8s (settled: true, deepest zoom 6)
+2026-10-20T18:39:21.673082Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/us-overview.png
+2026-10-20T18:42:10.443231Z  INFO us_explorer::roads: roads 14/2746/6336: 31 ways, 6 junctions, 2 bridges, 0 tunnels, 10 props, 6525 vertices
+2026-10-20T18:43:28.513264Z  INFO us_explorer::shot: screenshot shots/el-capitan-close.png after 240.5s (settled: false, deepest zoom 19)
+2026-10-20T18:43:33.618637Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/el-capitan-close.png
+2026-10-20T18:45:58.737048Z  INFO us_explorer::roads: roads 14/4825/6156: 2796 ways, 281 junctions, 46 bridges, 19 tunnels, 1489 props, 217231 vertices
+2026-10-20T18:47:27.198839Z  INFO us_explorer::roads: roads 14/4825/6155: 2282 ways, 241 junctions, 15 bridges, 10 tunnels, 1516 props, 151265 vertices
+2026-10-20T18:47:46.087394Z  INFO us_explorer::shot: screenshot shots/park-ground.png after 240.7s (settled: false, deepest zoom 19)
+2026-10-20T18:47:49.617702Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/park-ground.png
+2026-10-20T18:47:57.036581Z  INFO us_explorer::roads: roads 14/4824/6155: 833 ways, 238 junctions, 17 bridges, 4 tunnels, 875 props, 71261 vertices
+2026-10-20T18:51:31.117198Z  INFO us_explorer::roads: roads 14/1008/7200: 960 ways, 342 junctions, 25 bridges, 0 tunnels, 665 props, 70245 vertices
+2026-10-20T18:51:58.669633Z  INFO us_explorer::shot: screenshot shots/hawaii-diamond-head.png after 240.5s (settled: false, deepest zoom 18)
+2026-10-20T18:52:01.999279Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/hawaii-diamond-head.png
+2026-10-20T18:52:08.610123Z  INFO us_explorer::roads: roads 14/1008/7201: 0 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 0 vertices
+2026-10-20T18:54:08.175373Z  INFO us_explorer::shot: screenshot shots/alaska-denali.png after 118.4s (settled: true, deepest zoom 15)
+2026-10-20T18:54:11.465008Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/alaska-denali.png
+2026-10-20T18:54:29.527799Z  INFO us_explorer::roads: roads 14/3414/6218: 3303 ways, 1331 junctions, 12 bridges, 13 tunnels, 1932 props, 200619 vertices
+2026-10-20T18:54:30.309674Z  INFO us_explorer::roads: roads 14/3413/6218: 3975 ways, 1300 junctions, 65 bridges, 28 tunnels, 2745 props, 285676 vertices
+2026-10-20T18:56:27.714294Z  INFO us_explorer::roads: roads 14/3412/6218: 2244 ways, 901 junctions, 133 bridges, 3 tunnels, 2395 props, 270948 vertices
+2026-10-20T18:57:38.824454Z  INFO us_explorer::roads: roads 14/3412/6217: 3363 ways, 1365 junctions, 81 bridges, 1 tunnels, 2840 props, 264576 vertices
+2026-10-20T18:57:40.190040Z  INFO us_explorer::roads: roads 14/3414/6217: 3025 ways, 1185 junctions, 0 bridges, 1 tunnels, 2176 props, 209385 vertices
+2026-10-20T18:58:20.021439Z  INFO us_explorer::shot: screenshot shots/menu-teleport.png after 241.0s (settled: false, deepest zoom 17)
+2026-10-20T18:58:23.308395Z  INFO us_explorer::roads: roads 14/3413/6219: 1814 ways, 895 junctions, 25 bridges, 0 tunnels, 1162 props, 214601 vertices
+2026-10-20T18:58:24.693489Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/menu-teleport.png
+2026-10-20T18:58:54.531900Z  INFO us_explorer::roads: roads 14/3414/6219: 1629 ways, 785 junctions, 25 bridges, 0 tunnels, 1569 props, 130523 vertices
+2026-10-20T18:59:31.094420Z  INFO us_explorer::roads: roads 14/3414/6216: 2886 ways, 945 junctions, 26 bridges, 3 tunnels, 1623 props, 341335 vertices
+2026-10-20T19:00:28.419339Z  INFO us_explorer::roads: roads 14/3413/6217: 4504 ways, 1337 junctions, 132 bridges, 33 tunnels, 4934 props, 337939 vertices
+2026-10-20T19:00:29.785912Z  INFO us_explorer::shot: screenshot shots/night-denver.png after 115.6s (settled: true, deepest zoom 17)
+2026-10-20T19:00:34.044639Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/night-denver.png
+2026-10-20T19:01:29.155576Z  INFO us_explorer::roads: roads 14/3088/6431: 71 ways, 63 junctions, 1 bridges, 0 tunnels, 90 props, 26140 vertices
+2026-10-20T19:01:29.155697Z  INFO us_explorer::roads: roads 14/3088/6429: 18 ways, 1 junctions, 0 bridges, 0 tunnels, 4 props, 3378 vertices
+2026-10-20T19:01:29.155742Z  INFO us_explorer::roads: roads 14/3088/6430: 352 ways, 150 junctions, 3 bridges, 0 tunnels, 415 props, 105911 vertices
+2026-10-20T19:03:55.242344Z  INFO us_explorer::roads: roads 14/3087/6430: 28 ways, 20 junctions, 1 bridges, 0 tunnels, 6 props, 12407 vertices
+2026-10-20T19:04:04.139880Z  INFO us_explorer::shot: screenshot shots/dusk-grand-canyon.png after 199.7s (settled: true, deepest zoom 19)
+2026-10-20T19:04:08.651203Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/dusk-grand-canyon.png
+2026-10-20T19:04:47.590518Z  INFO us_explorer::roads: roads 14/4825/6156: 2796 ways, 281 junctions, 46 bridges, 19 tunnels, 1489 props, 217231 vertices
+2026-10-20T19:04:47.593709Z  INFO us_explorer::roads: roads 14/4825/6155: 2282 ways, 241 junctions, 15 bridges, 10 tunnels, 1516 props, 151265 vertices
+2026-10-20T19:04:52.526847Z  INFO us_explorer::roads: roads 14/4826/6156: 1913 ways, 316 junctions, 33 bridges, 10 tunnels, 1819 props, 142438 vertices
+2026-10-20T19:04:54.174905Z  INFO us_explorer::roads: roads 14/4826/6155: 2835 ways, 388 junctions, 42 bridges, 20 tunnels, 1716 props, 245770 vertices
+2026-10-20T19:04:55.358572Z  INFO us_explorer::roads: roads 14/4824/6155: 833 ways, 238 junctions, 17 bridges, 4 tunnels, 875 props, 71261 vertices
+2026-10-20T19:06:33.321039Z  INFO us_explorer::shot: screenshot shots/third-person-park.png after 134.2s (settled: true, deepest zoom 19)
+2026-10-20T19:06:36.900070Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/third-person-park.png
+2026-10-20T19:07:40.769364Z  INFO us_explorer::roads: roads 14/2749/6334: 317 ways, 99 junctions, 20 bridges, 0 tunnels, 175 props, 64616 vertices
+2026-10-20T19:10:45.229098Z  INFO us_explorer::shot: screenshot shots/orbit-yosemite.png after 240.0s (settled: false, deepest zoom 19)
+2026-10-20T19:10:48.635455Z  INFO us_explorer::roads: roads 14/2748/6335: 23 ways, 3 junctions, 0 bridges, 0 tunnels, 8 props, 8959 vertices
+2026-10-20T19:10:50.360003Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/orbit-yosemite.png
+2026-10-20T19:11:33.068744Z  INFO us_explorer::roads: roads 14/1008/7201: 0 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 0 vertices
+2026-10-20T19:11:33.068779Z  INFO us_explorer::roads: roads 14/1009/7201: 208 ways, 89 junctions, 0 bridges, 0 tunnels, 275 props, 23005 vertices
+2026-10-20T19:11:34.525118Z  INFO us_explorer::roads: roads 14/1008/7200: 960 ways, 342 junctions, 25 bridges, 0 tunnels, 665 props, 70245 vertices
+2026-10-20T19:11:43.596165Z  INFO us_explorer::roads: roads 14/1009/7200: 1478 ways, 777 junctions, 31 bridges, 0 tunnels, 1420 props, 167315 vertices
+2026-10-20T19:13:15.955993Z  INFO us_explorer::roads: roads 14/1008/7202: 0 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 0 vertices
+2026-10-20T19:13:18.194301Z  INFO us_explorer::shot: screenshot shots/swim-waikiki.png after 135.9s (settled: true, deepest zoom 19)
+2026-10-20T19:13:21.596986Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/swim-waikiki.png
+2026-10-20T19:14:48.237788Z  INFO us_explorer::roads: roads 14/3413/6218: 3975 ways, 1300 junctions, 65 bridges, 28 tunnels, 2745 props, 285676 vertices
+2026-10-20T19:14:50.034737Z  INFO us_explorer::roads: roads 14/3413/6217: 4504 ways, 1337 junctions, 132 bridges, 33 tunnels, 4934 props, 337939 vertices
+2026-10-20T19:14:55.334362Z  INFO us_explorer::roads: roads 14/3414/6218: 3303 ways, 1331 junctions, 12 bridges, 13 tunnels, 1932 props, 200619 vertices
+2026-10-20T19:14:57.000575Z  INFO us_explorer::roads: roads 14/3414/6217: 3025 ways, 1185 junctions, 0 bridges, 1 tunnels, 2176 props, 209385 vertices
+2026-10-20T19:15:02.282491Z  INFO us_explorer::roads: roads 14/3412/6218: 2244 ways, 901 junctions, 133 bridges, 3 tunnels, 2395 props, 270948 vertices
+2026-10-20T19:15:05.768458Z  INFO us_explorer::roads: roads 14/3412/6217: 3363 ways, 1365 junctions, 81 bridges, 1 tunnels, 2840 props, 264576 vertices
+2026-10-20T19:15:10.634453Z  INFO us_explorer::roads: roads 14/3413/6219: 1814 ways, 895 junctions, 25 bridges, 0 tunnels, 1162 props, 214601 vertices
+2026-10-20T19:15:13.448318Z  INFO us_explorer::roads: roads 14/3414/6219: 1629 ways, 785 junctions, 25 bridges, 0 tunnels, 1569 props, 130523 vertices
+2026-10-20T19:15:33.034047Z  INFO us_explorer::roads: roads 14/3414/6216: 2886 ways, 945 junctions, 26 bridges, 3 tunnels, 1623 props, 341335 vertices
+2026-10-20T19:15:58.958800Z  INFO us_explorer::shot: screenshot shots/map-us.png after 149.5s (settled: true, deepest zoom 19)
+2026-10-20T19:16:03.282320Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/map-us.png
+2026-10-20T19:16:53.438878Z  INFO us_explorer::roads: roads 14/4824/6156: 2281 ways, 328 junctions, 48 bridges, 11 tunnels, 1734 props, 166707 vertices
+2026-10-20T19:16:55.244852Z  INFO us_explorer::roads: roads 14/4824/6157: 3949 ways, 454 junctions, 47 bridges, 300 tunnels, 2287 props, 524426 vertices
+2026-10-20T19:16:58.968286Z  INFO us_explorer::roads: roads 14/4825/6156: 2796 ways, 281 junctions, 46 bridges, 19 tunnels, 1489 props, 217231 vertices
+2026-10-20T19:17:03.932019Z  INFO us_explorer::roads: roads 14/4825/6157: 3516 ways, 422 junctions, 52 bridges, 391 tunnels, 2427 props, 661197 vertices
+2026-10-20T19:17:27.446204Z  INFO us_explorer::roads: roads 14/4824/6158: 2907 ways, 363 junctions, 0 bridges, 5 tunnels, 2202 props, 177165 vertices
+2026-10-20T19:17:29.336620Z  INFO us_explorer::roads: roads 14/4825/6158: 2272 ways, 264 junctions, 28 bridges, 17 tunnels, 1426 props, 207597 vertices
+2026-10-20T19:19:27.642656Z  INFO us_explorer::shot: screenshot shots/roads-times-square.png after 194.4s (settled: true, deepest zoom 19)
+2026-10-20T19:19:32.660201Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-times-square.png
+2026-10-20T19:20:43.981990Z  INFO us_explorer::roads: roads 14/3413/6217: 4504 ways, 1337 junctions, 132 bridges, 33 tunnels, 4934 props, 337939 vertices
+2026-10-20T19:20:45.311718Z  INFO us_explorer::roads: roads 14/3414/6217: 3025 ways, 1185 junctions, 0 bridges, 1 tunnels, 2176 props, 209385 vertices
+2026-10-20T19:20:49.698500Z  INFO us_explorer::roads: roads 14/3413/6218: 3975 ways, 1300 junctions, 65 bridges, 28 tunnels, 2745 props, 285676 vertices
+2026-10-20T19:21:40.345280Z  INFO us_explorer::roads: roads 14/3414/6218: 3303 ways, 1331 junctions, 12 bridges, 13 tunnels, 1932 props, 200619 vertices
+2026-10-20T19:21:42.433793Z  INFO us_explorer::roads: roads 14/3412/6217: 3363 ways, 1365 junctions, 81 bridges, 1 tunnels, 2840 props, 264576 vertices
+2026-10-20T19:21:46.228641Z  INFO us_explorer::roads: roads 14/3414/6216: 2886 ways, 945 junctions, 26 bridges, 3 tunnels, 1623 props, 341335 vertices
+2026-10-20T19:21:49.301492Z  INFO us_explorer::roads: roads 14/3412/6218: 2244 ways, 901 junctions, 133 bridges, 3 tunnels, 2395 props, 270948 vertices
+2026-10-20T19:22:35.685248Z  INFO us_explorer::shot: screenshot shots/roads-corner-denver.png after 171.3s (settled: true, deepest zoom 19)
+2026-10-20T19:22:40.090282Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-corner-denver.png
+2026-10-20T19:24:19.385346Z  INFO us_explorer::roads: roads 14/3413/6215: 1928 ways, 824 junctions, 39 bridges, 0 tunnels, 1551 props, 418877 vertices
+2026-10-20T19:24:45.670178Z  WARN us_explorer::roads: roads 14/3413/6216: HTTP 504
+2026-10-20T19:25:33.940718Z  INFO us_explorer::roads: roads 14/3413/6214: 782 ways, 588 junctions, 11 bridges, 0 tunnels, 364 props, 373284 vertices
+2026-10-20T19:26:51.580237Z  INFO us_explorer::shot: screenshot shots/roads-mousetrap.png after 241.3s (settled: false, deepest zoom 19)
+2026-10-20T19:26:56.916063Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-mousetrap.png
+2026-10-20T19:27:20.615807Z  INFO us_explorer::roads: roads 14/2617/6330: 123 ways, 20 junctions, 7 bridges, 2 tunnels, 191 props, 55138 vertices
+2026-10-20T19:28:07.704220Z  INFO us_explorer::roads: roads 14/2618/6330: 264 ways, 47 junctions, 5 bridges, 1 tunnels, 232 props, 10837 vertices
+2026-10-20T19:28:54.645120Z  INFO us_explorer::roads: roads 14/2617/6331: 451 ways, 118 junctions, 4 bridges, 0 tunnels, 236 props, 26922 vertices
+2026-10-20T19:28:58.649189Z  INFO us_explorer::roads: roads 14/2618/6331: 1477 ways, 345 junctions, 39 bridges, 10 tunnels, 797 props, 121907 vertices
+2026-10-20T19:29:33.383670Z  INFO us_explorer::shot: screenshot shots/roads-golden-gate-deck.png after 144.1s (settled: true, deepest zoom 19)
+2026-10-20T19:29:36.892991Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-golden-gate-deck.png
+2026-10-20T19:33:46.278316Z  INFO us_explorer::shot: screenshot shots/roads-tunnel-eisenhower.png after 241.3s (settled: false, deepest zoom 19)
+2026-10-20T19:33:50.453045Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-tunnel-eisenhower.png
+2026-10-20T19:37:25.830999Z  INFO us_explorer::roads: roads 14/3731/6290: 10 ways, 7 junctions, 0 bridges, 0 tunnels, 6 props, 4290 vertices
+2026-10-20T19:37:32.538654Z  INFO us_explorer::roads: roads 14/3732/6290: 1 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 338 vertices
+2026-10-20T19:38:01.031132Z  INFO us_explorer::shot: screenshot shots/roads-rural-kansas.png after 240.9s (settled: false, deepest zoom 19)
+2026-10-20T19:38:04.329538Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-rural-kansas.png
+2026-10-20T19:38:23.609075Z  INFO us_explorer::roads: roads 14/4824/6157: 3949 ways, 454 junctions, 47 bridges, 300 tunnels, 2287 props, 524426 vertices
+2026-10-20T19:38:28.340224Z  INFO us_explorer::roads: roads 14/4825/6157: 3516 ways, 422 junctions, 52 bridges, 391 tunnels, 2427 props, 661197 vertices
+2026-10-20T19:38:33.767794Z  INFO us_explorer::roads: roads 14/4824/6158: 2907 ways, 363 junctions, 0 bridges, 5 tunnels, 2202 props, 177165 vertices
+2026-10-20T19:38:35.168004Z  INFO us_explorer::roads: roads 14/4825/6158: 2272 ways, 264 junctions, 28 bridges, 17 tunnels, 1426 props, 207597 vertices
+2026-10-20T19:38:39.764196Z  INFO us_explorer::roads: roads 14/4824/6156: 2281 ways, 328 junctions, 48 bridges, 11 tunnels, 1734 props, 166707 vertices
+2026-10-20T19:38:41.306318Z  INFO us_explorer::roads: roads 14/4825/6156: 2796 ways, 281 junctions, 46 bridges, 19 tunnels, 1489 props, 217231 vertices
+2026-10-20T19:38:44.455218Z  INFO us_explorer::roads: roads 14/4823/6158: 1725 ways, 187 junctions, 24 bridges, 0 tunnels, 1137 props, 78084 vertices
+2026-10-20T19:38:47.550893Z  INFO us_explorer::roads: roads 14/4823/6156: 1432 ways, 381 junctions, 24 bridges, 11 tunnels, 1252 props, 153653 vertices
+2026-10-20T19:41:04.660854Z  INFO us_explorer::shot: screenshot shots/roads-night-manhattan.png after 172.7s (settled: true, deepest zoom 19)
+2026-10-20T19:41:09.386534Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/roads-night-manhattan.png
