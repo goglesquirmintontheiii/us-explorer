@@ -163,6 +163,7 @@ struct World<'w> {
     player: Res<'w, Player>,
     terrain: ResMut<'w, Terrain>,
     stats: Res<'w, TerrainStats>,
+    roads: Res<'w, crate::roads::RoadStats>,
     link: Res<'w, WeatherLink>,
     region: ResMut<'w, RegionDownload>,
     clock: ResMut<'w, SimClock>,
@@ -188,7 +189,7 @@ fn draw(
     o: Out,
     mut commands: Commands,
 ) -> Result {
-    let World { viewer, player, mut terrain, stats, link, mut region, mut clock, diagnostics, map } = w;
+    let World { viewer, player, mut terrain, stats, roads, link, mut region, mut clock, diagnostics, map } = w;
     let Out { mut blocked, mut lock, mut tp, mut exit } = o;
     let ctx = contexts.ctx_mut()?;
     let units = settings.0.units;
@@ -240,6 +241,17 @@ fn draw(
                     usx_core::net::limiter().mbps()
                 ));
                 ui.label(format!("cache {:.2} / {:.0} GB ({} files)", cache.size() as f64 / 1e9, cache.limit() as f64 / 1e9, cache.len()));
+                let r = &*roads;
+                if r.tiles_ready + r.tiles_loading > 0 {
+                    ui.label(format!(
+                        "roads {} tiles{}, {} chunks, {} objects{}",
+                        r.tiles_ready,
+                        if r.tiles_loading > 0 { format!(" (+{} loading)", r.tiles_loading) } else { String::new() },
+                        r.chunks_drawn,
+                        r.props,
+                        if r.jobs > 0 { format!(", {} jobs", r.jobs) } else { String::new() }
+                    ));
+                }
                 ui.label(match &link.state {
                     LinkState::Connected { version, rtt_ms } => {
                         format!("weather service v{version}, ping {}", rtt_ms.map(|r| format!("{r:.0} ms")).unwrap_or("…".into()))
@@ -451,6 +463,9 @@ fn draw(
                             &mut draft.lidar_elevation,
                             "Use USGS 3DEP lidar where available",
                         );
+                        ui.end_row();
+                        ui.label("Roads");
+                        ui.checkbox(&mut draft.roads, "Roads, bridges and street furniture (OpenStreetMap)");
                         ui.end_row();
                         ui.label("Units");
                         ui.horizontal(|ui| {

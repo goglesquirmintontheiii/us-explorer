@@ -257,9 +257,11 @@ pub fn ground_height(terrain: &Terrain, walk: &crate::walkable::Walkables, g: Ge
     let t = terrain.floor_and_zoom(g.lat, g.lon);
     let w = walk.surface_below(g.lat, g.lon, g.h + 0.6);
     match (t, w) {
-        (Some((th, z)), Some(wh)) => Some((th.max(wh), z)),
+        // Down in a tunnel the hill above doesn't count.
+        (Some((_, z)), Some((wh, true))) if g.h - wh < 2.5 => Some((wh, z)),
+        (Some((th, z)), Some((wh, _))) => Some((th.max(wh), z)),
         (t, None) => t,
-        (None, Some(wh)) => Some((wh, 20)),
+        (None, Some((wh, _))) => Some((wh, 20)),
     }
 }
 
@@ -374,6 +376,14 @@ fn simulate(
     let local_move = DVec3::new(p.vel.x, p.vel.y, p.vel.z) * dt;
     p.feet = frame.to_ecef(local_move);
     let mut g2 = p.geo();
+    if p.mode != Mode::Noclip {
+        let (la, lo) = walk.push_out(g2.lat, g2.lon, g2.h, 0.3);
+        if la != g2.lat || lo != g2.lon {
+            g2.lat = la;
+            g2.lon = lo;
+            p.feet = g2.to_ecef();
+        }
+    }
     if let Some((h, _)) = ground_height(&terrain, &walk, g2) {
         p.ground = Some(h);
         if p.mode != Mode::Noclip && g2.h <= h {

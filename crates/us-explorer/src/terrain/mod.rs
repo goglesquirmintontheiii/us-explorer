@@ -5,6 +5,7 @@
 //! imagery texels would look too big on screen, but only once all four children are
 //! loaded, so there are never holes: the parent stays visible until they arrive.
 
+pub mod conform;
 pub mod load;
 pub mod material;
 pub mod region;
@@ -49,6 +50,10 @@ struct Tile {
     /// Built from fallback data; reload after this time.
     refresh_at: Option<f64>,
     refreshing: bool,
+    /// Heights were levelled under this area's roads.
+    conformed: bool,
+    /// Bumped every time the tile's mesh is replaced.
+    generation: u64,
 }
 
 #[derive(Resource)]
@@ -63,8 +68,31 @@ pub struct Terrain {
     /// GPU supports BC texture compression.
     pub bc1: bool,
     pub extra_detail_zoom: u8,
+    generation: u64,
     pub error_count: u32,
     pub last_error: Option<String>,
+}
+
+/// Height grids of the tiles on screen over an area, shareable with worker threads.
+pub struct HeightSnap {
+    tiles: HashMap<TileId, (Arc<HeightGrid>, bool)>,
+    zooms: Vec<u8>,
+}
+
+impl HeightSnap {
+    /// Visible ground height, and whether it was already levelled under roads.
+    pub fn ground(&self, lat: f64, lon: f64) -> Option<(f64, bool)> {
+        for &z in &self.zooms {
+            let (id, u, v) = TileId::containing(lat, lon, z);
+            if let Some((g, c)) = self.tiles.get(&id) {
+                return Some((g.sample(u, v), *c));
+            }
+        }
+        None
+    }
+    pub fn is_empty(&self) -> bool {
+        self.tiles.is_empty()
+    }
 }
 
 /// Numbers for the debug overlay and the loading indicator.
@@ -82,6 +110,10 @@ pub struct TerrainStats {
     pub settle: Option<f32>,
     pub idle_frames: u32,
 }
+
+/// Terrain streaming systems; roads drape after these.
+#[derive(SystemSet, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct TerrainSet;
 
 /// Sent when the viewer jumps somewhere new.
 #[derive(Message)]
@@ -107,6 +139,7 @@ impl Plugin for TerrainPlugin {
             max_zoom: max_zoom_for(&s),
             bc1: false,
             extra_detail_zoom: 0,
+            generation: 0,
             error_count: 0,
             last_error: None,
         })
@@ -115,7 +148,7 @@ impl Plugin for TerrainPlugin {
         .insert_resource(TeleportClock(Instant::now(), true))
         .add_plugins((region::RegionPlugin, material::TerrainMaterialPlugin))
         .add_systems(Startup, detect_compression)
-        .add_systems(Update, (on_teleport, receive, select).chain());
+        .add_systems(Update, (on_teleport, receive, select).chain().in_set(TerrainSet));
     }
 }
 
@@ -189,6 +222,8 @@ impl Terrain {
                 img_zoom: 0,
                 refresh_at: None,
                 refreshing: false,
+                conformed: false,
+                generation: 0,
             }
         });
         t.last_wanted = now;
@@ -203,6 +238,56 @@ impl Terrain {
                 self.pool.submit(key(id), priority, job);
             }
             _ => {}
+        }
+    }
+
+    /// Tiles on screen covering a box (s, w, n, e), plus coarse ones as a fallback,
+    /// for draping roads onto exactly the ground being drawn.
+    pub fn snapshot(&self, bbox: (f64, f64, f64, f64)) -> HeightSnap {
+        let mut tiles = HashMap::new();
+        self.visit(bbox, |id, t| {
+            if let Some(h) = &t.heights
+                && (t.visible || id.z <= 13)
+            {
+                tiles.insert(id, (h.clone(), t.conformed && id.z >= conform::CONFORM_ZOOM));
+            }
+        });
+        let mut zooms: Vec<u8> = tiles.keys().map(|k: &TileId| k.z).collect();
+        zooms.sort_unstable_by(|a, b| b.cmp(a));
+        zooms.dedup();
+        HeightSnap { tiles, zooms }
+    }
+
+    /// Changes whenever the ground drawn inside a box changes.
+    pub fn signature(&self, bbox: (f64, f64, f64, f64)) -> u64 {
+        let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+        self.visit(bbox, |id, t| {
+            if t.visible && t.heights.is_some() {
+                h ^= key(id).wrapping_mul(0x100_0000_01b3) ^ t.generation.rotate_left(17);
+                h = h.wrapping_mul(0x100_0000_01b3);
+            }
+        });
+        h
+    }
+
+    fn visit(&self, (s, w, n, e): (f64, f64, f64, f64), mut f: impl FnMut(TileId, &Tile)) {
+        for z in 0..=self.max_zoom {
+            let (a, _, _) = TileId::containing(n, w, z);
+            let (b, _, _) = TileId::containing(s, e, z);
+            let count = (b.x as u64 - a.x as u64 + 1) * (b.y as u64 - a.y as u64 + 1);
+            if count > 4096 {
+                break;
+            }
+            for y in a.y..=b.y {
+                for x in a.x..=b.x {
+                    let id = TileId::new(z, x, y);
+                    if let Some(t) = self.tiles.get(&id)
+                        && matches!(t.state, State::Ready { .. })
+                    {
+                        f(id, t);
+                    }
+                }
+            }
         }
     }
 
@@ -333,10 +418,14 @@ fn receive(
                         bevy::light::NotShadowCaster,
                     ))
                     .id();
+                terrain.generation += 1;
+                let generation = terrain.generation;
                 let t = terrain.tiles.get_mut(&id).unwrap();
                 if let State::Ready { entity: old, .. } = t.state {
                     commands.entity(old).despawn();
                 }
+                t.conformed = data.conformed;
+                t.generation = generation;
                 t.refreshing = false;
                 t.refresh_at = data.degraded.then_some(now + 30.0);
                 t.center = data.center;
@@ -475,12 +564,28 @@ fn select(
     for (id, p) in requests {
         terrain.request(id, p, now);
     }
-    let stale: Vec<TileId> = terrain
+    let mut stale: Vec<TileId> = terrain
         .tiles
         .iter()
         .filter(|(_, t)| !t.refreshing && t.refresh_at.is_some_and(|r| now > r) && now - t.last_wanted < 2.0)
         .map(|(id, _)| *id)
         .collect();
+    // Detailed tiles built before their roads were known: rebuild them levelled.
+    let reconform: Vec<TileId> = terrain
+        .tiles
+        .iter()
+        .filter(|(id, t)| {
+            id.z >= conform::CONFORM_ZOOM
+                && !t.conformed
+                && !t.refreshing
+                && matches!(t.state, State::Ready { .. })
+                && now - t.last_wanted < 2.0
+                && crate::roads::corridors_for(**id).is_some()
+        })
+        .map(|(id, _)| *id)
+        .take(24)
+        .collect();
+    stale.extend(reconform);
     for id in stale {
         let job =
             LoadJob { id, imagery: terrain.imagery, lidar: terrain.lidar, max_imagery_zoom: terrain.imagery.max_zoom(), bc1: terrain.bc1 };

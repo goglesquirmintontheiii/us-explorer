@@ -18,3 +18,10 @@ name=third-person-park;lat=40.7812;lon=-73.9665;agl=0;heading=20;pitch=-6;camera
 name=orbit-yosemite;lat=37.7420;lon=-119.5930;agl=0;heading=80;pitch=-12;camera=orbit
 name=swim-waikiki;lat=21.2665;lon=-157.8330;agl=0;heading=20;pitch=-4;camera=third
 name=map-us;lat=39.7392;lon=-104.9903;agl=2;heading=0;pitch=0;menu=map
+name=roads-times-square;lat=40.7570;lon=-73.9860;agl=30;heading=200;pitch=-28
+name=roads-corner-denver;lat=39.7487;lon=-104.9945;agl=0;heading=45;pitch=-4;camera=third
+name=roads-mousetrap;lat=39.7770;lon=-104.9880;agl=150;heading=0;pitch=-32
+name=roads-golden-gate-deck;lat=37.8130;lon=-122.4775;agl=0;heading=0;pitch=2;camera=third
+name=roads-tunnel-eisenhower;lat=39.6797;lon=-105.9100;agl=25;heading=255;pitch=-10
+name=roads-rural-kansas;lat=38.5000;lon=-98.0000;agl=4;heading=0;pitch=-6
+name=roads-night-manhattan;lat=40.7540;lon=-73.9840;agl=20;heading=180;pitch=-20;time=2026-06-22T03:00:00Z

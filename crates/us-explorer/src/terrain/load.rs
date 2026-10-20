@@ -85,6 +85,8 @@ pub struct Loaded {
 }
 
 pub struct TileData {
+    /// Heights were conformed to the area's roads.
+    pub conformed: bool,
     pub center: DVec3,
     pub radius: f64,
     pub heights: Arc<HeightGrid>,
@@ -153,6 +155,14 @@ fn terrarium(id: TileId) -> Result<Arc<Vec<f32>>, String> {
     Ok(h)
 }
 
+/// Ground height from the zoom-15 elevation tiles (about 5 m per pixel), fetched
+/// through the cache. Used for road profiles, which need a consistent coarse ground.
+pub fn dem_height(lat: f64, lon: f64) -> Option<f64> {
+    let (id, u, v) = TileId::containing(lat, lon, TERRARIUM_MAX_ZOOM);
+    let d = terrarium(id).ok()?;
+    Some(bilinear(&d, TEX, u * TEX as f64, v * TEX as f64) as f64)
+}
+
 fn bilinear(px: &[f32], w: usize, x: f64, y: f64) -> f32 {
     let x = (x - 0.5).clamp(0.0, (w - 1) as f64);
     let y = (y - 0.5).clamp(0.0, (w - 1) as f64);
@@ -166,7 +176,7 @@ fn bilinear(px: &[f32], w: usize, x: f64, y: f64) -> f32 {
 
 /// Heights for a tile: lidar from USGS 3DEP when enabled and deep enough, otherwise
 /// sampled from the terrarium pyramid (walking up to a parent when a tile is missing).
-fn heights(job: &LoadJob) -> Result<(HeightGrid, &'static str), String> {
+fn heights(job: &LoadJob) -> Result<(Vec<f32>, &'static str), String> {
     let id = job.id;
     if job.lidar && id.z > TERRARIUM_MAX_ZOOM && in_us(id) {
         if let Some(mut h) = lidar_heights(id) {
@@ -181,10 +191,10 @@ fn heights(job: &LoadJob) -> Result<(HeightGrid, &'static str), String> {
                     }
                 }
             }
-            return Ok((surface_grid(id, h), "USGS 3DEP lidar"));
+            return Ok((h, "USGS 3DEP lidar"));
         }
     }
-    Ok((surface_grid(id, terrarium_grid(id)?), "terrain tiles (3DEP 10 m / SRTM)"))
+    Ok((terrarium_grid(id)?, "terrain tiles (3DEP 10 m / SRTM)"))
 }
 
 /// Heights for a tile sampled from the terrarium pyramid (walking up to a parent when a
@@ -348,7 +358,7 @@ fn mip_chain(img: image::RgbaImage, bc1: bool) -> ImageData {
 
 // ---------------------------------------------------------------------- mesh
 
-fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
+fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, DVec3, f64) {
     let (clat, clon) = id.lat_lon_at(0.5, 0.5);
     let center = Geodetic::new(clat, clon, (g.min as f64 + g.max as f64) * 0.5).to_ecef();
     let n = GRID - 1;
@@ -406,6 +416,9 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
     let mut indices: Vec<u16> = Vec::with_capacity(n * n * 6 + 4 * n * 6);
     for j in 0..n {
         for i in 0..n {
+            if holes.is_some_and(|h| h[j * n + i]) {
+                continue;
+            }
             let a = (j * GRID + i) as u16;
             let (b, c, d) = (a + 1, a + GRID as u16, a + GRID as u16 + 1);
             // Counter-clockwise seen from above, split along a-d to match HeightGrid::sample.
@@ -449,16 +462,21 @@ pub fn load(job: LoadJob) -> Loaded {
     let id = job.id;
     let result = (|| {
         // The coarse globe must always exist, even offline: fall back to sea level.
-        let (g, elevation_source, mut degraded) = match heights(&job) {
+        let (mut raw, elevation_source, mut degraded) = match heights(&job) {
             Ok((g, s)) => (g, s, false),
-            Err(_) if id.z <= 4 => (grid_from(vec![0.0; GRID * GRID]), "none (offline)", true),
+            Err(_) if id.z <= 4 => (vec![0.0; GRID * GRID], "none (offline)", true),
             Err(e) => return Err(e),
         };
-        let (mesh, center, radius) = build_mesh(id, &g);
+        // Level the ground under roads (when this area's roads are known).
+        let corridors = (id.z >= super::conform::CONFORM_ZOOM).then(|| crate::roads::corridors_for(id)).flatten();
+        let holes = corridors.as_ref().map(|c| super::conform::conform(id, &mut raw, c).holes);
+        let g = surface_grid(id, raw);
+        let (mesh, center, radius) = build_mesh(id, &g, holes.as_deref());
         let img = imagery(&job);
         degraded |= img.is_none();
         let imagery_zoom = img.as_ref().map(|i| i.1).unwrap_or(0);
         Ok(TileData {
+            conformed: holes.is_some(),
             center,
             radius,
             heights: Arc::new(g),
@@ -502,7 +520,7 @@ mod tests {
     fn mesh_normals_point_up() {
         let id = TileId::containing(39.74, -104.99, 14).0;
         let g = grid_from(vec![1600.0; GRID * GRID]);
-        let (m, center, _) = build_mesh(id, &g);
+        let (m, center, _) = build_mesh(id, &g, None);
         let up = Geodetic::from_ecef(center).up();
         let nrm = m.normals[GRID * 16 + 16];
         let d = DVec3::new(nrm[0] as f64, nrm[1] as f64, nrm[2] as f64).dot(up);

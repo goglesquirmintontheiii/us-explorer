@@ -7,6 +7,7 @@ mod controls;
 mod globe;
 mod map;
 mod player;
+mod roads;
 mod shot;
 mod sun;
 mod terrain;
@@ -118,5 +119,6 @@ fn main() {
         ui::UiPlugin,
         shot::ShotPlugin,
     ));
+    app.add_plugins(roads::RoadsPlugin);
     app.run();
 }

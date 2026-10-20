@@ -6,6 +6,7 @@ pub mod cache;
 pub mod geo;
 pub mod geocode;
 pub mod net;
+pub mod osm;
 pub mod protocol;
 pub mod settings;
 pub mod sources;

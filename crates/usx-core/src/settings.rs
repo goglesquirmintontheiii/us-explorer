@@ -139,6 +139,8 @@ pub struct Settings {
     pub minimap_rotates: bool,
     pub map_style: MapStyle,
     pub invert_look_y: bool,
+    /// Roads, bridges and roadside objects from OpenStreetMap.
+    pub roads: bool,
 }
 
 impl Default for Settings {
@@ -147,6 +149,7 @@ impl Default for Settings {
             preset: Preset::High,
             units: Units::Imperial,
             imagery: ImagerySource::Esri,
+            roads: true,
             lidar_elevation: true,
             cache_dir: None,
             cache_size_gb: 50.0,

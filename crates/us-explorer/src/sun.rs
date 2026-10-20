@@ -38,7 +38,8 @@ pub struct SunPlugin;
 impl Plugin for SunPlugin {
     fn build(&self, app: &mut App) {
         let fixed = app.world().resource::<crate::Args>().time;
-        app.insert_resource(SimClock { unix: fixed.unwrap_or_else(SimClock::now_real), offset: 0.0, fixed: fixed.is_some() })
+        app.init_resource::<DayNight>()
+            .insert_resource(SimClock { unix: fixed.unwrap_or_else(SimClock::now_real), offset: 0.0, fixed: fixed.is_some() })
             .add_systems(Startup, spawn_sky)
             .add_systems(Update, tick_clock)
             .add_systems(PostUpdate, (place_sun, place_planet).after(GlobeSet).before(TransformSystems::Propagate));
@@ -61,7 +62,17 @@ fn tick_clock(mut clock: ResMut<SimClock>) {
     }
 }
 
+/// How dark it is, for lights and materials that respond to night.
+#[derive(Resource, Default, Clone, Copy)]
+pub struct DayNight {
+    /// Sun elevation, degrees.
+    pub elevation: f32,
+    /// 0 in daylight .. 1 when exposure is fully opened up for night (follows `night_ev`).
+    pub dark: f32,
+}
+
 fn place_sun(
+    mut day_night: ResMut<DayNight>,
     clock: Res<SimClock>,
     origin: Res<WorldOrigin>,
     mut q: Query<&mut Transform, With<Sun>>,
@@ -77,6 +88,10 @@ fn place_sun(
     // until real night lighting (moon, stars, street lights) arrives in Phase 5.
     let elev = dir.y.asin().to_degrees();
     let ev = night_ev(elev);
+    let dark = ((13.5 - ev) / 10.5).clamp(0.0, 1.0);
+    if (day_night.dark - dark).abs() > 0.002 || (day_night.elevation - elev).abs() > 0.05 {
+        *day_night = DayNight { elevation: elev, dark };
+    }
     for mut e in &mut cams {
         if (e.ev100 - ev).abs() > 0.01 {
             e.ev100 = ev;

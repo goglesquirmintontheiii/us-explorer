@@ -115,10 +115,22 @@ pub const CREDITS: &[Credit] = &[
         url: "https://www.usgs.gov/3d-elevation-program",
     },
     Credit {
-        name: "OpenStreetMap / Nominatim",
-        used_for: "Place search",
+        name: "OpenStreetMap",
+        used_for: "Roads, bridges, railways, signs and roadside objects; place search (Nominatim)",
         attribution: "© OpenStreetMap contributors, ODbL",
         url: "https://www.openstreetmap.org/copyright",
+    },
+    Credit {
+        name: "Overpass API",
+        used_for: "Fetching OpenStreetMap data (overpass-api.de, private.coffee, kumi.systems)",
+        attribution: "Overpass API by Roland Olbricht and the public instance operators",
+        url: "https://wiki.openstreetmap.org/wiki/Overpass_API",
+    },
+    Credit {
+        name: "DejaVu Fonts",
+        used_for: "Lettering on road signs",
+        attribution: "DejaVu fonts, Bitstream Vera license / public domain changes",
+        url: "https://dejavu-fonts.github.io/",
     },
     Credit { name: "Bevy Engine", used_for: "Game engine", attribution: "Bevy contributors, MIT / Apache-2.0", url: "https://bevy.org" },
     Credit {

@@ -1,44 +1,37 @@
-# Progress: Phase 2 (Player, cameras and maps), v0.2.0
+# Progress: Phase 3 (Roads, bridges and roadside objects), v0.3.0
 
-**Status:** complete · released as v0.2.0 on 2026-10-20 · previous phase: [Phase 1](progress/progress_phase_1.md) (released [v0.1.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.1.0))
+**Status:** in progress · previous phase: [Phase 2](progress/progress_phase_2.md) (released [v0.2.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.2.0))
 
-Goal: a player you can walk, jump, swim and fly as, with three camera views, a minimap and a full map with search, teleport and bookmarks.
+Goal: every road in the US drawn from OpenStreetMap, sitting properly on the terrain, with bridges, tunnels, interchanges and the things along the roadside.
 
 Open GitHub issues checked at the start of this phase: none.
 
 ## Tasks
 
-- [x] Player body with walk, run, jump, fall, fly, hover, swim and idle animations (procedural, jointed)
-- [x] Outfits: casual, rain jacket, winter, hiker (Settings → Outfit)
-- [x] Camera views: first person with your body visible, third-person over the shoulder, free orbit; V (or F5) cycles them
-- [x] Walking with gravity, jumping, stepping up curbs and snapping down slopes
-- [x] Double-tap Space (within 300 ms) toggles flying and walking
-- [x] Flight: Space rises, Shift descends, no gravity, stops when keys are released
-- [x] Sprint in both modes (Ctrl); mouse wheel changes fly speed from walking pace up to 1,000 km/h
-- [x] Touching the ground while flying down drops you into walk mode (Settings → Land on touch)
-- [x] Swimming in the sea: float at the surface, Space swims up, Shift dives
-- [x] Debug no-clip (N); collision with buildings and objects arrives with them in Phases 3–4
-- [x] Bridge decks and overpasses are walkable (walkable surface index, used by Phase 3 roads)
-- [x] Corner minimap that rotates with you; click it or press M to open the full map
-- [x] Full map: drag and zoom out to the whole US, place and address search, double-click (or right-click → Teleport) anywhere to go there
-- [x] Map layers panel (street map now; radar, clouds, warnings, hurricanes, fires, smoke and aircraft switch on in their phases)
-- [x] Gamepad support (sticks, A jump/fly, B descend, Y camera, X bookmark, Select map)
-- [x] Rebindable keys (Settings → Controls), saved in settings
-- [x] Bookmarks with name (looked up from the location) and view direction (B or the map); recent places list
-- [x] Weather service now runs from the same executable (one file to download on Windows too)
-- [x] Windows: no console window; one-click self-update for the .exe
-- [x] Fix: the third-person and orbit cameras pull in rather than going into cliffs
-- [x] Fix: lidar flattens water to its surface; sea depths now come from the bathymetry tiles there
-- [x] Screenshots from CI reviewed
-- [x] v0.2.0 release with AppImage
+- [x] OSM data per ~2 km tile from Overpass (three public servers, fallback between them), cached on disk in a compact binary form (about 13x smaller than the JSON)
+- [x] Road surfaces from OSM ways: width from lanes, shoulders and highway class (or the `width` tag)
+- [x] Terrain levelled under every road with smoothed cut and fill, blending back to the natural slope beside it; road meshes re-drape whenever the ground under them gets more detailed
+- [x] Junctions merged into one surface with curb returns; roads trimmed back to them, so nothing overlaps or flickers
+- [x] Lane markings from `lanes`, `lanes:forward/backward`, `oneway` and `turn:lanes`: centre lines (double yellow / dashed), lane lines, edge lines, turn arrows; crosswalks and stop lines
+- [x] Sidewalks and curbs from tags, or on urban streets where sidewalks aren't mapped separately, with corners that follow the curb returns
+- [x] Bridges: decks, parapets, undersides and piers; deck heights interpolated between where they meet the ground, kept clear of the roads and railways they cross (`layer`)
+- [x] Approach ramps: roads climb to overpasses and dip into underpasses at a 5% grade, with the terrain filled or cut to match
+- [x] Tunnels: walls, lit ceilings, portal headwalls; the hillside opens up at the portals; walkable inside
+- [x] Interchanges: ramps and viaducts grouped into networks and stacked by layer
+- [x] Street name signs at intersections with the real names (USPS abbreviations); route shields for Interstate, US and state routes with real numbers; exit signs at motorway junctions
+- [x] Traffic signals on mast arms with working cycles (each junction phased by approach), pedestrian signals; stop and yield signs; all from OSM, or inferred at untagged junctions
+- [x] Streetlights from OSM, or spaced along urban roads; they light up at night
+- [x] Guardrails from OSM, and along bridge approaches and high embankments
+- [x] Cones and barrels at construction zones
+- [x] ALPR camera posts where mapped
+- [x] Utility poles, fire hydrants, mailboxes, bus stops (with shelters and benches when tagged), benches, bollards, speed limit signs
+- [x] Potholes, patches and wear, more on roads tagged rough and on minor rural roads; potholes fill with water in rain (the same positions are available to the game for vehicles later)
+- [x] Railways (ballast, sleepers, rails); surfaces from the `surface` tag: asphalt, concrete, pavers, gravel, dirt, wood, metal
+- [x] Roadside objects are separate entities made of parts, ready to be knocked down in Phase 18; you collide with poles, posts and hydrants
+- [x] Settings → Roads switch; draw ranges follow the graphics preset
+- [ ] Screenshots from CI reviewed
+- [ ] v0.3.0 release with AppImage and Windows .exe
 
 ## Screenshots
 
-From the CI screenshot run (software rendering, so frame rates in the overlay are meaningless).
-
-| | |
-|---|---|
-| ![Third person in Central Park](docs/screenshots/phase2/third-person-park.jpg) | ![Orbit camera in Yosemite Valley, Half Dome ahead](docs/screenshots/phase2/orbit-yosemite.jpg) |
-| Third person, Central Park | Orbit camera, Yosemite Valley |
-| ![Swimming off Waikiki](docs/screenshots/phase2/swim-waikiki.jpg) | ![Full map over Denver](docs/screenshots/phase2/map-us.jpg) |
-| Swimming off Waikiki | Full map with search, bookmarks and layers |
+_Added when the CI screenshot run finishes._

@@ -2000,6 +2000,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
+name = "dejavu"
+version = "2.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "017b75b5fbc5806d490da36acc5c4d0e4ae1b69890d02f24c268da971813fbc1"
+
+[[package]]
 name = "derive_more"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4363,7 +4369,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5217,11 +5223,13 @@ dependencies = [
 
 [[package]]
 name = "us-explorer"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
+ "ab_glyph",
  "bevy",
  "bevy_egui",
  "crossbeam-channel",
+ "dejavu",
  "serde",
  "serde_json",
  "texpresso",
@@ -5232,7 +5240,7 @@ dependencies = [
 
 [[package]]
 name = "usx-core"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "crossbeam-channel",
  "directories",
@@ -5249,7 +5257,7 @@ dependencies = [
 
 [[package]]
 name = "usx-weather"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde_json",
  "usx-core",

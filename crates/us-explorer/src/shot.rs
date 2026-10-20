@@ -93,6 +93,7 @@ fn run(
     mut player: ResMut<crate::player::Player>,
     mut map: ResMut<crate::map::FullMap>,
     stats: Res<TerrainStats>,
+    roads: Option<Res<crate::roads::Roads>>,
     mut tp: MessageWriter<Teleported>,
     mut exit: MessageWriter<AppExit>,
     mut menus: ResMut<crate::ui::Menus>,
@@ -151,7 +152,7 @@ fn run(
     player.body_heading = spec.heading;
     player.vel = bevy::math::DVec3::ZERO;
     let t = started.elapsed().as_secs_f32();
-    let settled = t > 6.0 && stats.idle_frames > 90;
+    let settled = t > 6.0 && stats.idle_frames > 90 && crate::roads::settled(roads.as_deref());
     let limit = std::env::var("USX_SHOT_TIMEOUT").ok().and_then(|v| v.parse().ok()).unwrap_or(180.0);
     if r.captured_at.is_none() && (settled || t > limit) {
         let path = r.dir.join(format!("{}.png", spec.name));
