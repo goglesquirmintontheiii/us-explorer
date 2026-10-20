@@ -1,0 +1,43 @@
+name: Windows release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and attach a Windows .exe to (e.g. v0.1.0)
+        required: true
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build (fully optimised)
+        run: cargo build --workspace --profile dist
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=${{ inputs.tag }}
+          V=${TAG#v}
+          mkdir out
+          cp target/dist/us-explorer.exe "out/US_Explorer-${V}-windows-x86_64.exe"
+          # Releases before v0.2.0 run the weather service as a second program beside the game.
+          if [ -f target/dist/usx-weather.exe ] && ! grep -q "weather-service" crates/us-explorer/src/weather_link.rs; then
+            cp target/dist/usx-weather.exe out/usx-weather.exe
+          fi
+          (cd out && for f in *.exe; do sha256sum "$f" > "$f.sha256"; done; ls -l)
+          gh release upload "$TAG" out/* --clobber
