@@ -1,6 +1,8 @@
 //! Simulation clock, real sun position and the physically based sky.
 
 use crate::globe::{GlobeSet, WorldOrigin};
+use bevy::camera::Exposure;
+use bevy::light::GlobalAmbientLight;
 use bevy::light::atmosphere::ScatteringMedium;
 use bevy::light::{Atmosphere, light_consts::lux};
 use bevy::math::DVec3;
@@ -79,6 +81,8 @@ fn place_sun(
     clock: Res<SimClock>,
     origin: Res<WorldOrigin>,
     mut q: Query<&mut Transform, With<Sun>>,
+    mut cams: Query<&mut Exposure, With<crate::camera::MainCamera>>,
+    ambient: Option<ResMut<GlobalAmbientLight>>,
 ) {
     let dir = origin
         .frame
@@ -86,6 +90,37 @@ fn place_sun(
         .as_vec3();
     for mut t in &mut q {
         *t = Transform::IDENTITY.looking_to(-dir, Vec3::Y);
+    }
+    // Exposure follows the sun like an eye adapting: full daylight above 6 degrees,
+    // dusk through civil and nautical twilight, then a moonlit night that stays readable
+    // until real night lighting (moon, stars, street lights) arrives in Phase 5.
+    let elev = dir.y.asin().to_degrees();
+    let ev = night_ev(elev);
+    for mut e in &mut cams {
+        if (e.ev100 - ev).abs() > 0.01 {
+            e.ev100 = ev;
+        }
+    }
+    let night = ((6.0 - elev) / 18.0).clamp(0.0, 1.0);
+    let Some(mut ambient) = ambient else { return };
+    ambient.color = Color::srgb(
+        0.75 + 0.25 * (1.0 - night),
+        0.82 + 0.18 * (1.0 - night),
+        1.0,
+    );
+    ambient.brightness = 80.0 * (1.0 - night) + 30.0 * night;
+}
+
+/// Camera exposure (EV100) for a sun elevation in degrees.
+pub fn night_ev(elev: f32) -> f32 {
+    if elev >= 6.0 {
+        13.5
+    } else if elev >= -6.0 {
+        8.0 + (elev + 6.0) / 12.0 * 5.5
+    } else if elev >= -18.0 {
+        3.0 + (elev + 18.0) / 12.0 * 5.0
+    } else {
+        3.0
     }
 }
 

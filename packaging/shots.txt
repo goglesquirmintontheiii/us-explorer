@@ -12,3 +12,5 @@ name=park-ground;lat=40.7812;lon=-73.9665;agl=3;heading=0;pitch=-8
 name=hawaii-diamond-head;lat=21.2700;lon=-157.8300;agl=500;heading=60;pitch=-10
 name=alaska-denali;lat=63.0000;lon=-151.2000;agl=3000;heading=10;pitch=-4
 name=menu-teleport;lat=39.7392;lon=-104.9903;agl=800;heading=265;pitch=-10;menu=teleport
+name=night-denver;lat=39.7392;lon=-104.9903;agl=900;heading=265;pitch=-8;time=2026-06-22T06:00:00Z
+name=dusk-grand-canyon;lat=36.0572;lon=-112.1400;agl=300;heading=270;pitch=-4;time=2026-06-22T03:20:00Z

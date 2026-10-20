@@ -452,7 +452,11 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
         }
     }
     // Skirts hang below every edge to hide cracks between tiles of different zooms.
-    let depth = (id.width_m() * 0.03).clamp(4.0, 2_000.0);
+    // Each skirt reaches below the tile's lowest point: on cliffs a coarser neighbour's
+    // edge can pass hundreds of metres from ours, and the skirt must cover that gap.
+    let margin = (id.width_m() * 0.03).clamp(4.0, 2_000.0);
+    let floor = g.min as f64 - margin;
+    let mut depth: f64 = margin;
     let edges: [Vec<usize>; 4] = [
         (0..GRID).map(|i| i).collect(),                  // north, west->east
         (0..GRID).map(|j| j * GRID + n).collect(),       // east, north->south
@@ -462,7 +466,9 @@ fn build_mesh(id: TileId, g: &HeightGrid) -> (MeshData, DVec3, f64) {
     for edge in edges {
         let base = positions.len() as u16;
         for &k in &edge {
-            let p = ecef[k] - ups[k] * depth;
+            let d = (g.h[k] as f64 - floor).max(margin);
+            depth = depth.max(d);
+            let p = ecef[k] - ups[k] * d;
             positions.push((p - center).as_vec3().to_array());
             normals.push(normals[k]);
             uvs.push(uvs[k]);

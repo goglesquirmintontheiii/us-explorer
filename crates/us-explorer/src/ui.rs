@@ -26,6 +26,8 @@ pub struct Menus {
     pub credits: bool,
     pub region: bool,
     query: String,
+    /// Put the cursor in the search box on the next frame (set when the window opens).
+    pub focus_query: bool,
     results: Vec<Place>,
     searching: Option<crossbeam_channel::Receiver<Result<Vec<Place>, String>>>,
     search_error: Option<String>,
@@ -74,6 +76,7 @@ fn hotkeys(
     }
     if keys.just_pressed(KeyCode::KeyT) || keys.just_pressed(KeyCode::KeyM) {
         menus.teleport = true;
+        menus.focus_query = true;
     }
     if keys.just_pressed(KeyCode::F3) {
         settings.0.show_debug_overlay = !settings.0.show_debug_overlay;
@@ -336,6 +339,7 @@ fn draw(
                     .clicked()
                 {
                     menus.teleport = true;
+                    menus.focus_query = true;
                     menus.pause = false;
                 }
                 if ui.add_sized(w, egui::Button::new("Settings")).clicked() {
@@ -382,8 +386,13 @@ fn draw(
         egui::Window::new("Go to a place").open(&mut open).collapsible(false).default_width(420.0).anchor(egui::Align2::CENTER_TOP, [0.0, 60.0]).show(ctx, |ui| {
             ui.label("Type an address, a place name or coordinates (e.g. 36.1069, -112.1129), then press Enter.");
             let r = ui.add(egui::TextEdit::singleline(&mut menus.query).desired_width(f32::INFINITY).hint_text("Grand Canyon Village, AZ"));
-            r.request_focus();
-            let go = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+            if menus.focus_query {
+                r.request_focus();
+                menus.focus_query = false;
+            }
+            let enter = ui.input(|i| i.key_pressed(egui::Key::Enter)) && (r.lost_focus() || r.has_focus());
+            let clicked = ui.add_enabled(menus.searching.is_none(), egui::Button::new("Go")).clicked();
+            let go = enter || clicked;
             if go && !menus.query.trim().is_empty() {
                 if let Some((lat, lon)) = parse_lat_lon(&menus.query) {
                     teleport(&mut viewer, &terrain, lat, lon, &mut tp);

@@ -18,6 +18,8 @@ pub struct ShotSpec {
     pub pitch: f64,
     /// Menu to open for the picture: pause, teleport, settings, credits or region.
     pub menu: Option<String>,
+    /// UTC time for this picture (overrides --time).
+    pub time: Option<f64>,
 }
 
 impl ShotSpec {
@@ -31,6 +33,7 @@ impl ShotSpec {
             heading: 0.0,
             pitch: -10.0,
             menu: None,
+            time: None,
         };
         for kv in s.split(';') {
             let (k, v) = kv.split_once('=')?;
@@ -42,6 +45,7 @@ impl ShotSpec {
                 "heading" => sp.heading = v.parse().ok()?,
                 "pitch" => sp.pitch = v.parse().ok()?,
                 "menu" => sp.menu = Some(v.trim().to_string()),
+                "time" => sp.time = Some(crate::sun::parse_utc(v)?),
                 _ => {}
             }
         }
@@ -92,6 +96,8 @@ fn run(
     mut tp: MessageWriter<Teleported>,
     mut exit: MessageWriter<AppExit>,
     mut menus: ResMut<crate::ui::Menus>,
+    mut clock: ResMut<crate::sun::SimClock>,
+    args: Res<crate::Args>,
 ) {
     r.frame += 1;
     if r.current.is_none() {
@@ -105,6 +111,10 @@ fn run(
         viewer.ground = None;
         viewer.hold_agl = None;
         tp.write(Teleported);
+        if let Some(t) = next.time.or(args.time) {
+            clock.unix = t;
+            clock.fixed = true;
+        }
         let m = next.menu.as_deref().unwrap_or("");
         menus.pause = m == "pause";
         menus.teleport = m == "teleport";
@@ -129,7 +139,11 @@ fn run(
     viewer.velocity = bevy::math::DVec3::ZERO;
     let t = started.elapsed().as_secs_f32();
     let settled = t > 6.0 && stats.idle_frames > 90;
-    if r.captured_at.is_none() && (settled || t > 180.0) {
+    let limit = std::env::var("USX_SHOT_TIMEOUT")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(180.0);
+    if r.captured_at.is_none() && (settled || t > limit) {
         let path = r.dir.join(format!("{}.png", spec.name));
         info!(
             "screenshot {} after {t:.1}s (settled: {settled}, deepest zoom {})",
