@@ -1,0 +1,38 @@
+name: Fixtures
+# Fetches real OSM/Overpass samples for offline tests and pushes them to the `fixtures` branch.
+on:
+  workflow_dispatch:
+    inputs:
+      tiles:
+        description: "Space-separated z/x/y tiles"
+        required: true
+        default: "14/3413/6217 14/3413/6215 14/2808/6548 14/4824/6157 14/3731/6290 14/2617/6330"
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch
+        run: |
+          mkdir out
+          for t in ${{ inputs.tiles }}; do
+            IFS=/ read z x y <<< "$t"
+            read s w n e < <(python3 -c "
+          import math
+          z,x,y=$z,$x,$y
+          def lat(y): return math.degrees(math.atan(math.sinh(math.pi*(1-2*y/2**z))))
+          print(lat(y+1), x/2**z*360-180, lat(y), (x+1)/2**z*360-180)")
+            q="[out:json][timeout:90];(way[highway]($s,$w,$n,$e);way[railway~\"^(rail|light_rail|subway|tram|narrow_gauge)\$\"]($s,$w,$n,$e);way[barrier=guard_rail]($s,$w,$n,$e);node[highway~\"^(traffic_signals|stop|give_way|street_lamp|crossing|bus_stop|construction|motorway_junction)\$\"]($s,$w,$n,$e);node[emergency=fire_hydrant]($s,$w,$n,$e);node[amenity~\"^(bench|post_box)\$\"]($s,$w,$n,$e);node[power=pole]($s,$w,$n,$e);node[man_made=surveillance]($s,$w,$n,$e););out body geom qt;"
+            for ep in https://overpass-api.de/api/interpreter https://overpass.private.coffee/api/interpreter https://overpass.kumi.systems/api/interpreter; do
+              if curl -sf -m 120 -A "us-explorer-fixtures" --data-urlencode "data=$q" "$ep" -o "out/$z-$x-$y.json"; then echo "$t from $ep: $(wc -c < out/$z-$x-$y.json) bytes"; break; fi
+            done
+            sleep 2
+          done
+      - name: Push
+        run: |
+          cd out
+          git init -q -b fixtures
+          git config user.name "github-actions"; git config user.email "actions@github.com"
+          git add -A; git commit -qm "fixtures"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" fixtures
