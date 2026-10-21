@@ -1,6 +1,6 @@
 # Progress: Phase 4 (Buildings and interiors), v0.4.0
 
-**Status:** in progress · previous phase: [Phase 3.1](progress/progress_phase_3_1.md) (released [v0.3.1-hotfix](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.1-hotfix))
+**Status:** complete · released as [v0.4.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.4.0) on 2026-10-21 · previous phase: [Phase 3.1](progress/progress_phase_3_1.md) (released [v0.3.1-hotfix](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.1-hotfix))
 
 Goal: every building in OpenStreetMap drawn in 3D with the right height, roof, materials and colours, real doors you can open, and an interior you can walk around in, furnished for what the building is. Also the fixes and requests from testing 0.3.1. Linux AppImage and Windows build.
 
@@ -52,5 +52,32 @@ Open GitHub issues checked at the start of this phase: none.
 
 ### Release
 - [x] Building fixtures from six cities run through the whole pipeline in tests (no panics, interiors for nearly every building)
-- [ ] Quick bug sweep
-- [ ] v0.4.0 released (AppImage and Windows)
+- [x] Quick bug sweep (see below)
+- [x] v0.4.0 released (AppImage and Windows .exe); release screenshots skipped as asked, a short building-only screenshot run was used for checking
+
+## Bug sweep
+
+Found and fixed while checking the release:
+
+- The building shader didn't compile (a reserved word), so buildings were invisible
+- Buildings drawn in detail kept the height they were first given on coarse terrain and could float tens of metres up (or sit underground) once finer terrain arrived; they now follow the building's latest placement
+- Interior lights made nearby buildings vanish on some GPUs; real lights now only light the building you're in (six nearest you), the rest glow
+- Indoors everything was washed out: the sky's ambient light reached inside; it's turned down when you're indoors and exposure adapts less
+- A supermarket with a pharmacy counter became a hospital: buildings now go by the most telling shop or amenity inside, and a cafe in a tower doesn't make the tower a restaurant
+- Basements dug craters around houses: the ground is only kept below floors now
+- Attic rafters poked through hipped roofs
+- Two systems asked for the same resource twice (a crash at start)
+- Screens and mirrors faced into the wall; interior walls could be invisible from one side
+- Doorways had no step up from the ground; the third-person camera went through walls and ceilings
+- Big office floors away from yours are no longer furnished (a third of the triangles), and are filled in as you move between floors
+
+## Screenshots
+
+From the CI check run and local runs (software rendering, so frame rates in the overlay are meaningless).
+
+| | |
+|---|---|
+| ![Midtown Manhattan](docs/screenshots/phase4/manhattan-skyline.jpg) | ![Facades: curtain walls with inset panes, punched windows, brick](docs/screenshots/phase4/midtown-facades.jpg) |
+| ![A Denver suburb](docs/screenshots/phase4/suburb-denver.jpg) | ![Houses with porches, doors and garages](docs/screenshots/phase4/house-street.jpg) |
+| ![Inside a house](docs/screenshots/phase4/house-inside.jpg) | ![Inside a supermarket](docs/screenshots/phase4/supermarket-inside.jpg) |
+| ![A parking lot: stalls, islands, accessible stalls](docs/screenshots/phase4/parking-lot.jpg) | ![The suburb at night](docs/screenshots/phase4/night-suburb.jpg) |

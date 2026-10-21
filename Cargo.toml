@@ -3,7 +3,7 @@ resolver = "3"
 members = ["crates/usx-core", "crates/usx-weather", "crates/us-explorer"]
 
 [workspace.package]
-version = "0.3.1-hotfix"
+version = "0.4.0"
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/goglesquirmintontheiii/us-explorer"

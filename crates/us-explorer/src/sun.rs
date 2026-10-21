@@ -77,7 +77,7 @@ fn place_sun(
     clock: Res<SimClock>,
     origin: Res<WorldOrigin>,
     mut q: Query<&mut Transform, With<Sun>>,
-    mut cams: Query<(&mut Exposure, Option<&mut bevy::light::AtmosphereEnvironmentMapLight>), With<crate::camera::MainCamera>>,
+    mut cams: Query<(&mut Exposure, Option<&mut bevy::light::GeneratedEnvironmentMapLight>), With<crate::camera::MainCamera>>,
     ambient: Option<ResMut<GlobalAmbientLight>>,
     inside: Option<Res<crate::buildings::interior::Inside>>,
     time: Res<Time>,

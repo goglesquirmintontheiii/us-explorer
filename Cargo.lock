@@ -5352,7 +5352,7 @@ dependencies = [
 
 [[package]]
 name = "us-explorer"
-version = "0.3.1-hotfix"
+version = "0.4.0"
 dependencies = [
  "ab_glyph",
  "bevy",
@@ -5370,7 +5370,7 @@ dependencies = [
 
 [[package]]
 name = "usx-core"
-version = "0.3.1-hotfix"
+version = "0.4.0"
 dependencies = [
  "crossbeam-channel",
  "directories",
@@ -5388,7 +5388,7 @@ dependencies = [
 
 [[package]]
 name = "usx-weather"
-version = "0.3.1-hotfix"
+version = "0.4.0"
 dependencies = [
  "serde_json",
  "usx-core",

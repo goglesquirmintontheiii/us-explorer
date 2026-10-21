@@ -92,18 +92,19 @@ pub fn drape(built: &Built, chunk: usize, snap: &HeightSnap, hidden: &[u32]) -> 
     let mut indices = Vec::with_capacity(c.geom.i.len());
     let mut placed = Vec::new();
     for r in &c.ranges {
-        if hidden.contains(&r.b) {
-            continue;
-        }
         let Some((base, low)) = base_of(built, r.b as usize, snap) else { continue };
         let bl = &built.buildings[r.b as usize];
         let cen = super::geom::centroid(&bl.outline);
         let (la, lo) = built.local.ll(cen);
         let g = Geodetic::new(la, lo, base);
         let origin = g.to_ecef();
+        placed.push(Placed { b: r.b, base, low, origin });
+        // Buildings drawn on their own (in detail) are still placed, just not drawn here.
+        if hidden.contains(&r.b) {
+            continue;
+        }
         // Local (x east, y up, z south) to ECEF.
         let to_ecef: DMat3 = EnuFrame::at(g).ecef_to_local.transpose();
-        placed.push(Placed { b: r.b, base, low, origin });
         let first = positions.len() as u32;
         for v in &c.geom.v[r.v0 as usize..r.v1 as usize] {
             let mut y = v.p.y as f64;

@@ -871,6 +871,19 @@ mod fixture_tests {
                 match r {
                     Some(d) => {
                         ok += 1;
+                        if only_b.is_some() {
+                            for sp in &d.specs {
+                                if let furniture::Spec::Mirror { centre, yaw, .. } = sp {
+                                    let (mla, mlo) = b.local.ll(cen + Vec2::new(centre.x, centre.z));
+                                    println!(
+                                        "    mirror at {mla:.7},{mlo:.7} y {:.2} facing yaw {:.2} (heading {:.0})",
+                                        centre.y,
+                                        yaw,
+                                        (-yaw.to_degrees()).rem_euclid(360.0)
+                                    );
+                                }
+                            }
+                        }
                         for mb in d.kit.parts.values() {
                             tris += mb.idx.len() / 3;
                             for q in &mb.pos {
