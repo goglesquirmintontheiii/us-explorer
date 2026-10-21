@@ -1,6 +1,6 @@
 # Progress: Phase 3.1 (Hotfix: roads, lights and water), v0.3.1-hotfix
 
-**Status:** in progress · previous phase: [Phase 3](progress/progress_phase_3.md) (released [v0.3.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.0))
+**Status:** complete · released as [v0.3.1-hotfix](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.1-hotfix) on 2026-10-21 · previous phase: [Phase 3](progress/progress_phase_3.md) (released [v0.3.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.0))
 
 Goal: fix what testing of 0.3.0 turned up and add the requested road, sign, light and water features. Linux AppImage only for this release.
 
@@ -46,7 +46,7 @@ Open GitHub issues checked at the start of this phase: none.
 
 ### Release
 - [x] Screenshots reviewed (water ripples toned down after review; streets with mapped lamps also get pools of light)
-- [ ] v0.3.1-hotfix released (AppImage)
+- [x] v0.3.1-hotfix released (AppImage)
 
 ## Screenshots
 
