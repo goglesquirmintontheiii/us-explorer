@@ -7,6 +7,14 @@ on:
         description: "Space-separated z/x/y tiles"
         required: true
         default: "14/3413/6217 14/3413/6215 14/2808/6548 14/4824/6157 14/3731/6290 14/2617/6330"
+      layer:
+        description: "roads or buildings"
+        required: false
+        default: "roads"
+      branch:
+        description: "Branch to push the samples to"
+        required: false
+        default: "fixtures"
 permissions:
   contents: write
 jobs:
@@ -23,16 +31,21 @@ jobs:
           z,x,y=$z,$x,$y
           def lat(y): return math.degrees(math.atan(math.sinh(math.pi*(1-2*y/2**z))))
           print(lat(y+1), x/2**z*360-180, lat(y), (x+1)/2**z*360-180)")
+            if [ "${{ inputs.layer }}" = "buildings" ]; then
+              b="$s,$w,$n,$e"
+              q="[out:json][timeout:180];(way[building]($b);relation[building](if:count_members()<400)($b);way[\"building:part\"]($b);relation[\"building:part\"](if:count_members()<200)($b);way[indoor~\"^(room|corridor|area|level)\$\"]($b);node[entrance]($b);node[door]($b);node[shop]($b);node[amenity]($b);node[office]($b);node[craft]($b);node[tourism]($b);node[healthcare]($b);way[amenity=parking]($b););out body geom qt;"
+            else
             q="[out:json][timeout:90];(way[highway]($s,$w,$n,$e);way[railway~\"^(rail|light_rail|subway|tram|narrow_gauge)\$\"]($s,$w,$n,$e);way[barrier=guard_rail]($s,$w,$n,$e);node[highway~\"^(traffic_signals|stop|give_way|street_lamp|crossing|bus_stop|construction|motorway_junction)\$\"]($s,$w,$n,$e);node[emergency=fire_hydrant]($s,$w,$n,$e);node[amenity~\"^(bench|post_box)\$\"]($s,$w,$n,$e);node[power=pole]($s,$w,$n,$e);node[man_made=surveillance]($s,$w,$n,$e););out body geom qt;"
+            fi
             for ep in https://overpass-api.de/api/interpreter https://overpass.private.coffee/api/interpreter https://overpass.kumi.systems/api/interpreter; do
-              if curl -sf -m 120 -A "us-explorer-fixtures" --data-urlencode "data=$q" "$ep" -o "out/$z-$x-$y.json"; then echo "$t from $ep: $(wc -c < out/$z-$x-$y.json) bytes"; break; fi
+              if curl -sf -m 200 -A "us-explorer-fixtures" --data-urlencode "data=$q" "$ep" -o "out/$z-$x-$y.json"; then echo "$t from $ep: $(wc -c < out/$z-$x-$y.json) bytes"; break; fi
             done
             sleep 2
           done
       - name: Push
         run: |
           cd out
-          git init -q -b fixtures
+          git init -q -b out
           git config user.name "github-actions"; git config user.email "actions@github.com"
           git add -A; git commit -qm "fixtures"
-          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" fixtures
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:${{ inputs.branch }}
