@@ -377,14 +377,15 @@ pub fn leaf_atlas(cell: usize) -> Canvas {
         let s = cell as f32;
         let o = Vec2::new(ox as f32, oy as f32);
         let mut rng = Rng(0xf20d);
-        let n = 34;
+        let n = 24;
         for i in 0..n {
             let v = (i as f32 + 0.5) / n as f32;
             for sgn in [-1.0f32, 1.0] {
+                // Separate leaflets with sky between them, drooping a little.
                 let a = o + Vec2::new(0.5, v) * s;
-                let b = o + Vec2::new(0.5 + sgn * 0.5, (v + 0.12).min(1.0)) * s;
+                let b = o + Vec2::new(0.5 + sgn * rng.r(0.4, 0.5), (v + 0.16 + rng.r(-0.02, 0.02)).min(1.0)) * s;
                 let tone = leaf_tone(&mut rng);
-                let w = s * 0.022;
+                let w = s * 0.011;
                 // Leaflet: tapered.
                 let d = (b - a).normalize();
                 let nrm = Vec2::new(-d.y, d.x);

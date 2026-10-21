@@ -168,7 +168,7 @@ fn star_colour(k: f32) -> [f32; 3] {
 }
 
 /// Points as camera-facing quads: direction, colour, magnitude, twinkle seed.
-fn points_mesh(points: &[(Vec3, [f32; 3], f32)]) -> Mesh {
+fn points_mesh(points: &[(Vec3, [f32; 3], f32)], usage: RenderAssetUsages) -> Mesh {
     let n = points.len();
     let (mut pos, mut uv, mut info, mut col, mut idx) =
         (Vec::with_capacity(n * 4), Vec::with_capacity(n * 4), Vec::with_capacity(n * 4), Vec::with_capacity(n * 4), Vec::with_capacity(n * 6));
@@ -183,7 +183,7 @@ fn points_mesh(points: &[(Vec3, [f32; 3], f32)]) -> Mesh {
         let b = (i * 4) as u32;
         idx.extend_from_slice(&[b, b + 1, b + 2, b, b + 2, b + 3]);
     }
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD)
+    Mesh::new(PrimitiveTopology::TriangleList, usage)
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, pos)
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uv)
         .with_inserted_attribute(Mesh::ATTRIBUTE_UV_1, info)
@@ -218,8 +218,8 @@ fn spawn(
     let sky = skies.add(SkyMaterial::default());
     let stars = star_mats.add(StarMaterial::default());
     let dome = meshes.add(Sphere::new(1.0).mesh().ico(3).unwrap());
-    let star_mesh = meshes.add(points_mesh(&catalogue()));
-    let planets = meshes.add(points_mesh(&planet_points(clock.time())));
+    let star_mesh = meshes.add(points_mesh(&catalogue(), RenderAssetUsages::RENDER_WORLD));
+    let planets = meshes.add(points_mesh(&planet_points(clock.time()), RenderAssetUsages::default()));
     let common = (Transform::default(), NotShadowCaster, bevy::camera::visibility::NoFrustumCulling);
     commands.spawn((Dome, Mesh3d(dome), MeshMaterial3d(sky.clone()), common.clone()));
     commands.spawn((Celestial, Mesh3d(star_mesh), MeshMaterial3d(stars.clone()), common.clone()));
@@ -263,7 +263,7 @@ fn update(
     if (unix - *planets_at).abs() > 600.0 {
         *planets_at = unix;
         if let Some(mut m) = meshes.get_mut(&h.planets) {
-            *m = points_mesh(&planet_points(unix));
+            *m = points_mesh(&planet_points(unix), RenderAssetUsages::default());
         }
     }
     // The moon from where you stand (it's close enough for parallax to matter).

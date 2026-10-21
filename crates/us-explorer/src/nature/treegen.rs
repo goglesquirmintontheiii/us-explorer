@@ -715,8 +715,9 @@ fn pinnate_frond(cx: &mut Ctx, base: Vec3, d0: Vec3, len: f32, droop: f32, cell:
         let d = dir_on(&pts, t);
         let side = d.cross(Vec3::Y).normalize_or(Vec3::X);
         // Width: narrow at the base, widest a third along, tapering to the tip.
-        let w = len * 0.28 * (t * 3.0).min(1.0) * (1.0 - t * 0.75);
-        let keel = Vec3::NEG_Y * w * 0.35;
+        let w = len * 0.22 * (t * 3.0).min(1.0) * (1.0 - t * 0.75);
+        // Leaflets hang from the midrib in an inverted V.
+        let keel = Vec3::NEG_Y * w * 0.55;
         let n = d.cross(side).normalize();
         let n = if n.y < 0.0 { -n } else { n };
         let v = uv0.y + (uv1.y - uv0.y) * t;
@@ -884,7 +885,7 @@ fn shrub(cx: &mut Ctx, stage: Stage, sp: Sp) {
     let h = cx.height.max(0.4);
     let w = h * cx.df.width;
     cx.crown_c = Vec3::new(0.0, h * 0.5, 0.0);
-    cx.crown_r = Vec3::new(w * 0.5, h * 0.5, w * 0.5);
+    cx.crown_r = Vec3::new(w * 0.5, h * 0.48, w * 0.5);
     if sp == Sp::SawPalmetto {
         let cell = atlas_cell(LeafKind::Fan, false);
         for k in 0..9 {
@@ -898,18 +899,20 @@ fn shrub(cx: &mut Ctx, stage: Stage, sp: Sp) {
     for k in 0..4 {
         let az = k as f32 * 1.6 + cx.rng.next();
         let d = Vec3::new(az.cos() * 0.4, 1.0, az.sin() * 0.4).normalize();
-        let (pts, rad) = grow(&mut cx.rng, Vec3::ZERO, d, h * 0.7, 0.03, 0.01, 3, Vec3::Y * 0.1, 0.3);
+        let (pts, rad) = grow(&mut cx.rng, Vec3::ZERO, d, h * 0.55, 0.03, 0.01, 3, Vec3::Y * 0.1, 0.3);
         cx.tube(&Limb { pts, radius: rad, depth: 1, sway0: 0.0, phase: 0.0 }, 4, false);
     }
     if cx.leaf_amount <= 0.01 {
         return;
     }
-    let n = ((w * h * 10.0 * cx.df.density) as usize).clamp(6, 60) / if cx.detail == Detail::Low { 3 } else { 1 };
+    // Densely leaved: many small clusters through the whole dome, thickest at its skin.
+    let n = ((w * h * 36.0 * cx.df.density) as usize).clamp(24, 150) / if cx.detail == Detail::Low { 3 } else { 1 };
     let cell = atlas_cell(cx.leaf_kind, cx.detail == Detail::Low);
-    let s = if cx.detail == Detail::Full { 0.45 } else { 0.9 } * (h / 2.0).clamp(0.5, 1.2);
+    let s = if cx.detail == Detail::Full { 0.36 } else { 0.7 } * (h / 2.0).clamp(0.5, 1.2);
     for _ in 0..n {
-        let u = Vec3::new(cx.rng.signed(), cx.rng.next().sqrt(), cx.rng.signed()).normalize_or(Vec3::Y);
-        let c = cx.crown_c + u * cx.crown_r * cx.rng.range(0.55, 1.0);
+        let u = Vec3::new(cx.rng.signed(), cx.rng.range(-0.7, 1.0), cx.rng.signed()).normalize_or(Vec3::Y);
+        let mut c = cx.crown_c + u * cx.crown_r * cx.rng.range(0.35, 1.0).sqrt();
+        c.y = c.y.max(h * 0.12);
         let face = (u + Vec3::new(cx.rng.signed(), 0.0, cx.rng.signed()) * 0.5).normalize_or(Vec3::Y);
         let ph = cx.rng.next() * 6.0;
         cx.card(c, face, Vec3::Y, Vec2::splat(s), cell, ph, 0.3);
