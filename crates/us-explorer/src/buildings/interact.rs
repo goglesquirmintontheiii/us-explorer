@@ -101,6 +101,8 @@ pub struct LiftCar {
     pub depth: f32,
     /// Car door panels, and each floor's hall door panels.
     pub car_doors: [Entity; 2],
+    /// Took over the car position from before a rebuild.
+    pub init: bool,
     pub hall_doors: Vec<([Entity; 2], Vec3)>,
 }
 
@@ -784,6 +786,7 @@ fn spawn_lift(
         width,
         depth,
         car_doors,
+        init: false,
         hall_doors,
     });
     for &(p, floor) in &l.calls {
@@ -1124,6 +1127,16 @@ fn animate_lifts(
     let dt = time.delta_secs();
     for (mut c, mut tr) in &mut cars {
         let c = &mut *c;
+        if !c.init {
+            c.init = true;
+            if let Some(&h) = walk.lifts.get(&c.id) {
+                c.y = (h - c.base) as f32;
+                let near =
+                    c.floors.iter().enumerate().min_by(|a, b| (a.1 - c.y).abs().total_cmp(&(b.1 - c.y).abs())).map(|x| x.0).unwrap_or(0);
+                c.at = near;
+                c.target = near;
+            }
+        }
         let ty = c.floors[c.target.min(c.floors.len() - 1)];
         let moving = (c.y - ty).abs() > 0.005;
         if moving {

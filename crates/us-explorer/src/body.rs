@@ -392,8 +392,10 @@ fn place_body(
     head_ents: Query<Entity, With<HeadPart>>,
     mut commands: Commands,
     mut last_first: Local<Option<bool>>,
+    close: Option<Res<crate::player::CameraClose>>,
 ) {
     let first = p.view == CameraView::FirstPerson && p.showcase.is_none();
+    let hide_all = close.is_some_and(|c| c.0) && p.showcase.is_none();
     let frame = EnuFrame::at(p.geo());
     let m = origin.frame.ecef_to_local * frame.ecef_to_local.transpose();
     let rot = (DQuat::from_mat3(&m) * DQuat::from_rotation_y(-p.body_heading.to_radians())).as_quat();
@@ -402,7 +404,10 @@ fn place_body(
         t.translation = origin.local(p.feet);
         t.rotation = rot;
         t.scale = Vec3::new(ch.build.clamp(0.8, 1.25), ch.height.clamp(0.85, 1.15), ch.build.clamp(0.8, 1.25).sqrt());
-        *v = Visibility::Visible;
+        let want = if hide_all { Visibility::Hidden } else { Visibility::Visible };
+        if *v != want {
+            *v = want;
+        }
     }
     for (mut v, look) in &mut looks {
         let want = if look.shown(settings.0.outfit, ch) { Visibility::Inherited } else { Visibility::Hidden };
