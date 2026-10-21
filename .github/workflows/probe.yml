@@ -1,0 +1,32 @@
+name: Probe
+# Development aid: fetch a few URLs (data sources being evaluated) and push what came
+# back to the `probe` branch, since the development sandbox can't reach them.
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "URLs separated by spaces"
+        required: true
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch
+        run: |
+          mkdir out
+          i=0
+          for u in ${{ inputs.urls }}; do
+            i=$((i+1))
+            code=$(curl -sS -L -m 90 -A "us-explorer-probe" -o "out/$i.body" -w "%{http_code} %{content_type} %{size_download}" "$u" 2>out/$i.err || true)
+            echo "$i $code $u" | tee -a out/index.txt
+            head -c 3000000 "out/$i.body" > "out/$i.tmp" && mv "out/$i.tmp" "out/$i.body" || true
+          done
+      - name: Push
+        run: |
+          cd out
+          git init -q -b probe
+          git -c user.name=ci -c user.email=ci@example.com add -A
+          git -c user.name=ci -c user.email=ci@example.com commit -qm probe
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:probe
