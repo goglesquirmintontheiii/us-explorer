@@ -1,0 +1,170 @@
+2026-10-21T18:00:51.148538Z  INFO bevy_diagnostic::system_information_diagnostics_plugin::internal: SystemInfo { os: "Linux (Ubuntu 24.04)", kernel: "6.17.0-1022-azure", cpu: "AMD EPYC 9V74 80-Core Processor", core_count: "2", memory: "15.6 GiB" }
+2026-10-21T18:00:51.517309Z  INFO bevy_render::renderer: AdapterInfo { name: "llvmpipe (LLVM 20.1.2, 256 bits)", vendor: 65541, device: 0, device_type: Cpu, device_pci_bus_id: "", driver: "llvmpipe", driver_info: "Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)", backend: Vulkan, subgroup_min_size: 8, subgroup_max_size: 8, transient_saves_memory: false }
+2026-10-21T18:00:51.517335Z  WARN bevy_render::renderer: The selected adapter is using a driver that only supports software rendering. This is likely to be very slow. See https://bevy.org/learn/errors/b0006/
+ALSA lib confmisc.c:855:(parse_card) cannot find card '0'
+ALSA lib conf.c:5208:(_snd_config_evaluate) function snd_func_card_inum returned error: No such file or directory
+ALSA lib confmisc.c:422:(snd_func_concat) error evaluating strings
+ALSA lib conf.c:5208:(_snd_config_evaluate) function snd_func_concat returned error: No such file or directory
+ALSA lib confmisc.c:1342:(snd_func_refer) error evaluating name
+ALSA lib conf.c:5208:(_snd_config_evaluate) function snd_func_refer returned error: No such file or directory
+ALSA lib conf.c:5731:(snd_config_expand) Evaluate error: No such file or directory
+ALSA lib pcm.c:2721:(snd_pcm_open_noupdate) Unknown PCM default
+2026-10-21T18:00:52.356268Z  WARN bevy_audio::audio_output: No audio device found.
+2026-10-21T18:00:52.376613Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-10-21T18:00:52.376712Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-10-21T18:00:52.377035Z  INFO bevy_egui::render: Using bindless_mode_array_size 16 (Device maximum 1000000)
+2026-10-21T18:00:52.377298Z  INFO bevy_winit::system: Creating new window US Explorer 0.4.0 (64v0)
+2026-10-21T18:00:52.377776Z  WARN winit::platform_impl::linux::x11::util::randr: XRandR reported that the display's 0mm in size, which is certifiably insane
+2026-10-21T18:00:52.377829Z  INFO winit::platform_impl::linux::x11::window: Guessed window scale factor: 1
+2026-10-21T18:00:52.379554Z  INFO us_explorer::terrain: terrain textures: BC1 compressed
+2026-10-21T18:00:53.933142Z  INFO us_explorer::nature: vegetation season: Season { leaves: 1.0, fall: 0.0, spring: 0.0, dry: 0.2, dormant: 0.0 } (Plains), 3D trees true
+2026-10-21T18:00:54.187564Z  INFO us_explorer::nature: vegetation season: Season { leaves: 1.0, fall: 0.0, spring: 0.0, dry: 0.0, dormant: 0.0 } (SouthFlorida), 3D trees true
+2026-10-21T18:02:02.672817Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.672838Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.674037Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.674040Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.675192Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.675196Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.677519Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.677532Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.677673Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.677680Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.678846Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.678855Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.679248Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.679254Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.680705Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.680713Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.681984Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.681993Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.682130Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.682136Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.682318Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.682325Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683305Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683314Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683619Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683628Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683631Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683632Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683890Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.683897Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.684361Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.684369Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686524Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686534Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686536Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686538Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686900Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.686908Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688392Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688401Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688603Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688610Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688814Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.688820Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.689780Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.689789Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.691408Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:02:02.691417Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:03:10.432289Z  INFO us_explorer::nature: nature 15/9090/13952: 52 areas, 272 trees, 0 rows, 3 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:03:11.858068Z  INFO us_explorer::nature::details: details 15/9090/13952: 11 chunks
+2026-10-21T18:03:37.465752Z  INFO us_explorer::roads: roads 15/9090/13952: 704 ways, 162 junctions, 9 bridges, 0 tunnels, 829 props, 78174 vertices
+2026-10-21T18:03:37.466298Z  INFO us_explorer::roads: roads 15/9090/13953: 534 ways, 121 junctions, 0 bridges, 0 tunnels, 770 props, 60142 vertices
+2026-10-21T18:03:39.166001Z  INFO us_explorer::roads: roads 15/9089/13952: 931 ways, 284 junctions, 32 bridges, 0 tunnels, 1312 props, 117187 vertices
+2026-10-21T18:03:49.363888Z  INFO us_explorer::nature: nature 15/9090/13953: 34 areas, 136 trees, 1 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:03:49.560517Z  INFO us_explorer::nature::details: details 15/9090/13953: 11 chunks
+2026-10-21T18:04:05.360995Z  INFO us_explorer::buildings: buildings 15/9090/13953: 324 buildings, 79428 vertices
+2026-10-21T18:04:05.361095Z  INFO us_explorer::buildings: buildings 15/9090/13952: 225 buildings, 65932 vertices
+2026-10-21T18:04:56.298916Z  INFO us_explorer::roads: roads 15/9091/13953: 0 ways, 0 junctions, 0 bridges, 0 tunnels, 0 props, 0 vertices
+2026-10-21T18:04:58.106319Z  INFO us_explorer::roads: roads 15/9089/13953: 750 ways, 278 junctions, 0 bridges, 0 tunnels, 1579 props, 106511 vertices
+2026-10-21T18:05:55.029982Z  INFO us_explorer::shot: screenshot shots/miami_beach.png after 301.2s (settled: false, deepest zoom 19)
+2026-10-21T18:05:59.814649Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/miami_beach.png
+2026-10-21T18:06:12.716012Z  INFO us_explorer::nature: vegetation season: Season { leaves: 1.0, fall: 0.0, spring: 0.0, dry: 0.2, dormant: 0.0 } (HillCountry), 3D trees true
+2026-10-21T18:06:31.268942Z  INFO us_explorer::nature: nature 15/9089/13952: 165 areas, 121 trees, 0 rows, 5 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:06:32.221352Z  INFO us_explorer::nature::details: details 15/9089/13952: 13 chunks
+2026-10-21T18:06:36.522055Z  INFO us_explorer::nature: nature 15/9090/13952: 52 areas, 272 trees, 0 rows, 3 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:06:38.766981Z  INFO us_explorer::nature::details: details 15/9090/13952: 11 chunks
+2026-10-21T18:08:54.337680Z  INFO us_explorer::roads: roads 15/7231/13268: 5 ways, 3 junctions, 0 bridges, 0 tunnels, 176 props, 5822 vertices
+2026-10-21T18:09:11.296049Z  INFO us_explorer::nature: nature 15/7231/13268: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:09:12.438795Z  INFO us_explorer::nature::details: details 15/7231/13268: 0 chunks
+2026-10-21T18:09:23.871513Z  INFO us_explorer::nature: nature 15/7231/13268: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:09:30.795946Z  INFO us_explorer::buildings: buildings 15/7231/13268: 0 buildings, 0 vertices
+2026-10-21T18:10:04.409764Z  INFO us_explorer::buildings: buildings 15/7231/13267: 0 buildings, 0 vertices
+2026-10-21T18:10:25.494646Z  INFO us_explorer::roads: roads 15/7232/13268: 2 ways, 1 junctions, 0 bridges, 0 tunnels, 98 props, 1919 vertices
+2026-10-21T18:10:25.494671Z  INFO us_explorer::roads: roads 15/7231/13267: 2 ways, 1 junctions, 0 bridges, 0 tunnels, 73 props, 3312 vertices
+2026-10-21T18:10:38.708743Z  INFO us_explorer::nature: nature 15/7231/13267: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:10:38.710086Z  INFO us_explorer::nature::details: details 15/7231/13267: 0 chunks
+2026-10-21T18:10:39.877025Z  INFO us_explorer::nature: nature 15/7231/13267: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:11:11.884045Z  INFO us_explorer::shot: screenshot shots/windfarm.png after 300.9s (settled: false, deepest zoom 19)
+2026-10-21T18:11:15.690800Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/windfarm.png
+2026-10-21T18:11:59.482371Z  INFO us_explorer::nature: nature 15/7231/13267: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:12:00.535699Z  INFO us_explorer::nature::details: details 15/7231/13267: 0 chunks
+2026-10-21T18:13:05.929817Z  INFO us_explorer::roads: roads 15/7420/13580: 478 ways, 249 junctions, 19 bridges, 4 tunnels, 2698 props, 203248 vertices
+2026-10-21T18:13:22.271240Z  INFO us_explorer::buildings: buildings 15/7420/13580: 208 buildings, 41911 vertices
+2026-10-21T18:14:39.652866Z  INFO us_explorer::nature: nature 15/7420/13580: 3 areas, 0 trees, 0 rows, 31 barriers, 3 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:14:41.322967Z  INFO us_explorer::nature::details: details 15/7420/13580: 6 chunks
+2026-10-21T18:14:58.210932Z  INFO us_explorer::buildings: buildings 15/7419/13580: 532 buildings, 112985 vertices
+2026-10-21T18:14:59.818940Z  INFO us_explorer::nature: nature 15/7420/13580: 3 areas, 0 trees, 0 rows, 31 barriers, 3 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:15:36.177094Z  INFO us_explorer::roads: roads 15/7420/13579: 545 ways, 306 junctions, 12 bridges, 0 tunnels, 1780 props, 155945 vertices
+2026-10-21T18:16:24.577210Z  INFO us_explorer::shot: screenshot shots/sa_lot.png after 300.5s (settled: false, deepest zoom 19)
+2026-10-21T18:16:29.753357Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/sa_lot.png
+2026-10-21T18:16:43.525928Z  INFO us_explorer::nature: vegetation season: Season { leaves: 1.0, fall: 0.0, spring: 0.0, dry: 0.0, dormant: 0.0 } (Southeast), 3D trees true
+2026-10-21T18:17:19.720224Z  INFO us_explorer::nature: nature 15/7419/13580: 14 areas, 0 trees, 0 rows, 2 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:17:21.199932Z  INFO us_explorer::nature::details: details 15/7419/13580: 13 chunks
+2026-10-21T18:17:31.944672Z  INFO us_explorer::nature: nature 15/7419/13580: 14 areas, 0 trees, 0 rows, 2 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:17:34.765300Z  INFO us_explorer::nature::details: details 15/7419/13580: 13 chunks
+2026-10-21T18:18:19.483987Z  INFO us_explorer::buildings: buildings 15/8790/12911: 1 buildings, 162 vertices
+2026-10-21T18:18:40.414311Z  INFO us_explorer::roads: roads 15/8790/12911: 33 ways, 10 junctions, 0 bridges, 0 tunnels, 105 props, 11671 vertices
+2026-10-21T18:19:30.144432Z  INFO us_explorer::nature: nature 15/8790/12911: 4 areas, 0 trees, 0 rows, 3 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:19:30.145603Z  INFO us_explorer::nature::details: details 15/8790/12911: 13 chunks
+2026-10-21T18:19:44.507191Z  INFO us_explorer::nature: nature 15/8790/12911: 8 areas, 0 trees, 0 rows, 3 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:19:50.307037Z  INFO us_explorer::roads: roads 15/8789/12911: 14 ways, 12 junctions, 0 bridges, 0 tunnels, 155 props, 8526 vertices
+2026-10-21T18:20:08.560139Z  INFO us_explorer::buildings: buildings 15/8789/12911: 0 buildings, 0 vertices
+2026-10-21T18:21:00.625165Z  INFO us_explorer::buildings: buildings 15/8790/12910: 0 buildings, 0 vertices
+2026-10-21T18:21:06.305942Z  INFO us_explorer::roads: roads 15/8790/12910: 8 ways, 2 junctions, 1 bridges, 1 tunnels, 51 props, 7939 vertices
+2026-10-21T18:21:09.164750Z  INFO us_explorer::nature: nature 15/8789/12911: 3 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:21:12.031893Z  INFO us_explorer::nature::details: details 15/8789/12911: 148 chunks
+2026-10-21T18:21:26.691581Z  INFO us_explorer::roads: roads 15/8789/12910: 1 ways, 0 junctions, 0 bridges, 0 tunnels, 1 props, 1949 vertices
+2026-10-21T18:21:44.417884Z  INFO us_explorer::shot: screenshot shots/forest.png after 302.7s (settled: false, deepest zoom 19)
+2026-10-21T18:21:53.314592Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/forest.png
+2026-10-21T18:22:17.685369Z  INFO us_explorer::nature: nature 15/8789/12911: 0 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:23:10.481167Z  INFO us_explorer::nature: nature 15/8790/12910: 7 areas, 0 trees, 0 rows, 0 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:23:10.481433Z  INFO us_explorer::nature::details: details 15/8790/12910: 7 chunks
+2026-10-21T18:24:11.066764Z  INFO us_explorer::roads: roads 15/7864/12176: 75 ways, 81 junctions, 0 bridges, 0 tunnels, 1097 props, 40097 vertices
+2026-10-21T18:24:59.941670Z  INFO us_explorer::buildings: buildings 15/7864/12175: 188 buildings, 44176 vertices
+2026-10-21T18:25:15.499585Z  INFO us_explorer::roads: roads 15/7864/12175: 56 ways, 40 junctions, 0 bridges, 0 tunnels, 512 props, 18678 vertices
+2026-10-21T18:25:20.737179Z  INFO us_explorer::buildings: buildings 15/7864/12176: 562 buildings, 104525 vertices
+2026-10-21T18:25:28.500863Z  INFO us_explorer::nature: nature 15/7864/12176: 17 areas, 0 trees, 0 rows, 1 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:25:28.820533Z  INFO us_explorer::nature::details: details 15/7864/12176: 4 chunks
+2026-10-21T18:25:50.282859Z  INFO us_explorer::nature: nature 15/7864/12176: 17 areas, 0 trees, 0 rows, 1 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:26:12.325297Z  INFO us_explorer::roads: roads 15/7863/12175: 92 ways, 47 junctions, 0 bridges, 0 tunnels, 685 props, 30836 vertices
+2026-10-21T18:26:34.834710Z  INFO us_explorer::roads: roads 15/7863/12176: 125 ways, 92 junctions, 0 bridges, 0 tunnels, 691 props, 36568 vertices
+2026-10-21T18:27:14.250866Z  INFO us_explorer::shot: screenshot shots/farm.png after 300.3s (settled: false, deepest zoom 19)
+2026-10-21T18:27:22.887386Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/farm.png
+2026-10-21T18:28:01.109953Z  INFO us_explorer::nature: nature 15/7864/12175: 26 areas, 0 trees, 0 rows, 1 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:28:01.111451Z  INFO us_explorer::nature::details: details 15/7864/12175: 10 chunks
+2026-10-21T18:28:30.257869Z  INFO us_explorer::nature: nature 15/7864/12175: 26 areas, 0 trees, 0 rows, 1 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:30:35.836881Z  INFO us_explorer::roads: roads 15/8175/12566: 876 ways, 134 junctions, 30 bridges, 4 tunnels, 1357 props, 199116 vertices
+2026-10-21T18:30:43.041560Z  INFO us_explorer::nature: nature 15/8175/12566: 344 areas, 1650 trees, 0 rows, 187 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:30:44.702540Z  INFO us_explorer::nature::details: details 15/8175/12566: 32 chunks
+2026-10-21T18:30:46.065461Z  INFO us_explorer::buildings: buildings 15/8175/12566: 57 buildings, 12011 vertices
+2026-10-21T18:31:02.797849Z  INFO us_explorer::buildings: buildings 15/8175/12567: 6 buildings, 3632 vertices
+2026-10-21T18:31:02.798498Z  INFO us_explorer::nature: nature 15/8175/12566: 344 areas, 1650 trees, 0 rows, 187 barriers, 0 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:31:05.873529Z  INFO us_explorer::nature::details: details 15/8175/12566: 32 chunks
+2026-10-21T18:31:23.066388Z  INFO us_explorer::roads: roads 15/8175/12567: 221 ways, 23 junctions, 12 bridges, 3 tunnels, 476 props, 130782 vertices
+2026-10-21T18:32:04.239031Z  INFO us_explorer::roads: roads 15/8174/12566: 1884 ways, 317 junctions, 26 bridges, 4 tunnels, 2576 props, 170157 vertices
+2026-10-21T18:32:05.846963Z  INFO us_explorer::nature: nature 15/8175/12567: 58 areas, 865 trees, 0 rows, 50 barriers, 2 power lines, 0 turbines, 0 seamarks
+2026-10-21T18:32:05.874863Z  INFO us_explorer::nature::details: details 15/8175/12567: 19 chunks
+2026-10-21T18:32:07.432161Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:07.432182Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:10.668444Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:10.668469Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:40.343027Z  INFO us_explorer::buildings: buildings 15/8174/12567: 133 buildings, 38692 vertices
+2026-10-21T18:32:43.438535Z  INFO us_explorer::shot: screenshot shots/river.png after 300.4s (settled: false, deepest zoom 19)
+2026-10-21T18:32:48.430936Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/river.png
+2026-10-21T18:32:55.136639Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:55.136661Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:56.736852Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:32:56.736874Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T18:33:01.521334Z  INFO us_explorer::nature: nature 15/8175/12567: 58 areas, 865 trees, 0 rows, 50 barriers, 2 power lines, 0 turbines, 0 seamarks
