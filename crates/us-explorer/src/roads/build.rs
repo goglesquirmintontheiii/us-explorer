@@ -75,6 +75,9 @@ pub enum H {
     Terrain,
     /// On a bridge or tunnel deck, between two deck nodes.
     Deck { a: u32, b: u32, t: f32 },
+    /// A water surface: the lowest natural ground within a few metres (a river in a
+    /// channel lies at the channel's bottom, not at the street level beside it).
+    Water { at: Vec2 },
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -264,6 +267,9 @@ pub struct Lake {
     pub bbox: (f64, f64, f64, f64), // s, w, n, e
     /// Deepest point, metres below the surface; the bed slopes down from the shore.
     pub depth: f32,
+    /// Not water: a paved area (a parking lot) whose ground is smoothed so the paving
+    /// lies flat on it.
+    pub level: bool,
 }
 
 /// Bridge and tunnel deck nodes, solved for height when draping.
@@ -1157,21 +1163,50 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 dem(la, lo).map(|h| h as f32)
             })
             .collect();
+        // Decks as they'd be with nothing to clear: straight between their ends. The
+        // clearance each layer needs is kept aside for the crossings below.
+        let layer_clear = std::mem::replace(&mut decks.clear, vec![0.0; decks.p.len()]);
         let deck_h = solve_decks(&decks, &|i| ground[i].unwrap_or(0.0), &|i| decks.off[i]);
         // Clearance is needed only where a deck crosses a road or railway on the ground.
-        let mut grid: HashMap<(i32, i32), Vec<(Vec2, Vec2)>> = HashMap::new();
+        let mut grid: HashMap<(i32, i32), Vec<(Vec2, Vec2, usize)>> = HashMap::new();
         let cell = |p: Vec2| ((p.x / 50.0).floor() as i32, (p.y / 50.0).floor() as i32);
-        for w in ways.iter().filter(|w| !w.elevated()) {
+        // Footpaths don't need a bridge raised over them: where one passes under (a
+        // river walk under street bridges) it's the path that's down low, and the
+        // elevation data has the street level.
+        for (wi, w) in ways.iter().enumerate().filter(|(_, w)| !w.elevated() && !w.class.path() && w.layer >= 0) {
             for q in w.pts.windows(2) {
                 let (a, b) = (cell(q[0]), cell(q[1]));
                 for x in a.0.min(b.0)..=a.0.max(b.0) {
                     for z in a.1.min(b.1)..=a.1.max(b.1) {
-                        grid.entry((x, z)).or_default().push((q[0], q[1]));
+                        grid.entry((x, z)).or_default().push((q[0], q[1], wi));
                     }
                 }
             }
         }
-        let mut need = vec![0.0f32; decks.nets as usize];
+        let debug = std::env::var_os("USX_DEBUG_DECKS").is_some();
+        let mut boundary_pts: Vec<Vec<Vec2>> = vec![Vec::new(); decks.nets as usize];
+        for i in 0..decks.p.len() {
+            if decks.boundary[i] {
+                boundary_pts[decks.net[i] as usize].push(decks.p[i]);
+            }
+        }
+        // Each crossing sets a height the deck must reach there: the nodes either side
+        // get that as a clearance (the solver lifts the deck locally), and only the deck
+        // ends too close to climb it in time (7% grade) are raised, with the roads on
+        // the ground ramping up to them. (Raising a whole interchange by its worst
+        // crossing put every ramp end metres in the air.)
+        const DECK_GRADE: f32 = 0.07;
+        let mut node_clear = vec![0.0f32; decks.p.len()];
+        let mut raise = vec![0.0f32; decks.p.len()];
+        let boundary_ids: Vec<Vec<usize>> = {
+            let mut v = vec![Vec::new(); decks.nets as usize];
+            for i in 0..decks.p.len() {
+                if decks.boundary[i] {
+                    v[decks.net[i] as usize].push(i);
+                }
+            }
+            v
+        };
         for i in 0..decks.p.len() {
             for &(j, _) in &decks.edges[i] {
                 let j = j as usize;
@@ -1180,38 +1215,102 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 }
                 let (pa, pb) = (decks.p[i], decks.p[j]);
                 let (ca, cb) = (cell(pa), cell(pb));
-                let mut hit: Option<f32> = None;
+                let mut hit: Option<(f32, usize)> = None;
                 for x in ca.0.min(cb.0)..=ca.0.max(cb.0) {
                     for z in ca.1.min(cb.1)..=ca.1.max(cb.1) {
-                        for &(qa, qb) in grid.get(&(x, z)).map(|v| v.as_slice()).unwrap_or(&[]) {
+                        for &(qa, qb, wi) in grid.get(&(x, z)).map(|v| v.as_slice()).unwrap_or(&[]) {
                             if let Some(t) = seg_cross(pa, pb, qa, qb) {
-                                hit = Some(hit.map_or(t, |h: f32| if (h - 0.5).abs() < (t - 0.5).abs() { h } else { t }));
+                                hit = Some(hit.map_or((t, wi), |h: (f32, usize)| if (h.0 - 0.5).abs() < (t - 0.5).abs() { h } else { (t, wi) }));
                             }
                         }
                     }
                 }
-                let Some(t) = hit else { continue };
-                let c = if decks.clear[i].abs() > decks.clear[j].abs() { decks.clear[i] } else { decks.clear[j] };
-                let p = pa.lerp(pb, t);
-                let (la, lo) = local.ll(p);
+                let Some((t, under)) = hit else { continue };
+                // A crossing right at the end of a short deck is an at-grade junction
+                // drawn across a bridge's end, not a road passing underneath.
+                let cross_at = pa.lerp(pb, t);
+                let net = decks.net[i] as usize;
+                let near_end = boundary_ids[net].iter().any(|&q| decks.p[q].distance(cross_at) < 12.0);
+                if near_end {
+                    if debug {
+                        let (la, lo) = local.ll(cross_at);
+                        eprintln!("deck net {net} at {la:.6},{lo:.6}: crossing {:?} next to the deck's end ignored", ways[under].tags.get("name"));
+                    }
+                    continue;
+                }
+                let c = if layer_clear[i].abs() > layer_clear[j].abs() { layer_clear[i] } else { layer_clear[j] };
+                let (la, lo) = local.ll(cross_at);
                 let g = dem(la, lo).map(|h| h as f32).unwrap_or(ground[i].unwrap_or(0.0));
+                let target = g + c;
                 let line = deck_h[i] + (deck_h[j] - deck_h[i]) * t;
-                let n = &mut need[decks.net[i] as usize];
-                if c > 0.0 {
-                    *n = n.max(g + c - line);
-                } else {
-                    *n = n.min(g + c - line);
+                if (c > 0.0 && line >= target) || (c < 0.0 && line <= target) {
+                    continue;
+                }
+                if debug {
+                    eprintln!(
+                        "deck net {net} at {la:.6},{lo:.6} crosses {:?} {:?} ({}): ground {g:.1} line {line:.1} clear {c:.1} -> needs {:.1} more",
+                        ways[under].class,
+                        ways[under].tags.get("name"),
+                        ways[under].id,
+                        target - line
+                    );
+                }
+                // The deck reaches the target here and slopes away from it at deck
+                // grade (so a viaduct over several roads stays smooth between them).
+                let len_ij = pa.distance(pb);
+                let mut dist: HashMap<usize, f32> = HashMap::new();
+                let mut heap: BinaryHeap<(OrdF, usize)> = BinaryHeap::new();
+                for (k, d0) in [(i, t * len_ij), (j, (1.0 - t) * len_ij)] {
+                    dist.insert(k, d0);
+                    heap.push((OrdF(-d0), k));
+                }
+                let reach = (c.abs() + 2.0) / DECK_GRADE;
+                while let Some((OrdF(nd), u)) = heap.pop() {
+                    let du = -nd;
+                    if dist.get(&u).is_some_and(|&x| x < du) || du > reach {
+                        continue;
+                    }
+                    if !decks.boundary[u] {
+                        let gk = ground[u].unwrap_or(g);
+                        let want = if c > 0.0 { target - du * DECK_GRADE - gk } else { target + du * DECK_GRADE - gk };
+                        let nc = &mut node_clear[u];
+                        if c > 0.0 {
+                            *nc = nc.max(want);
+                        } else {
+                            *nc = nc.min(want);
+                        }
+                    }
+                    for &(v, w) in &decks.edges[u] {
+                        let v = v as usize;
+                        let dv = du + w;
+                        if dist.get(&v).is_none_or(|&x| dv < x) {
+                            dist.insert(v, dv);
+                            heap.push((OrdF(-dv), v));
+                        }
+                    }
+                }
+                for &b in &boundary_ids[net] {
+                    let gb = ground[b].unwrap_or(g);
+                    let d = decks.p[b].distance(cross_at);
+                    let r = &mut raise[b];
+                    if c > 0.0 {
+                        let short = target - (gb + d * DECK_GRADE);
+                        if short > 0.4 {
+                            *r = r.max(short);
+                        }
+                    } else {
+                        let short = target - (gb - d * DECK_GRADE);
+                        if short < -0.4 {
+                            *r = r.min(short);
+                        }
+                    }
                 }
             }
         }
-        // From here on, decks follow their ends; clearance was handled by raising them.
-        decks.clear.iter_mut().for_each(|c| *c = 0.0);
         for i in 0..decks.p.len() {
-            if decks.boundary[i] {
-                let n = need[decks.net[i] as usize];
-                if n.abs() > 0.4 {
-                    decks.off[i] = n;
-                }
+            decks.clear[i] = node_clear[i];
+            if decks.boundary[i] && raise[i] != 0.0 {
+                decks.off[i] = raise[i];
             }
         }
         // Spread the seeds along roads on the ground at the ramp grade.
@@ -3232,7 +3331,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                             let p = Vec2::new(flat[2 * k], flat[2 * k + 1]);
                             g.v.push(V {
                                 p,
-                                h: H::GroundAt { at: p, off: 0.0 },
+                                h: H::Water { at: p },
                                 dy: 0.05,
                                 uv: [p.x, p.y],
                                 uv2: [0.0, pk.0],
@@ -3295,9 +3394,25 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 inner: a.inner.clone(),
                 bbox: (s0, w0, n0, e0),
                 depth: ((area_m2.sqrt() * k) as f32).clamp(1.5, if river { 6.0 } else { 18.0 }),
+                level: false,
             }
         })
         .collect();
+    let mut lakes = lakes;
+    // Parking lots: the ground under them is smoothed (see terrain::conform).
+    for a in osm.areas.iter().filter(|a| usx_core::osm::is_parking(&a.tags) && a.tags.get("building").is_none()) {
+        let (mut s0, mut w0, mut n0, mut e0) = (90.0f64, 180.0f64, -90.0f64, -180.0f64);
+        for &(la, lo) in a.outer.iter().flatten() {
+            s0 = s0.min(la);
+            n0 = n0.max(la);
+            w0 = w0.min(lo);
+            e0 = e0.max(lo);
+        }
+        if a.outer.is_empty() || n0 < ts || s0 > tn || e0 < tw || w0 > te {
+            continue;
+        }
+        lakes.push(Lake { outer: a.outer.clone(), inner: a.inner.clone(), bbox: (s0, w0, n0, e0), depth: 0.0, level: true });
+    }
     Built { tile, local, chunks: out_chunks, decks, corridors, controllers, lanes, water, lakes, stats }
 }
 
@@ -3826,6 +3941,43 @@ mod fixture_tests {
     use super::*;
 
     /// Real Overpass answers from the `fixtures` branch: USX_FIXTURES=dir cargo test fixtures -- --ignored --nocapture
+    /// Build tiles straight from the game's download cache:
+    /// USX_TILES="15/7419/13579 ..." [USX_CACHE=dir] [USX_DEBUG_DECKS=1]
+    /// cargo test --profile fast cached_tiles -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn cached_tiles() {
+        let root = std::env::var("USX_CACHE").unwrap_or_else(|_| format!("{}/.cache/us-explorer", std::env::var("HOME").unwrap()));
+        let _ = crate::terrain::load::CACHE.set(usx_core::cache::DiskCache::open(root, 50 << 30));
+        for t in std::env::var("USX_TILES").expect("USX_TILES").split_whitespace() {
+            let p: Vec<u32> = t.split('/').map(|x| x.parse().unwrap()).collect();
+            let tile = TileId { z: p[0] as u8, x: p[1], y: p[2] };
+            let Some(osm) = usx_core::osm::cached(tile, crate::terrain::load::cache()) else {
+                println!("{t}: not cached");
+                continue;
+            };
+            let dem = |la: f64, lo: f64| crate::terrain::load::dem_height(la, lo);
+            let b = build(tile, &osm, &dem);
+            println!(
+                "{t}: {} ways, {} junctions, {} bridges, {} tunnels, {} lots, {} chunks",
+                b.stats.ways, b.stats.junctions, b.stats.bridges, b.stats.tunnels, b.stats.parking_stalls, b.chunks.len()
+            );
+            // Ground roads raised or sunk a lot (ramps up to bridges, down to underpasses).
+            let mut big: Vec<(f32, f64, f64)> = Vec::new();
+            for c in &b.corridors {
+                for (k, o) in c.off.iter().enumerate() {
+                    if o.abs() > 2.5 {
+                        big.push((*o, c.pts[k].0, c.pts[k].1));
+                    }
+                }
+            }
+            big.sort_by(|a, b| b.0.abs().total_cmp(&a.0.abs()));
+            for x in big.iter().take(15) {
+                println!("  ground road offset {:.1} m at {:.6},{:.6}", x.0, x.1, x.2);
+            }
+        }
+    }
+
     #[test]
     #[ignore]
     fn fixtures() {

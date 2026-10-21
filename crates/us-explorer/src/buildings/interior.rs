@@ -28,7 +28,7 @@ pub struct Inside(pub Option<(TileId, u32)>);
 /// Everything an interior needs, in building-local metres (x east, y up from the
 /// ground floor, z south, origin at the footprint's centroid).
 pub struct InteriorData {
-    pub kit: Kit,
+    pub meshes: Vec<(M, bevy::mesh::Mesh)>,
     pub specs: Vec<Spec>,
     pub walls: Vec<SWall>,
     pub floors: Vec<SFloor>,
@@ -200,6 +200,15 @@ fn paint_colour(kind: RoomKind, house: bool, seed: u64) -> [f32; 4] {
             rgb(0.72, 0.76, 0.82),
             rgb(0.9, 0.9, 0.9),
         ]),
+        RoomKind::Sales => pick(&[
+            rgb(0.93, 0.93, 0.91),
+            rgb(0.95, 0.95, 0.95),
+            rgb(0.25, 0.25, 0.27),
+            rgb(0.86, 0.8, 0.72),
+            rgb(0.72, 0.8, 0.78),
+            rgb(0.9, 0.84, 0.86),
+            rgb(0.78, 0.72, 0.62),
+        ]),
         _ => pick(&[rgb(0.93, 0.93, 0.91), rgb(0.88, 0.88, 0.86), rgb(0.9, 0.9, 0.88)]),
     }
 }
@@ -239,7 +248,21 @@ fn floor_finish(kind: RoomKind, bk: Kind, seed: u64) -> (M, [f32; 4]) {
         RoomKind::Attic => (M::Insulation, WHITE),
         RoomKind::Office | RoomKind::OpenOffice | RoomKind::Conference => (M::Carpet, rgb(0.42, 0.44, 0.48)),
         RoomKind::Lobby => (M::Marble, WHITE),
-        RoomKind::Sales | RoomKind::Classroom | RoomKind::Patient | RoomKind::Break => (M::Linoleum, WHITE),
+        RoomKind::Sales => {
+            // Shops differ: vinyl, polished concrete, wood, tile or carpet.
+            if r < 0.3 {
+                (M::Linoleum, WHITE)
+            } else if r < 0.5 {
+                (M::Concrete, rgb(0.85, 0.85, 0.85))
+            } else if r < 0.68 {
+                (M::WoodFloor, WHITE)
+            } else if r < 0.88 {
+                (M::TileFloor, furniture::rgb(0.75 + 0.25 * hash01(seed ^ 3), 0.72 + 0.25 * hash01(seed ^ 3), 0.7 + 0.25 * hash01(seed ^ 3)))
+            } else {
+                (M::Carpet, furniture::fabric_colour(seed ^ 11))
+            }
+        }
+        RoomKind::Classroom | RoomKind::Patient | RoomKind::Break => (M::Linoleum, WHITE),
         RoomKind::Seating => {
             if r < 0.5 {
                 (M::WoodFloor, WHITE)
@@ -1487,75 +1510,447 @@ fn furnish(cx: &mut Ctx, fi: usize) {
     }
 }
 
+/// What kind of shop a sales floor is, from the shop it holds (or, untagged, the
+/// building's own seed so not every corner shop looks alike).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ShopStyle {
+    Grocery,
+    Convenience,
+    Clothing,
+    Shoes,
+    Electronics,
+    Books,
+    Hardware,
+    Furniture,
+    Pharmacy,
+    Salon,
+    Jewelry,
+    Bakery,
+    Liquor,
+    Florist,
+    Pet,
+    Toys,
+    Department,
+    Sports,
+    General,
+}
+
+fn shop_style(b: &super::model::Building) -> ShopStyle {
+    use ShopStyle::*;
+    let d = b.detail.as_deref().unwrap_or("");
+    let by_tag = match d {
+        "supermarket" | "grocery" | "greengrocer" | "wholesale" | "farm" | "health_food" | "frozen_food" => Some(Grocery),
+        "department_store" | "variety_store" | "general" | "mall" | "discount" => Some(Department),
+        "convenience" | "kiosk" | "newsagent" | "tobacco" | "e-cigarette" | "fuel" | "lottery" => Some(Convenience),
+        "clothes" | "boutique" | "fashion" | "fashion_accessories" | "bag" | "second_hand" | "charity" | "tailor" | "leather" => {
+            Some(Clothing)
+        }
+        "shoes" => Some(Shoes),
+        "electronics" | "mobile_phone" | "computer" | "hifi" | "video_games" | "appliance" | "camera" | "telecommunication"
+        | "video" | "radiotechnics" => Some(Electronics),
+        "books" | "stationery" | "music" | "art" | "craft" | "frame" | "anime" | "musical_instrument" => Some(Books),
+        "hardware" | "doityourself" | "trade" | "garden_centre" | "paint" | "building_materials" | "agrarian" | "tool_hire"
+        | "car_parts" | "tyres" => Some(Hardware),
+        "furniture" | "interior_decoration" | "bed" | "kitchen" | "houseware" | "lighting" | "carpet" | "curtain" | "antiques"
+        | "bathroom_furnishing" | "flooring" => Some(Furniture),
+        "chemist" | "pharmacy" | "cosmetics" | "medical_supply" | "perfumery" | "optician" | "herbalist" | "nutrition_supplements"
+        | "hearing_aids" => Some(Pharmacy),
+        "hairdresser" | "beauty" | "barber" | "massage" | "tattoo" | "nails" | "cosmetology" => Some(Salon),
+        "jewelry" | "watches" | "gift" | "pawnbroker" | "souvenir" => Some(Jewelry),
+        "bakery" | "pastry" | "confectionery" | "deli" | "butcher" | "cheese" | "chocolate" | "coffee" | "tea" | "seafood"
+        | "donut" => Some(Bakery),
+        "alcohol" | "wine" | "beverages" => Some(Liquor),
+        "florist" => Some(Florist),
+        "pet" | "pet_grooming" => Some(Pet),
+        "toys" | "baby_goods" | "hobby" | "model" | "games" => Some(Toys),
+        "sports" | "outdoor" | "bicycle" | "fishing" | "hunting" | "golf" => Some(Sports),
+        _ => None,
+    };
+    if let Some(s) = by_tag {
+        return s;
+    }
+    if b.kind == Kind::Supermarket {
+        return Grocery;
+    }
+    // Untagged shops: a spread of common kinds.
+    let r = hash01(b.seed ^ 0x5ab0);
+    match (r * 12.0) as u32 {
+        0 | 1 => Clothing,
+        2 => Convenience,
+        3 => Pharmacy,
+        4 => Electronics,
+        5 => Furniture,
+        6 => Jewelry,
+        7 => Salon,
+        8 => Books,
+        9 => Toys,
+        _ => General,
+    }
+}
+
+/// Where the entry is and which way is into the store.
+fn entry_of(cx: &Ctx, rm: &Room2) -> (Vec2, Vec2, bool) {
+    let (a, bb) = (rm.a, rm.b);
+    let (q, into) = cx.plan.entry.unwrap_or((Vec2::new((a.x + bb.x) * 0.5, a.y), Vec2::Y));
+    (q, into, into.y.abs() >= into.x.abs())
+}
+
+/// The wall the entry is on (0 south .. 3 east, as Room2 numbers them).
+fn entry_wall(into: Vec2, front_is_y: bool) -> usize {
+    if front_is_y {
+        if into.y > 0.0 { 0 } else { 1 }
+    } else if into.x > 0.0 {
+        2
+    } else {
+        3
+    }
+}
+
+/// Fill the walls (all but the entry wall) with items `seg` long.
+#[allow(clippy::too_many_arguments)]
+fn line_walls(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, skip: usize, seg: f32, depth: f32, seed: u64, item: &dyn Fn(f32, u64) -> Item) {
+    for wi in 0..4 {
+        if wi == skip {
+            continue;
+        }
+        let n = ((rm.wall_len(wi) - 0.6) / (seg + 0.05)).floor().max(0.0) as usize;
+        for k in 0..n.min(14) {
+            let pref = if n <= 1 { 0.5 } else { k as f32 / (n - 1) as f32 };
+            let sd = seed ^ (wi * 100 + k) as u64;
+            place_wall(cx, rm, fl, item(seg, sd), seg, depth, &[wi], pref, sd);
+        }
+    }
+}
+
+/// Parallel runs of free-standing fixtures across the floor, running from front to
+/// back, `pitch` apart; leaves `front` metres clear inside the entry and `back` at the
+/// far wall.
+#[allow(clippy::too_many_arguments)]
+fn aisles(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, pitch: f32, front: f32, back: f32, max_len: f32, seed: u64, item: &dyn Fn(f32, u64) -> Item) {
+    let (a, bb) = (rm.a, rm.b);
+    let (_, into, front_is_y) = entry_of(cx, rm);
+    let (w, d) = (bb.x - a.x, bb.y - a.y);
+    let (span, depth) = if front_is_y { (w, d) } else { (d, w) };
+    let glen = (depth - front - back).clamp(1.2, max_len);
+    let n = ((span - 3.0) / pitch).floor() as i32;
+    for k in 0..n.max(0) {
+        let s = 1.8 + (k as f32 + 0.5) * (span - 3.6) / n as f32;
+        // Centre of the run between `front` and `back`.
+        let mid_t = front + (depth - front - back) * 0.5;
+        let f = if front_is_y {
+            let y = if into.y > 0.0 { a.y + mid_t } else { bb.y - mid_t };
+            Vec2::new(a.x + s, y)
+        } else {
+            let x = if into.x > 0.0 { a.x + mid_t } else { bb.x - mid_t };
+            Vec2::new(x, a.y + s)
+        };
+        let (size, dir) = if front_is_y { (Vec2::new(1.0, glen), Vec2::X) } else { (Vec2::new(glen, 1.0), Vec2::Y) };
+        place_free(cx, rm, fl, item(glen, seed ^ (100 + k as u64)), size, f, dir, seed ^ (100 + k as u64));
+    }
+}
+
+/// Free-standing things on a grid, `step` apart, `margin` from the walls.
+#[allow(clippy::too_many_arguments)]
+fn grid(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, step: Vec2, margin: f32, size: Vec2, seed: u64, max: usize, item: &dyn Fn(u64) -> Item) {
+    let (a, bb) = (rm.a, rm.b);
+    let (_, into, _) = entry_of(cx, rm);
+    let mut k = 0u64;
+    let mut placed = 0;
+    let mut y = a.y + margin;
+    while y < bb.y - margin + 0.01 {
+        let mut x = a.x + margin;
+        while x < bb.x - margin + 0.01 {
+            if placed >= max {
+                return;
+            }
+            if place_free(cx, rm, fl, item(seed ^ k), size, Vec2::new(x, y), -into, seed ^ k) {
+                placed += 1;
+            }
+            x += step.x;
+            k += 1;
+        }
+        y += step.y;
+    }
+}
+
+/// A till counter just inside the entry, to one side.
+fn till(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, seed: u64, len: f32) {
+    let (q, into, _) = entry_of(cx, rm);
+    let side = if hash01(seed ^ 0x7111) < 0.5 { 1.0 } else { -1.0 };
+    for off in [2.6f32, 3.4, 1.8, 4.2] {
+        let at = q + into * 2.2 + into.perp() * side * off;
+        let size = if into.y.abs() > into.x.abs() { Vec2::new(len, 0.8) } else { Vec2::new(0.8, len) };
+        if place_free(cx, rm, fl, Item::Counter { len }, size, at, into, seed ^ 0x7112) {
+            return;
+        }
+    }
+}
+
 fn sales(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, seed: u64) {
+    use furniture::Goods;
+    let style = shop_style(cx.b);
     let (a, bb) = (rm.a, rm.b);
     let (w, d) = (bb.x - a.x, bb.y - a.y);
-    let supermarket = cx.b.kind == Kind::Supermarket;
-    // The entry side: checkouts there; aisles run from front to back.
-    let (q, into) = cx.plan.entry.unwrap_or((Vec2::new((a.x + bb.x) * 0.5, a.y), Vec2::Y));
-    let front_is_y = into.y.abs() >= into.x.abs();
-    let mut by_len = [0usize, 1, 2, 3];
-    by_len.sort_by(|&x, &y| rm.wall_len(y).total_cmp(&rm.wall_len(x)));
-    if supermarket {
-        // Fridge cases along the side walls, produce near the entry.
-        let side_walls = if front_is_y { [2usize, 3] } else { [0usize, 1] };
-        for sw in side_walls {
-            let len = (rm.wall_len(sw) - 3.0).clamp(2.0, 12.0);
-            place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[sw], 0.6, seed ^ sw as u64);
+    let (q, into, front_is_y) = entry_of(cx, rm);
+    let ew = entry_wall(into, front_is_y);
+    let r = |k: u64| hash01(seed ^ k);
+    match style {
+        ShopStyle::Grocery => {
+            // Fridge cases on the side walls or along the back; produce near the entry;
+            // checkouts in a row just inside the front.
+            let side_walls = if front_is_y { [2usize, 3] } else { [0usize, 1] };
+            let back_wall = ew ^ 1;
+            if r(1) < 0.5 {
+                for sw in side_walls {
+                    let len = (rm.wall_len(sw) - 3.0).clamp(2.0, 12.0);
+                    place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[sw], 0.6, seed ^ sw as u64);
+                }
+            } else {
+                let len = (rm.wall_len(back_wall) - 2.0).clamp(2.0, 18.0);
+                place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[back_wall], 0.5, seed ^ 0xbac);
+                let sw = side_walls[(r(2) * 2.0) as usize % 2];
+                let len = (rm.wall_len(sw) * 0.5).clamp(2.0, 8.0);
+                place_wall(cx, rm, fl, Item::GoodsWall { len, goods: Goods::Bread }, len, 0.5, &[sw], 0.8, seed ^ 0xb4);
+            }
+            let n_check = ((if front_is_y { w } else { d }) / 4.0).floor().clamp(1.0, 8.0) as i32;
+            for k in 0..n_check {
+                let t = (k as f32 + 1.0) / (n_check as f32 + 1.0);
+                let f = if front_is_y {
+                    let y = if into.y > 0.0 { a.y + 3.0 } else { bb.y - 3.0 };
+                    Vec2::new(a.x + w * t, y)
+                } else {
+                    let x = if into.x > 0.0 { a.x + 3.0 } else { bb.x - 3.0 };
+                    Vec2::new(x, a.y + d * t)
+                };
+                if (f - q).length() < 2.0 {
+                    continue;
+                }
+                let along = if front_is_y { Vec2::Y } else { Vec2::X };
+                place_free(cx, rm, fl, Item::Checkout, if front_is_y { Vec2::new(0.9, 2.6) } else { Vec2::new(2.6, 0.9) }, f, along, seed ^ (40 + k as u64));
+            }
+            let pitch = 2.5 + r(3) * 0.4;
+            aisles(cx, rm, fl, pitch, 9.0, 1.5, 18.0, seed, &|len, sd| {
+                let g = match (hash01(sd) * 5.0) as u32 {
+                    0 => Goods::Cans,
+                    1 => Goods::Bottles,
+                    _ => Goods::Groceries,
+                };
+                Item::GoodsGondola { len, h: 1.8, goods: g }
+            });
+            let bins = 3 + (r(4) * 4.0) as u64;
+            for k in 0..bins {
+                let f = q + into * (6.0 + (k / 3) as f32 * 1.6) + into.perp() * ((k % 3) as f32 - 1.0) * 2.0;
+                place_free(cx, rm, fl, Item::ProduceBin, Vec2::new(1.5, 1.1), f, into, seed ^ (200 + k));
+            }
         }
-    } else {
-        for wi in by_len {
-            for k in 0..3 {
-                place_wall(cx, rm, fl, Item::Shelf { len: 1.8 }, 1.8, 0.42, &[wi], 0.2 + k as f32 * 0.3, seed ^ (wi * 10 + k) as u64);
+        ShopStyle::Convenience => {
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) - 1.0).clamp(1.5, 8.0);
+            place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[back], 0.5, seed ^ 0xf1);
+            till(cx, rm, fl, seed, 2.4);
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, sd| Item::GoodsWall {
+                len,
+                goods: if hash01(sd) < 0.3 { Goods::Cans } else { Goods::Groceries },
+            });
+            aisles(cx, rm, fl, 2.3, 3.5, 2.0, 6.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.4, goods: Goods::Groceries });
+        }
+        ShopStyle::Clothing | ShopStyle::Department | ShopStyle::Sports => {
+            till(cx, rm, fl, seed, 2.0);
+            // Fitting rooms on the back wall.
+            let back = ew ^ 1;
+            let n = ((rm.wall_len(back) * 0.4) / 1.1).floor().clamp(1.0, 6.0) as u32;
+            place_wall(cx, rm, fl, Item::FittingRooms { n }, n as f32 * 1.1 + 0.1, 1.4, &[back], if r(5) < 0.5 { 0.05 } else { 0.95 }, seed ^ 0xf17);
+            line_walls(cx, rm, fl, ew, 1.6, 0.45, seed, &|len, sd| {
+                if matches!(style, ShopStyle::Sports) && hash01(sd) < 0.5 {
+                    Item::GoodsWall { len, goods: Goods::Shoes }
+                } else {
+                    Item::GoodsWall { len, goods: Goods::Clothes }
+                }
+            });
+            // Mannequins near the window.
+            for k in 0..(2 + (r(6) * 2.0) as u64) {
+                let at = q + into * 1.6 + into.perp() * (k as f32 - 1.0) * 1.4;
+                place_free(cx, rm, fl, Item::Mannequin, Vec2::splat(0.6), at, -into, seed ^ (300 + k));
+            }
+            // Racks and tables over the floor.
+            grid(cx, rm, fl, Vec2::new(2.6, 2.6), 2.4, Vec2::splat(1.6), seed, 60, &|sd| match (hash01(sd) * 4.0) as u32 {
+                0 => Item::DisplayTable { goods: Goods::Clothes },
+                1 => Item::ClothingRack { round: false },
+                _ => Item::ClothingRack { round: true },
+            });
+            if matches!(style, ShopStyle::Department) {
+                aisles(cx, rm, fl, 6.0, 6.0, 4.0, 8.0, seed ^ 0xdd, &|len, sd| Item::GoodsGondola {
+                    len,
+                    h: 1.5,
+                    goods: if hash01(sd) < 0.5 { Goods::Homeware } else { Goods::Cosmetics },
+                });
+            }
+        }
+        ShopStyle::Shoes => {
+            till(cx, rm, fl, seed, 1.8);
+            line_walls(cx, rm, fl, ew, 1.6, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Shoes });
+            grid(cx, rm, fl, Vec2::new(3.0, 2.8), 2.2, Vec2::new(1.8, 1.0), seed, 30, &|sd| {
+                if hash01(sd) < 0.5 { Item::Bench { len: 1.6 } } else { Item::DisplayTable { goods: Goods::Shoes } }
+            });
+        }
+        ShopStyle::Electronics => {
+            till(cx, rm, fl, seed, 2.4);
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) - 1.0).clamp(2.0, 14.0);
+            place_wall(cx, rm, fl, Item::TvWall { len }, len, 0.3, &[back], 0.5, seed ^ 0x7e);
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Boxes });
+            grid(cx, rm, fl, Vec2::new(2.8, 2.6), 2.4, Vec2::new(1.7, 1.0), seed, 40, &|_| Item::DisplayTable { goods: Goods::Electronics });
+        }
+        ShopStyle::Books => {
+            till(cx, rm, fl, seed, 2.0);
+            line_walls(cx, rm, fl, ew, 0.9, 0.36, seed, &|_, _| Item::Bookshelf);
+            aisles(cx, rm, fl, 2.4, 4.5, 2.0, 7.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.6, goods: Goods::Books });
+            grid(cx, rm, fl, Vec2::new(3.0, 3.0), 2.0, Vec2::new(1.7, 1.0), seed ^ 0xb0, 4, &|_| Item::DisplayTable { goods: Goods::Books });
+            for k in 0..2u64 {
+                place_wall(cx, rm, fl, Item::Armchair, 0.9, 0.9, &[ew], 0.2 + k as f32 * 0.6, seed ^ (500 + k));
+            }
+        }
+        ShopStyle::Hardware => {
+            till(cx, rm, fl, seed, 2.4);
+            line_walls(cx, rm, fl, ew, 2.7, 1.1, seed, &|len, sd| {
+                if hash01(sd) < 0.3 { Item::Lumber { len } } else { Item::PalletRack { len } }
+            });
+            aisles(cx, rm, fl, 3.0, 5.0, 2.0, 16.0, seed, &|len, sd| Item::GoodsGondola {
+                len,
+                h: 2.2,
+                goods: if hash01(sd) < 0.5 { Goods::Tools } else { Goods::Boxes },
+            });
+        }
+        ShopStyle::Furniture => {
+            till(cx, rm, fl, seed, 1.8);
+            // Room settings: a sofa group, a dining set, a bed.
+            let mut k = 0u64;
+            let mut y = a.y + 2.5;
+            while y < bb.y - 2.0 {
+                let mut x = a.x + 2.5;
+                while x < bb.x - 2.0 {
+                    let sd = seed ^ (600 + k);
+                    let c = Vec2::new(x, y);
+                    match (hash01(sd) * 4.0) as u32 {
+                        0 => {
+                            if place_free(cx, rm, fl, Item::Sofa { seats: 3 }, Vec2::new(2.2, 1.0), c, -into, sd) {
+                                place_free(cx, rm, fl, Item::CoffeeTable, Vec2::new(1.1, 0.6), c - into * 1.1, -into, sd ^ 1);
+                                place_free(cx, rm, fl, Item::FloorLamp, Vec2::splat(0.4), c + into.perp() * 1.4, -into, sd ^ 2);
+                            }
+                        }
+                        1 => {
+                            place_free(cx, rm, fl, Item::DiningTable { seats: 4 }, Vec2::new(1.6, 1.0), c, Vec2::Y, sd);
+                        }
+                        2 => {
+                            place_free(cx, rm, fl, Item::Bed { width: 1.6 }, Vec2::new(1.7, 2.2), c, -into, sd);
+                        }
+                        _ => {
+                            place_free(cx, rm, fl, Item::Armchair, Vec2::splat(0.9), c, -into, sd);
+                            place_free(cx, rm, fl, Item::Rug { w: 2.0, d: 1.4 }, Vec2::new(2.0, 1.4), c - into * 1.3, -into, sd ^ 3);
+                        }
+                    }
+                    x += 4.0;
+                    k += 1;
+                }
+                y += 4.0;
+            }
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Homeware });
+        }
+        ShopStyle::Pharmacy => {
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) * 0.4).clamp(2.0, 6.0);
+            place_wall(cx, rm, fl, Item::Counter { len }, len, 2.0, &[back], 0.5, seed ^ 0xc0);
+            till(cx, rm, fl, seed, 2.2);
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Cosmetics });
+            aisles(cx, rm, fl, 2.4, 4.0, 3.5, 12.0, seed, &|len, sd| Item::GoodsGondola {
+                len,
+                h: 1.6,
+                goods: if hash01(sd) < 0.6 { Goods::Cosmetics } else { Goods::Groceries },
+            });
+        }
+        ShopStyle::Salon => {
+            till(cx, rm, fl, seed, 1.6);
+            let n = ((if front_is_y { d } else { w }) - 3.0).max(0.0) / 1.3;
+            let side = if front_is_y { if r(7) < 0.5 { 2usize } else { 3 } } else if r(7) < 0.5 { 0 } else { 1 };
+            for k in 0..(n as u64).min(8) {
+                place_wall(cx, rm, fl, Item::SalonStation, 1.2, 1.6, &[side], (k as f32 + 0.5) / n.max(1.0), seed ^ (700 + k));
+            }
+            let other = side ^ 1;
+            for k in 0..2u64 {
+                place_wall(cx, rm, fl, Item::WashBasin, 0.8, 1.2, &[other], 0.7 + k as f32 * 0.15, seed ^ (720 + k));
+            }
+            for k in 0..3u64 {
+                place_wall(cx, rm, fl, Item::Armchair, 0.9, 0.9, &[ew], 0.15 + k as f32 * 0.2, seed ^ (740 + k));
+            }
+        }
+        ShopStyle::Jewelry => {
+            // Glass cases in a U facing the door.
+            let lens = (if front_is_y { w } else { d }) - 3.0;
+            let back_c = q + into * ((if front_is_y { d } else { w }) - 3.0);
+            let sz = |l: f32| if front_is_y { Vec2::new(l, 0.7) } else { Vec2::new(0.7, l) };
+            place_free(cx, rm, fl, Item::GlassCase { len: lens.clamp(1.5, 8.0), goods: Goods::Jewelry }, sz(lens.clamp(1.5, 8.0)), back_c, into, seed ^ 0x900);
+            for side in [-1.0f32, 1.0] {
+                let l = ((if front_is_y { d } else { w }) - 5.0).clamp(1.2, 6.0);
+                let at = q + into * (2.0 + l * 0.5) + into.perp() * side * (lens * 0.5 - 0.2);
+                let sz2 = if front_is_y { Vec2::new(0.7, l) } else { Vec2::new(l, 0.7) };
+                place_free(cx, rm, fl, Item::GlassCase { len: l, goods: Goods::Jewelry }, sz2, at, into.perp() * -side, seed ^ (0x901 + side as i32 as u64));
+            }
+            line_walls(cx, rm, fl, ew, 1.6, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Homeware });
+        }
+        ShopStyle::Bakery => {
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) * 0.6).clamp(2.0, 7.0);
+            // The display counter across the shop, racks behind it.
+            let at = q + into * ((if front_is_y { d } else { w }) - 2.6);
+            let sz = if front_is_y { Vec2::new(len, 0.7) } else { Vec2::new(0.7, len) };
+            place_free(cx, rm, fl, Item::GlassCase { len, goods: Goods::Pastry }, sz, at, into, seed ^ 0xbb);
+            place_wall(cx, rm, fl, Item::GoodsWall { len, goods: Goods::Bread }, len, 0.5, &[back], 0.5, seed ^ 0xbc);
+            grid(cx, rm, fl, Vec2::new(2.2, 2.2), 1.6, Vec2::new(0.9, 1.7), seed, 6, &|_| Item::CafeTable);
+        }
+        ShopStyle::Liquor => {
+            till(cx, rm, fl, seed, 2.0);
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) - 1.0).clamp(1.5, 10.0);
+            place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[back], 0.5, seed ^ 0xf2);
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::WineRack { len });
+            aisles(cx, rm, fl, 2.4, 4.0, 2.5, 10.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.5, goods: Goods::Bottles });
+        }
+        ShopStyle::Florist => {
+            till(cx, rm, fl, seed, 1.8);
+            let back = ew ^ 1;
+            let len = (rm.wall_len(back) * 0.5).clamp(1.5, 5.0);
+            place_wall(cx, rm, fl, Item::FridgeCase { len }, len, 0.85, &[back], 0.5, seed ^ 0xf3);
+            line_walls(cx, rm, fl, ew, 1.6, 1.0, seed, &|len, _| Item::FlowerStand { len });
+            grid(cx, rm, fl, Vec2::new(1.6, 1.6), 1.8, Vec2::splat(0.6), seed, 12, &|_| Item::Plant);
+        }
+        ShopStyle::Pet => {
+            till(cx, rm, fl, seed, 2.0);
+            let back = ew ^ 1;
+            for k in 0..3u64 {
+                place_wall(cx, rm, fl, Item::Aquarium { len: 1.5 }, 1.5, 0.6, &[back], 0.2 + k as f32 * 0.3, seed ^ (800 + k));
+            }
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Boxes });
+            aisles(cx, rm, fl, 2.5, 4.0, 2.5, 12.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.5, goods: Goods::Groceries });
+        }
+        ShopStyle::Toys => {
+            till(cx, rm, fl, seed, 2.0);
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods: Goods::Toys });
+            aisles(cx, rm, fl, 2.6, 4.0, 2.0, 12.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.5, goods: Goods::Toys });
+            grid(cx, rm, fl, Vec2::new(3.0, 3.0), 2.0, Vec2::new(1.7, 1.0), seed ^ 0x70, 3, &|_| Item::DisplayTable { goods: Goods::Toys });
+        }
+        ShopStyle::General => {
+            // Shelving round the walls, gondolas, one till; a few layouts.
+            till(cx, rm, fl, seed, 2.0);
+            let goods = [Goods::Groceries, Goods::Homeware, Goods::Boxes, Goods::Cosmetics][(r(8) * 4.0) as usize % 4];
+            line_walls(cx, rm, fl, ew, 1.8, 0.45, seed, &|len, _| Item::GoodsWall { len, goods });
+            if r(9) < 0.6 {
+                aisles(cx, rm, fl, 2.5 + r(10) * 0.6, 4.0, 2.0, 14.0, seed, &|len, _| Item::GoodsGondola { len, h: 1.4 + r(11) * 0.6, goods });
+            } else {
+                grid(cx, rm, fl, Vec2::new(2.8, 2.8), 2.2, Vec2::new(1.7, 1.0), seed, 30, &|_| Item::DisplayTable { goods });
             }
         }
     }
-    // Checkouts in a row just inside the front.
-    let n_check = if supermarket { ((if front_is_y { w } else { d }) / 4.0).floor().clamp(1.0, 8.0) as i32 } else { 1 };
-    for k in 0..n_check {
-        let t = (k as f32 + 1.0) / (n_check as f32 + 1.0);
-        let f = if front_is_y {
-            let y = if into.y > 0.0 { a.y + 3.0 } else { bb.y - 3.0 };
-            Vec2::new(a.x + w * t, y)
-        } else {
-            let x = if into.x > 0.0 { a.x + 3.0 } else { bb.x - 3.0 };
-            Vec2::new(x, a.y + d * t)
-        };
-        if (f - q).length() < 2.0 {
-            continue;
-        }
-        let along = if front_is_y { Vec2::Y } else { Vec2::X };
-        place_free(
-            cx,
-            rm,
-            fl,
-            Item::Checkout,
-            if front_is_y { Vec2::new(0.9, 2.6) } else { Vec2::new(2.6, 0.9) },
-            f,
-            along,
-            seed ^ (40 + k as u64),
-        );
-    }
-    // Aisles: gondolas running front to back, 2.6 m apart.
-    let (span, depth) = if front_is_y { (w, d) } else { (d, w) };
-    let glen = (depth - 9.0).clamp(2.0, 18.0);
-    let n_aisles = ((span - 3.0) / 2.7).floor() as i32;
-    for k in 0..n_aisles.max(0) {
-        let s = 1.8 + (k as f32 + 0.5) * (span - 3.6) / n_aisles as f32;
-        let f = if front_is_y {
-            Vec2::new(a.x + s, (a.y + bb.y) * 0.5 + if into.y > 0.0 { 2.0 } else { -2.0 })
-        } else {
-            Vec2::new((a.x + bb.x) * 0.5 + if into.x > 0.0 { 2.0 } else { -2.0 }, a.y + s)
-        };
-        let (size, dir) = if front_is_y { (Vec2::new(1.0, glen), Vec2::X) } else { (Vec2::new(glen, 1.0), Vec2::Y) };
-        place_free(cx, rm, fl, Item::Gondola { len: glen }, size, f, dir, seed ^ (100 + k as u64));
-    }
-    if supermarket {
-        for k in 0..3 {
-            let f = q + into * 6.0 + into.perp() * (k as f32 - 1.0) * 2.0;
-            place_free(cx, rm, fl, Item::ProduceBin, Vec2::new(1.5, 1.1), f, into, seed ^ (200 + k));
-        }
-    }
+    let _ = (w, d);
 }
 
 fn seating(cx: &mut Ctx, rm: &mut Room2, fl: &FloorPlan, seed: u64) {
@@ -2037,7 +2432,8 @@ pub fn realise(b: &Built, bi: u32, p: &PlacedRef, near_y: f32) -> Option<Interio
     let lift = elevator(&mut cx, (p.tile, bi));
     // Exterior door frames inside are part of the shell; doors themselves are entities.
     Some(InteriorData {
-        kit: cx.kit,
+        // Meshes are made here on the worker thread, not when the interior arrives.
+        meshes: cx.kit.into_meshes(),
         specs: cx.specs,
         walls: cx.walls,
         floors: cx.floors,
@@ -2252,12 +2648,17 @@ fn receive_interiors(
                 ChildOf(root),
             ))
             .id();
-        for (m, mesh) in data.kit.into_meshes() {
-            let mut e = commands.spawn((Mesh3d(meshes.add(mesh)), MeshMaterial3d(imats.get(m)), Transform::default(), ChildOf(frame)));
-            // Glass and water don't block the sun.
-            if matches!(m, M::Glass | M::Water) {
-                e.insert(bevy::light::NotShadowCaster);
-            }
+        for (m, mesh) in data.meshes {
+            // Interiors don't cast sun shadows: the building's own walls already shade
+            // them, and drawing every room into each shadow cascade was a big part of the
+            // GPU load indoors.
+            commands.spawn((
+                Mesh3d(meshes.add(mesh)),
+                MeshMaterial3d(imats.get(m)),
+                Transform::default(),
+                ChildOf(frame),
+                bevy::light::NotShadowCaster,
+            ));
         }
         let um = &*um;
         super::interact::spawn_specs(

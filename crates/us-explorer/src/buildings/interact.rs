@@ -243,10 +243,14 @@ fn setup(
 
 fn spawn_kit(commands: &mut Commands, meshes: &mut Assets<Mesh>, imats: &InteriorMats, parent: Entity, kit: Kit) {
     for (m, mesh) in kit.into_meshes() {
-        let mut e = commands.spawn((Mesh3d(meshes.add(mesh)), MeshMaterial3d(imats.get(m)), Transform::default(), ChildOf(parent)));
-        if matches!(m, M::Glass | M::Water) {
-            e.insert(bevy::light::NotShadowCaster);
-        }
+        // Furniture doesn't cast sun shadows (the walls around it do).
+        commands.spawn((
+            Mesh3d(meshes.add(mesh)),
+            MeshMaterial3d(imats.get(m)),
+            Transform::default(),
+            ChildOf(parent),
+            bevy::light::NotShadowCaster,
+        ));
     }
 }
 
@@ -1225,9 +1229,9 @@ fn mirror_camera(
         }
         return;
     };
-    // Keep the reflection at half the window's resolution.
+    // Keep the reflection at a third of the window's resolution.
     if let Ok(w) = windows.single() {
-        let want = UVec2::new((w.physical_width() / 2).max(16), (w.physical_height() / 2).max(16));
+        let want = UVec2::new((w.physical_width() / 3).max(16), (w.physical_height() / 3).max(16));
         let have = images.get(&um.mirror_image).map(|i| i.size()).unwrap_or(UVec2::ZERO);
         if have != want {
             let img = mirror_image(&mut images, want);
@@ -1250,7 +1254,13 @@ fn mirror_camera(
     let view_from_world = Mat3A::from_quat(cam_r).inverse();
     let plane_n = (view_from_world * Vec3A::from(-n)).normalize();
     let dist = n.dot(c - cam_t);
-    *proj = Projection::Perspective(PerspectiveProjection { near_clip_plane: Vec3::from(plane_n).extend(dist), ..main_p.clone() });
+    // A bathroom mirror only needs the room: a short far plane culls the rest of the
+    // world (drawing the whole city twice was most of the GPU time indoors).
+    *proj = Projection::Perspective(PerspectiveProjection {
+        near_clip_plane: Vec3::from(plane_n).extend(dist),
+        far: 25.0,
+        ..main_p.clone()
+    });
     exp.ev100 = main_e.ev100;
     camera.is_active = true;
 }

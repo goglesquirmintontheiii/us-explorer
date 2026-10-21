@@ -482,10 +482,10 @@ impl DrapeApply<'_, '_> {
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, d.color);
         mesh.insert_indices(Indices::U32(d.indices));
         match (&c.mesh, c.root) {
-            (Some(old), Some(root)) => {
-                // A fresh mesh each time: the renderer may still be using the old one.
+            (Some(_), Some(root)) => {
+                // A fresh mesh each time; the old one is freed when its last handle
+                // goes (removing it here raced the renderer).
                 let h = self.meshes.add(mesh);
-                self.meshes.remove(old.id());
                 self.commands.entity(root).insert(Mesh3d(h.clone()));
                 c.mesh = Some(h);
                 if let Ok(mut a) = self.anchors.get_mut(root) {

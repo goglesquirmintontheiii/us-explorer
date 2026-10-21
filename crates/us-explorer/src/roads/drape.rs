@@ -58,6 +58,23 @@ pub fn drape(b: &Built, chunk: usize, snap: &HeightSnap) -> Option<Draped> {
                 snap.natural(la, lo)? + off as f64
             }
             H::Terrain => ground(p)?.0,
+            H::Water { at } => {
+                let mut low = f64::MAX;
+                for (r, n) in [(0.0f32, 1), (6.0, 6), (12.0, 8)] {
+                    for k in 0..n {
+                        let a = k as f32 / n as f32 * std::f32::consts::TAU;
+                        let q = at + Vec2::new(a.cos(), a.sin()) * r;
+                        let (la, lo) = b.local.ll(q);
+                        if let Some(h) = snap.natural(la, lo) {
+                            low = low.min(h);
+                        }
+                    }
+                }
+                if low == f64::MAX {
+                    return None;
+                }
+                low
+            }
             H::Deck { a, b: bb, t } => {
                 let (ha, hb) = (decks[a as usize] as f64, decks[bb as usize] as f64);
                 ha + (hb - ha) * t as f64

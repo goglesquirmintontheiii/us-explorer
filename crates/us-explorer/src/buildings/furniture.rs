@@ -206,15 +206,17 @@ impl Kit {
             .into_iter()
             .filter(|(_, b)| !b.idx.is_empty())
             .map(|(m, b)| {
+                let tan = tangents(&b.pos, &b.nrm, &b.uv, &b.idx);
                 let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, b.pos);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, b.nrm);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, b.uv);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, b.col);
+                // Tangents straight from the triangles' uv directions: our shapes have
+                // simple planar mappings, and this is many times quicker than
+                // MikkTSpace on a big interior.
+                mesh.insert_attribute(Mesh::ATTRIBUTE_TANGENT, tan);
                 mesh.insert_indices(Indices::U32(b.idx));
-                if mesh.generate_tangents().is_err() {
-                    // Flat surfaces without a normal map don't need them.
-                }
                 (m, mesh)
             })
             .collect()
@@ -223,6 +225,43 @@ impl Kit {
     pub fn is_empty(&self) -> bool {
         self.parts.values().all(|b| b.idx.is_empty())
     }
+}
+
+/// Per-vertex tangents (xyz, handedness) accumulated from each triangle's uv gradient.
+pub fn tangents(pos: &[[f32; 3]], nrm: &[[f32; 3]], uv: &[[f32; 2]], idx: &[u32]) -> Vec<[f32; 4]> {
+    let n = pos.len();
+    let mut t = vec![Vec3::ZERO; n];
+    let mut bt = vec![Vec3::ZERO; n];
+    for tri in idx.chunks_exact(3) {
+        let (a, b, c) = (tri[0] as usize, tri[1] as usize, tri[2] as usize);
+        let (pa, pb, pc) = (Vec3::from(pos[a]), Vec3::from(pos[b]), Vec3::from(pos[c]));
+        let (ua, ub, uc) = (Vec2::from(uv[a]), Vec2::from(uv[b]), Vec2::from(uv[c]));
+        let (e1, e2) = (pb - pa, pc - pa);
+        let (d1, d2) = (ub - ua, uc - ua);
+        let det = d1.x * d2.y - d2.x * d1.y;
+        if det.abs() < 1e-12 {
+            continue;
+        }
+        let r = 1.0 / det;
+        let tt = (e1 * d2.y - e2 * d1.y) * r;
+        let bb = (e2 * d1.x - e1 * d2.x) * r;
+        for k in [a, b, c] {
+            t[k] += tt;
+            bt[k] += bb;
+        }
+    }
+    (0..n)
+        .map(|i| {
+            let nn = Vec3::from(nrm[i]);
+            let mut tg = t[i] - nn * nn.dot(t[i]);
+            if tg.length_squared() < 1e-12 {
+                tg = nn.any_orthonormal_vector();
+            }
+            let tg = tg.normalize();
+            let w = if nn.cross(tg).dot(bt[i]) < 0.0 { -1.0 } else { 1.0 };
+            [tg.x, tg.y, tg.z, w]
+        })
+        .collect()
 }
 
 /// What kind of hinged thing (for the interaction prompt and sounds later).
@@ -398,6 +437,52 @@ pub enum Item {
     LightSwitch,
     Pipe { len: f32, vertical: bool },
     Shelf { len: f32 },
+    // Shop fittings.
+    /// Wall shelving stocked with one kind of goods (2 m tall).
+    GoodsWall { len: f32, goods: Goods },
+    /// Double-sided gondola stocked with one kind of goods, `h` tall.
+    GoodsGondola { len: f32, h: f32, goods: Goods },
+    ClothingRack { round: bool },
+    Mannequin,
+    /// A low display table with goods on it.
+    DisplayTable { goods: Goods },
+    /// A row of curtained changing cubicles against a wall.
+    FittingRooms { n: u32 },
+    /// A glass-topped display counter.
+    GlassCase { len: f32, goods: Goods },
+    WineRack { len: f32 },
+    /// A salon chair facing a wall mirror, with a shelf.
+    SalonStation,
+    /// A backwash basin and chair.
+    WashBasin,
+    Bench { len: f32 },
+    /// Televisions on a wall.
+    TvWall { len: f32 },
+    Aquarium { len: f32 },
+    /// Stacked lumber on a rack.
+    Lumber { len: f32 },
+    /// Buckets of cut flowers on a stepped stand.
+    FlowerStand { len: f32 },
+}
+
+/// What a shop sells, for stocking shelves.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Goods {
+    Groceries,
+    Boxes,
+    Books,
+    Shoes,
+    Clothes,
+    Bread,
+    Bottles,
+    Cans,
+    Electronics,
+    Toys,
+    Tools,
+    Cosmetics,
+    Jewelry,
+    Pastry,
+    Homeware,
 }
 
 fn t(x: f32, y: f32, z: f32) -> Affine3A {
@@ -411,6 +496,153 @@ fn ty(x: f32, y: f32, z: f32, yaw: f32) -> Affine3A {
 /// A hash for picking colours.
 fn pick<T: Copy>(opts: &[T], seed: u64) -> T {
     opts[(super::model::hash64(seed) % opts.len() as u64) as usize]
+}
+
+/// Clothes colours: mostly muted with some brights.
+fn clothes_colour(seed: u64) -> [f32; 4] {
+    pick(
+        &[
+            rgb(0.1, 0.1, 0.12),
+            rgb(0.9, 0.9, 0.88),
+            rgb(0.2, 0.28, 0.45),
+            rgb(0.55, 0.5, 0.45),
+            rgb(0.6, 0.12, 0.12),
+            rgb(0.3, 0.4, 0.3),
+            rgb(0.85, 0.7, 0.5),
+            rgb(0.9, 0.55, 0.6),
+            rgb(0.35, 0.55, 0.75),
+            rgb(0.95, 0.8, 0.2),
+        ],
+        seed,
+    )
+}
+
+/// Goods filling a shelf: a strip `len` wide, `depth` deep and up to `h` high, standing
+/// on `at` (its centre on the shelf).
+fn stock(k: &mut Kit, goods: Goods, at: Vec3, len: f32, depth: f32, h: f32, seed: u64) {
+    let r = |q: u64| super::model::hash01(seed ^ q.wrapping_mul(0x9e37));
+    let bright = |q: u64| {
+        pick(
+            &[
+                rgb(0.85, 0.15, 0.12),
+                rgb(0.95, 0.75, 0.1),
+                rgb(0.15, 0.35, 0.75),
+                rgb(0.15, 0.55, 0.25),
+                rgb(0.95, 0.95, 0.93),
+                rgb(0.95, 0.45, 0.1),
+                rgb(0.5, 0.2, 0.55),
+                rgb(0.2, 0.2, 0.22),
+            ],
+            seed ^ q,
+        )
+    };
+    let x0 = at.x - len * 0.5;
+    match goods {
+        Goods::Groceries | Goods::Cosmetics | Goods::Toys | Goods::Homeware => {
+            // Rows of packages of varying width and height.
+            let mut x = x0;
+            let mut i = 0u64;
+            let small = matches!(goods, Goods::Cosmetics);
+            while x < at.x + len * 0.5 - 0.05 {
+                let w = if small { 0.05 + r(i) * 0.06 } else { 0.08 + r(i) * 0.22 };
+                let w = w.min(at.x + len * 0.5 - x);
+                let hh = h * if small { 0.3 + r(i + 1) * 0.3 } else { 0.45 + r(i + 1) * 0.5 };
+                let c = if matches!(goods, Goods::Toys) { bright(i) } else { bright(i / 3) };
+                k.cube(M::Packaging, Affine3A::from_translation(Vec3::new(x + w * 0.5, at.y + hh * 0.5, at.z)), Vec3::new(w - 0.01, hh, depth), c);
+                x += w;
+                i += 1;
+            }
+        }
+        Goods::Boxes | Goods::Tools => {
+            let n = (len / 0.45).floor().max(1.0) as i32;
+            for i in 0..n {
+                if r(i as u64) < 0.2 {
+                    continue;
+                }
+                let hh = h * (0.5 + r(i as u64 + 9) * 0.45);
+                let c = if matches!(goods, Goods::Tools) { bright(i as u64 / 2) } else { WHITE };
+                let m = if matches!(goods, Goods::Tools) { M::Packaging } else { M::Cardboard };
+                k.cube(m, Affine3A::from_translation(Vec3::new(x0 + (i as f32 + 0.5) * len / n as f32, at.y + hh * 0.5, at.z)), Vec3::new(len / n as f32 - 0.04, hh, depth * 0.9), c);
+            }
+        }
+        Goods::Books => {
+            let mut x = x0;
+            let mut i = 0u64;
+            while x < at.x + len * 0.5 - 0.03 {
+                let w = 0.025 + r(i) * 0.035;
+                let hh = (0.18 + r(i + 3) * 0.12).min(h);
+                let c = pick(&[rgb(0.5, 0.1, 0.1), rgb(0.1, 0.2, 0.4), rgb(0.85, 0.82, 0.7), rgb(0.1, 0.3, 0.15), rgb(0.15, 0.15, 0.15), rgb(0.7, 0.5, 0.2)], seed ^ i);
+                k.cube(M::Packaging, Affine3A::from_translation(Vec3::new(x + w * 0.5, at.y + hh * 0.5, at.z + depth * 0.2)), Vec3::new(w - 0.003, hh, depth * 0.55), c);
+                x += w;
+                i += 1;
+            }
+        }
+        Goods::Shoes => {
+            let n = (len / 0.34).floor().max(1.0) as i32;
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                let c = pick(&[rgb(0.1, 0.1, 0.1), rgb(0.95, 0.95, 0.95), rgb(0.45, 0.28, 0.15), rgb(0.7, 0.15, 0.15), rgb(0.2, 0.3, 0.6)], seed ^ i as u64);
+                for side in [-0.05f32, 0.05] {
+                    k.ball(M::Leather, Affine3A::from_translation(Vec3::new(x + side, at.y + 0.05, at.z)), Vec3::new(0.09, 0.1, 0.27), c);
+                }
+            }
+        }
+        Goods::Clothes => {
+            // Folded stacks.
+            let n = (len / 0.38).floor().max(1.0) as i32;
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                let hh = (0.06 + r(i as u64) * 0.2).min(h);
+                k.cube(M::Fabric, Affine3A::from_translation(Vec3::new(x, at.y + hh * 0.5, at.z)), Vec3::new(0.3, hh, (depth * 0.8).min(0.35)), clothes_colour(seed ^ i as u64));
+            }
+        }
+        Goods::Bread | Goods::Pastry => {
+            let n = (len / 0.2).floor().max(1.0) as i32;
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                let c = pick(&[rgb(0.75, 0.5, 0.25), rgb(0.6, 0.38, 0.18), rgb(0.85, 0.65, 0.4), rgb(0.95, 0.85, 0.75), rgb(0.45, 0.25, 0.12)], seed ^ i as u64);
+                let sz = if matches!(goods, Goods::Pastry) { Vec3::new(0.09, 0.05, 0.09) } else { Vec3::new(0.16, 0.1, 0.3) };
+                for z in [-0.25f32, 0.0, 0.25] {
+                    k.ball(M::Fabric, Affine3A::from_translation(Vec3::new(x, at.y + sz.y * 0.5, at.z + z * depth)), sz, c);
+                }
+            }
+        }
+        Goods::Bottles | Goods::Cans => {
+            let step = if matches!(goods, Goods::Cans) { 0.075 } else { 0.095 };
+            let n = (len / step).floor().max(1.0) as i32;
+            let hh = if matches!(goods, Goods::Cans) { 0.12 } else { (0.3f32).min(h) };
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                let c = if matches!(goods, Goods::Bottles) {
+                    pick(&[rgb(0.08, 0.2, 0.1), rgb(0.35, 0.15, 0.05), rgb(0.85, 0.85, 0.8), rgb(0.12, 0.05, 0.05)], seed ^ (i / 4) as u64)
+                } else {
+                    bright(i as u64 / 6)
+                };
+                for z in [-0.3f32, 0.0, 0.3] {
+                    k.cyl(M::Glass, Affine3A::from_translation(Vec3::new(x, at.y, at.z + z * depth)), step * 0.42, hh, 8, c, true);
+                }
+            }
+        }
+        Goods::Electronics => {
+            let n = (len / 0.45).floor().max(1.0) as i32;
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                let tilt = Quat::from_rotation_x(-0.35);
+                let (w, d) = if r(i as u64) < 0.5 { (0.32, 0.22) } else { (0.08, 0.16) };
+                k.cube(M::Plastic, Affine3A::from_rotation_translation(tilt, Vec3::new(x, at.y + 0.06, at.z)), Vec3::new(w, 0.012, d), rgb(0.06, 0.06, 0.07));
+                k.cube(M::Plastic, Affine3A::from_translation(Vec3::new(x, at.y + 0.02, at.z + 0.06)), Vec3::new(0.06, 0.04, 0.06), rgb(0.85, 0.85, 0.85));
+            }
+        }
+        Goods::Jewelry => {
+            let n = (len / 0.25).floor().max(1.0) as i32;
+            for i in 0..n {
+                let x = x0 + (i as f32 + 0.5) * len / n as f32;
+                k.cube(M::Fabric, Affine3A::from_translation(Vec3::new(x, at.y + 0.02, at.z)), Vec3::new(0.18, 0.04, 0.14), rgb(0.1, 0.1, 0.12));
+                let c = pick(&[rgb(0.95, 0.8, 0.35), rgb(0.85, 0.85, 0.88), rgb(0.95, 0.75, 0.7)], seed ^ i as u64);
+                k.ball(M::Chrome, Affine3A::from_translation(Vec3::new(x, at.y + 0.06, at.z)), Vec3::new(0.06, 0.03, 0.06), c);
+            }
+        }
+    }
 }
 
 pub fn fabric_colour(seed: u64) -> [f32; 4] {
@@ -1345,6 +1577,229 @@ pub fn build(item: Item, at: Affine3A, seed: u64, kit: &mut Kit, specs: &mut Vec
             k.cyl(M::WhitePlastic, xf2, 0.025, len, 8, rgb(0.95, 0.95, 0.93), false);
             let xf3 = xf * t(0.12, 0.0, 0.02);
             k.cyl(M::Plastic, xf3, 0.006, len, 6, rgb(0.85, 0.75, 0.3), false);
+        }
+        Item::GoodsWall { len, goods } => {
+            let frame = pick(&[rgb(0.85, 0.86, 0.86), rgb(0.25, 0.25, 0.27), rgb(0.62, 0.5, 0.36)], seed ^ 0x5f);
+            let m = if frame[0] > 0.5 && frame[1] > 0.45 && frame[2] < 0.4 { M::Wood } else { M::Metal };
+            k.cube(m, t(0.0, 1.0, -0.02), Vec3::new(len, 2.0, 0.04), frame);
+            for x in [-0.5f32, 0.5] {
+                k.cube(m, t(x * len, 1.0, -0.22), Vec3::new(0.04, 2.0, 0.44), frame);
+            }
+            for r in 0..5 {
+                let y = 0.12 + r as f32 * 0.42;
+                k.cube(m, t(0.0, y, -0.22), Vec3::new(len, 0.025, 0.44), frame);
+                stock(&mut k, goods, Vec3::new(0.0, y + 0.013, -0.22), len - 0.08, 0.38, 0.36, seed ^ (r * 31));
+            }
+        }
+        Item::GoodsGondola { len, h, goods } => {
+            let frame = pick(&[rgb(0.85, 0.86, 0.86), rgb(0.93, 0.93, 0.9), rgb(0.2, 0.2, 0.22)], seed ^ 0x77);
+            k.cube(M::Metal, t(0.0, h * 0.5, 0.0), Vec3::new(len, h, 0.06), frame);
+            k.cube(M::Metal, t(0.0, 0.07, 0.0), Vec3::new(len, 0.14, 1.0), frame);
+            let rows = ((h - 0.2) / 0.42).floor().max(1.0) as u32;
+            for side in [-1.0f32, 1.0] {
+                for r in 0..rows {
+                    let y = 0.16 + r as f32 * 0.42;
+                    k.cube(M::Metal, t(0.0, y, side * 0.25), Vec3::new(len, 0.02, 0.45), frame);
+                    stock(&mut k, goods, Vec3::new(0.0, y + 0.01, side * 0.26), len - 0.06, 0.4, 0.34, seed ^ (r as u64 * 17 + (side > 0.0) as u64));
+                }
+            }
+            // End caps in the shop's colour.
+            let cap = pick(&[rgb(0.75, 0.12, 0.1), rgb(0.1, 0.3, 0.6), rgb(0.95, 0.75, 0.1), rgb(0.1, 0.5, 0.25)], seed ^ 0xe);
+            for x in [-0.5f32, 0.5] {
+                k.cube(M::Plastic, t(x * (len + 0.02), h * 0.5, 0.0), Vec3::new(0.03, h, 1.0), cap);
+            }
+        }
+        Item::ClothingRack { round } => {
+            let chrome = rgb(0.85, 0.86, 0.88);
+            if round {
+                k.cyl(M::Chrome, t(0.0, 0.0, 0.0), 0.3, 0.03, 16, chrome, true);
+                k.cyl(M::Chrome, t(0.0, 0.0, 0.0), 0.025, 1.3, 8, chrome, false);
+                // The ring, as short straight pieces.
+                let n = 20;
+                for i in 0..n {
+                    let a = i as f32 / n as f32 * std::f32::consts::TAU;
+                    let p = Vec3::new(a.cos() * 0.55, 1.3, a.sin() * 0.55);
+                    k.cube(M::Chrome, Affine3A::from_rotation_translation(Quat::from_rotation_y(-a), p), Vec3::new(0.025, 0.025, 0.18), chrome);
+                    // A garment hanging off the ring, facing out.
+                    let col = clothes_colour(seed ^ (i / 3) as u64);
+                    let xf = Affine3A::from_rotation_translation(Quat::from_rotation_y(-a + std::f32::consts::FRAC_PI_2), p + Vec3::new(0.0, -0.42, 0.0));
+                    k.cube(M::Fabric, xf, Vec3::new(0.48, 0.78, 0.035), col);
+                }
+            } else {
+                let len = 1.5;
+                for x in [-0.5f32, 0.5] {
+                    k.cyl(M::Chrome, t(x * len, 0.0, 0.0), 0.02, 1.45, 8, chrome, false);
+                    k.cube(M::Chrome, t(x * len, 0.02, 0.0), Vec3::new(0.05, 0.03, 0.55), chrome);
+                }
+                k.cube(M::Chrome, t(0.0, 1.45, 0.0), Vec3::new(len, 0.025, 0.025), chrome);
+                let n = 18;
+                for i in 0..n {
+                    let x = -len * 0.46 + i as f32 / (n - 1) as f32 * len * 0.92;
+                    let col = clothes_colour(seed ^ (i / 4) as u64);
+                    let long = super::model::hash01(seed ^ 0x10) < 0.4;
+                    let hh = if long { 1.0 } else { 0.7 };
+                    k.cube(M::Fabric, t(x, 1.42 - hh * 0.5, 0.0), Vec3::new(0.03, hh, 0.5), col);
+                }
+            }
+        }
+        Item::Mannequin => {
+            let skin = pick(&[rgb(0.92, 0.92, 0.9), rgb(0.12, 0.12, 0.13), rgb(0.78, 0.66, 0.52)], seed);
+            let top = clothes_colour(seed ^ 1);
+            let bottom = clothes_colour(seed ^ 2);
+            k.cyl(M::Chrome, t(0.0, 0.0, 0.0), 0.2, 0.02, 14, rgb(0.8, 0.8, 0.82), true);
+            k.cyl(M::Chrome, t(0.0, 0.0, 0.0), 0.015, 0.95, 6, rgb(0.8, 0.8, 0.82), false);
+            for x in [-0.09f32, 0.09] {
+                k.frustum(M::Fabric, t(x, 0.1, 0.0), 0.07, 0.085, 0.85, 10, bottom, false);
+            }
+            k.ball(M::Fabric, t(0.0, 1.0, 0.0), Vec3::new(0.36, 0.3, 0.22), bottom);
+            k.frustum(M::Fabric, t(0.0, 1.0, 0.0), 0.17, 0.2, 0.48, 12, top, true);
+            k.ball(M::Fabric, t(0.0, 1.44, 0.0), Vec3::new(0.44, 0.14, 0.24), top);
+            for x in [-0.25f32, 0.25] {
+                k.frustum(M::Fabric, t(x, 0.82, 0.0), 0.04, 0.055, 0.62, 8, top, false);
+            }
+            k.cyl(M::Plastic, t(0.0, 1.48, 0.0), 0.045, 0.1, 8, skin, false);
+            k.ball(M::Plastic, t(0.0, 1.66, 0.0), Vec3::new(0.19, 0.24, 0.21), skin);
+        }
+        Item::DisplayTable { goods } => {
+            let wood = pick(&[rgb(0.72, 0.56, 0.38), rgb(0.95, 0.94, 0.9), rgb(0.35, 0.25, 0.18)], seed ^ 0x3);
+            k.cube(M::Wood, t(0.0, 0.74, 0.0), Vec3::new(1.6, 0.05, 0.9), wood);
+            for (x, z) in [(-0.72f32, -0.38f32), (0.72, -0.38), (-0.72, 0.38), (0.72, 0.38)] {
+                k.cube(M::Wood, t(x, 0.36, z), Vec3::new(0.06, 0.72, 0.06), wood);
+            }
+            k.cube(M::Wood, t(0.0, 0.22, 0.0), Vec3::new(1.5, 0.03, 0.8), wood);
+            stock(&mut k, goods, Vec3::new(0.0, 0.765, 0.0), 1.5, 0.8, 0.3, seed);
+        }
+        Item::FittingRooms { n } => {
+            let wall = pick(&[rgb(0.95, 0.95, 0.93), rgb(0.3, 0.3, 0.32), rgb(0.7, 0.62, 0.52)], seed);
+            let curtain = pick(&[rgb(0.2, 0.2, 0.22), rgb(0.6, 0.15, 0.15), rgb(0.85, 0.82, 0.75), rgb(0.2, 0.3, 0.45)], seed ^ 9);
+            let w = 1.1;
+            let total = w * n as f32;
+            for i in 0..=n {
+                let x = -total * 0.5 + i as f32 * w;
+                k.cube(M::Paint, t(x, 1.1, -0.65), Vec3::new(0.05, 2.2, 1.3), wall);
+            }
+            for i in 0..n {
+                let x = -total * 0.5 + (i as f32 + 0.5) * w;
+                k.cube(M::Fabric, t(x, 1.15, -1.28), Vec3::new(w - 0.1, 1.9, 0.03), curtain);
+                k.cube(M::Chrome, t(x, 2.12, -1.28), Vec3::new(w, 0.02, 0.02), rgb(0.8, 0.8, 0.82));
+                k.cube(M::Mirror, t(x, 1.3, -0.03), Vec3::new(0.5, 1.4, 0.01), WHITE);
+                k.cube(M::Wood, t(x + 0.3, 0.45, -0.25), Vec3::new(0.4, 0.05, 0.3), rgb(0.6, 0.45, 0.3));
+            }
+        }
+        Item::GlassCase { len, goods } => {
+            let base = pick(&[rgb(0.95, 0.95, 0.93), rgb(0.15, 0.15, 0.16), rgb(0.55, 0.4, 0.28)], seed);
+            k.cube(M::Wood, t(0.0, 0.4, 0.0), Vec3::new(len, 0.8, 0.6), base);
+            stock(&mut k, goods, Vec3::new(0.0, 0.81, 0.0), len - 0.1, 0.5, 0.2, seed ^ 4);
+            k.cube(M::Glass, t(0.0, 0.97, 0.0), Vec3::new(len, 0.32, 0.6), WHITE);
+            k.cube(M::LightPanel, t(0.0, 1.12, 0.0), Vec3::new(len - 0.1, 0.01, 0.05), WHITE);
+        }
+        Item::WineRack { len } => {
+            let wood = pick(&[rgb(0.5, 0.34, 0.2), rgb(0.3, 0.2, 0.13)], seed);
+            k.cube(M::Wood, t(0.0, 1.0, -0.2), Vec3::new(len, 2.0, 0.4), wood);
+            let cols = (len / 0.11).floor() as i32;
+            for r in 0..14 {
+                for c in 0..cols {
+                    if super::model::hash01(seed ^ (r * 97 + c) as u64) < 0.15 {
+                        continue;
+                    }
+                    let col = pick(&[rgb(0.08, 0.2, 0.1), rgb(0.12, 0.05, 0.05), rgb(0.6, 0.55, 0.3), rgb(0.05, 0.05, 0.05)], seed ^ (c / 3) as u64);
+                    let x = -len * 0.5 + (c as f32 + 0.5) * len / cols as f32;
+                    let xf = Affine3A::from_rotation_translation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2), Vec3::new(x, 0.12 + r as f32 * 0.135, -0.42));
+                    k.cyl(M::Glass, xf, 0.038, 0.06, 8, col, true);
+                }
+            }
+        }
+        Item::SalonStation => {
+            k.cube(M::Wood, t(0.0, 0.85, -0.15), Vec3::new(1.0, 0.04, 0.3), rgb(0.95, 0.95, 0.93));
+            for i in 0..4 {
+                let c = pick(&[rgb(0.9, 0.3, 0.4), rgb(0.2, 0.2, 0.2), rgb(0.95, 0.95, 0.95), rgb(0.3, 0.5, 0.8)], seed ^ i);
+                k.cyl(M::Plastic, t(-0.35 + i as f32 * 0.2, 0.87, -0.15), 0.03, 0.16, 8, c, true);
+            }
+            k.cube(M::Mirror, t(0.0, 1.45, -0.02), Vec3::new(0.8, 1.0, 0.01), WHITE);
+            s.push(Spec::Mirror { centre: Vec3::new(0.0, 1.45, -0.03), yaw: 0.0, w: 0.8, h: 1.0 });
+            // The chair, facing the mirror.
+            let seat = pick(&[rgb(0.1, 0.1, 0.1), rgb(0.5, 0.1, 0.1), rgb(0.85, 0.85, 0.82)], seed ^ 3);
+            k.cyl(M::Chrome, t(0.0, 0.0, -1.1), 0.28, 0.04, 16, rgb(0.8, 0.8, 0.82), true);
+            k.cyl(M::Chrome, t(0.0, 0.04, -1.1), 0.06, 0.4, 10, rgb(0.8, 0.8, 0.82), false);
+            k.cube(M::Leather, t(0.0, 0.5, -1.1), Vec3::new(0.55, 0.14, 0.55), seat);
+            k.cube(M::Leather, t(0.0, 0.88, -1.37), Vec3::new(0.52, 0.65, 0.1), seat);
+            for x in [-0.3f32, 0.3] {
+                k.cube(M::Leather, t(x, 0.68, -1.1), Vec3::new(0.08, 0.06, 0.45), seat);
+            }
+            s.push(Spec::Seat { at: Vec3::new(0.0, 0.58, -1.15), yaw: 0.0, half: Vec3::new(0.3, 0.3, 0.3), centre: Vec3::new(0.0, 0.5, -1.1), lie: false });
+        }
+        Item::WashBasin => {
+            k.cube(M::Plastic, t(0.0, 0.45, -0.25), Vec3::new(0.6, 0.9, 0.5), rgb(0.15, 0.15, 0.16));
+            k.ball(M::Ceramic, t(0.0, 0.95, -0.3), Vec3::new(0.55, 0.22, 0.45), rgb(0.12, 0.12, 0.13));
+            k.cube(M::Leather, t(0.0, 0.5, -0.95), Vec3::new(0.55, 0.12, 0.55), rgb(0.12, 0.12, 0.12));
+            k.cube(M::Leather, t(0.0, 0.8, -0.65), Vec3::new(0.52, 0.5, 0.12), rgb(0.12, 0.12, 0.12));
+            k.cube(M::Metal, t(0.0, 0.25, -0.95), Vec3::new(0.45, 0.5, 0.45), rgb(0.2, 0.2, 0.2));
+        }
+        Item::Bench { len } => {
+            let wood = pick(&[rgb(0.6, 0.45, 0.3), rgb(0.2, 0.2, 0.22)], seed);
+            k.cube(M::Leather, t(0.0, 0.42, 0.0), Vec3::new(len, 0.1, 0.45), pick(&[rgb(0.15, 0.15, 0.16), rgb(0.45, 0.3, 0.2)], seed ^ 1));
+            for x in [-0.45f32, 0.45] {
+                k.cube(M::Wood, t(x * len, 0.19, 0.0), Vec3::new(0.06, 0.38, 0.4), wood);
+            }
+        }
+        Item::TvWall { len } => {
+            k.cube(M::Plastic, t(0.0, 1.3, -0.03), Vec3::new(len, 2.4, 0.06), rgb(0.12, 0.12, 0.13));
+            let mut x = -len * 0.5 + 0.1;
+            let mut i = 0u64;
+            while x < len * 0.5 - 0.6 {
+                let w = 0.6 + super::model::hash01(seed ^ i) * 0.9;
+                if x + w > len * 0.5 - 0.1 {
+                    break;
+                }
+                for (row, y) in [(0u64, 0.95f32), (1, 1.75)] {
+                    let ww = if row == 1 { w * 0.85 } else { w };
+                    let hh = ww * 0.57;
+                    k.cube(M::Plastic, t(x + w * 0.5, y, -0.08), Vec3::new(ww, hh, 0.04), rgb(0.05, 0.05, 0.06));
+                    s.push(Spec::Screen { centre: Vec3::new(x + w * 0.5, y, -0.101), yaw: 0.0, w: ww - 0.03, h: hh - 0.03 });
+                }
+                x += w + 0.1;
+                i += 1;
+            }
+        }
+        Item::Aquarium { len } => {
+            k.cube(M::Wood, t(0.0, 0.4, -0.25), Vec3::new(len, 0.8, 0.5), rgb(0.15, 0.15, 0.16));
+            k.cube(M::Water, t(0.0, 1.05, -0.25), Vec3::new(len - 0.04, 0.46, 0.46), WHITE);
+            k.cube(M::Glass, t(0.0, 1.07, -0.25), Vec3::new(len, 0.54, 0.5), WHITE);
+            k.cube(M::Plastic, t(0.0, 1.36, -0.25), Vec3::new(len, 0.04, 0.5), rgb(0.1, 0.1, 0.1));
+            for i in 0..6 {
+                let r = |q: u64| super::model::hash01(seed ^ (i * 13 + q));
+                let c = pick(&[rgb(0.95, 0.5, 0.1), rgb(0.2, 0.4, 0.95), rgb(0.95, 0.9, 0.2), rgb(0.9, 0.2, 0.3)], seed ^ i);
+                k.ball(M::Plastic, t((r(1) - 0.5) * (len - 0.3), 0.9 + r(2) * 0.3, -0.25 + (r(3) - 0.5) * 0.3), Vec3::new(0.07, 0.04, 0.02), c);
+            }
+            for i in 0..5 {
+                let x = (super::model::hash01(seed ^ (i + 50)) - 0.5) * (len - 0.2);
+                k.frustum(M::Plant, t(x, 0.84, -0.2), 0.03, 0.005, 0.3, 5, rgb(0.2, 0.5, 0.2), false);
+            }
+        }
+        Item::Lumber { len } => {
+            for x in [-0.45f32, 0.0, 0.45] {
+                k.cube(M::Metal, t(x * len, 1.2, -0.5), Vec3::new(0.08, 2.4, 1.0), rgb(0.9, 0.5, 0.1));
+            }
+            for r in 0..3 {
+                let y = 0.1 + r as f32 * 0.8;
+                k.cube(M::Metal, t(0.0, y, -0.5), Vec3::new(len, 0.06, 1.0), rgb(0.15, 0.25, 0.55));
+                k.cube(M::Wood, t(0.0, y + 0.2, -0.5), Vec3::new(len - 0.05, 0.34, 0.9), rgb(0.86, 0.72, 0.5));
+            }
+        }
+        Item::FlowerStand { len } => {
+            for step in 0..3 {
+                let y = 0.3 + step as f32 * 0.3;
+                let z = -0.25 - step as f32 * 0.0 + (2 - step) as f32 * -0.3;
+                k.cube(M::Wood, t(0.0, y, z), Vec3::new(len, 0.04, 0.3), rgb(0.5, 0.36, 0.22));
+                let n = (len / 0.3) as i32;
+                for i in 0..n {
+                    let x = -len * 0.5 + (i as f32 + 0.5) * len / n as f32;
+                    k.frustum(M::Metal, t(x, y + 0.02, z), 0.1, 0.12, 0.25, 10, rgb(0.6, 0.6, 0.62), false);
+                    let c = pick(&[rgb(0.9, 0.15, 0.2), rgb(0.95, 0.85, 0.2), rgb(0.95, 0.95, 0.95), rgb(0.85, 0.4, 0.7), rgb(0.95, 0.5, 0.1)], seed ^ i as u64 ^ step);
+                    k.cyl(M::Plant, t(x, y + 0.25, z), 0.02, 0.25, 5, rgb(0.25, 0.5, 0.2), false);
+                    k.ball(M::Fabric, t(x, y + 0.55, z), Vec3::new(0.24, 0.16, 0.24), c);
+                }
+            }
         }
         Item::Shelf { len } => {
             let c = rgb(0.6, 0.62, 0.64);
