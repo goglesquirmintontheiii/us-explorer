@@ -1264,6 +1264,19 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
     // Street lights: mapped ones where the area has them, otherwise inferred along
     // urban (or lit) streets.
     let lamps_mapped = osm.nodes.iter().filter(|n| n.tags.is("highway", "street_lamp")).count() >= 8;
+    // Mapped lamps by 40 m cell, so streets lined with them get pools of light too.
+    let mut lamp_cells: HashMap<(i32, i32), u32> = HashMap::new();
+    for n in osm.nodes.iter().filter(|n| n.tags.is("highway", "street_lamp")) {
+        let p = local.xz(n.lat, n.lon);
+        *lamp_cells.entry(((p.x / 40.0).floor() as i32, (p.y / 40.0).floor() as i32)).or_default() += 1;
+    }
+    let lamps_along = |pts: &[Vec2]| -> u32 {
+        let mut seen: HashSet<(i32, i32)> = HashSet::new();
+        for q in pts.iter().step_by(4) {
+            seen.insert(((q.x / 40.0).floor() as i32, (q.y / 40.0).floor() as i32));
+        }
+        seen.iter().map(|c| lamp_cells.get(c).copied().unwrap_or(0)).sum()
+    };
     let infer_lamps = |w: &RWay, p0: Vec2| {
         !lamps_mapped && w.class.vehicle() && w.class <= Class::Residential && !w.tunnel && (is_urban(p0) || w.tags.is("lit", "yes"))
     };
@@ -1457,7 +1470,11 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
             + ((w.prof.shoulder_l * 10.0).round() as u32).min(63) * 256
             + ((w.prof.shoulder_r * 10.0).round() as u32).min(63) * 16384;
         let turns = (w.turn_f & 0x1ff) | (w.turn_b & 0x1ff) << 9;
-        let glow = if infer_lamps(w, pts[0]) { lamp_layout(w).3 } else { 0 };
+        let glow = if infer_lamps(w, pts[0]) || lamps_mapped && w.class.vehicle() && !w.tunnel && lamps_along(&pts) >= 2 {
+            lamp_layout(w).3
+        } else {
+            0
+        };
 
         // Width per row: where a road joins one of a different width (a lane added or
         // dropped), both meet at the average width and taper to their own.

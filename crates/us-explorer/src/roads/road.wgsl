@@ -426,11 +426,11 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         // Two drifting ripple layers for the normal; deeper colour away from the light.
         let r1 = vec2(vnoise(w * 0.35 + vec2(t * 0.21, t * 0.13)), vnoise(w.yx * 0.35 - vec2(t * 0.17, t * 0.09)));
         let r2 = vec2(vnoise(w * 1.7 + vec2(-t * 0.5, t * 0.37)), vnoise(w.yx * 1.7 + vec2(t * 0.41, -t * 0.29)));
-        let slope = (r1 - 0.5) * 0.35 + (r2 - 0.5) * 0.18 * (0.3 + 0.7 * near);
+        let slope = (r1 - 0.5) * 0.16 + (r2 - 0.5) * 0.08 * (0.3 + 0.7 * near);
         let tn = normalize(cross(pbr_input.N, vec3(0.0, 0.0, 1.0)) + vec3(1e-4));
         let bn = cross(pbr_input.N, tn);
         pbr_input.N = normalize(pbr_input.N + tn * slope.x + bn * slope.y);
-        painted = vec3(0.025, 0.07, 0.08) * (0.85 + 0.3 * fbm(w * 0.02));
+        painted = vec3(0.03, 0.085, 0.11) * (0.85 + 0.3 * fbm(w * 0.02));
         pbr_input.material.base_color = vec4(painted, 1.0);
         pbr_input.material.perceptual_roughness = 0.07 + 0.15 * road.wet;
         pbr_input.material.metallic = 0.0;

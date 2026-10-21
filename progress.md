@@ -45,9 +45,15 @@ Open GitHub issues checked at the start of this phase: none.
 - [x] Lakes, reservoirs and river areas from OSM drawn as water with moving ripples, and you can swim in them
 
 ### Release
-- [ ] Screenshots reviewed
+- [x] Screenshots reviewed (water ripples toned down after review; streets with mapped lamps also get pools of light)
 - [ ] v0.3.1-hotfix released (AppImage)
 
 ## Screenshots
 
-To come from the CI screenshot run.
+From the CI screenshot run (software rendering, so frame rates in the overlay are meaningless).
+
+| | |
+|---|---|
+| ![Times Square: turn arrows at real size, coloured signals](docs/screenshots/phase3_1/roads-times-square.jpg) | ![Golden Gate: suspension towers, cables and suspenders, no piers in the main span](docs/screenshots/phase3_1/roads-golden-gate-deck.jpg) |
+| ![The South Platte beside I-25: river water, poles and wires](docs/screenshots/phase3_1/roads-freeway-i25.jpg) | ![A downtown Denver corner at night](docs/screenshots/phase3_1/night-street-denver.jpg) |
+| ![The Mousetrap: raised roads on retaining walls](docs/screenshots/phase3_1/roads-mousetrap.jpg) | ![Lake Union](docs/screenshots/phase3_1/water-lake-union.jpg) |
