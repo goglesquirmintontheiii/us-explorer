@@ -198,6 +198,9 @@ pub fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>, mut mats
                    images: &mut Assets<Image>,
                    mats: &mut Assets<StandardMaterial>| {
         let mut sm = sm;
+        // Interiors are seen from both sides (walls, doors, furniture boxes).
+        sm.cull_mode = None;
+        sm.double_sided = true;
         if let Some(t) = tex {
             sm.base_color_texture = Some(images.add(t.albedo()));
             if let Some(s) = normal {

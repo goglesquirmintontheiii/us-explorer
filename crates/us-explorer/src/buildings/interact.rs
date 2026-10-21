@@ -59,6 +59,8 @@ pub struct Hinge {
     pub hinge: Vec3,
     pub centre0: Vec3,
     pub brot0: Quat,
+    /// Picked up the door's state from before it was (re)built.
+    pub synced: bool,
 }
 
 /// Running water: taps, showers, baths, toilets.
@@ -388,7 +390,7 @@ fn spawn_hinge(
             Transform::from_translation(hinge),
             Visibility::Inherited,
             ChildOf(parent),
-            Hinge { axis, angle: angle * sign, t: 0.0, open: false, door_id, kind, hinge, centre0: centre, brot0 },
+            Hinge { axis, angle: angle * sign, t: 0.0, open: false, door_id, kind, hinge, centre0: centre, brot0, synced: false },
             Usable { origin, rot, centre, half: half + Vec3::splat(0.02), brot: brot0, what: Use::Hinge },
         ))
         .id();
@@ -633,7 +635,7 @@ pub fn spawn_specs(
                     MeshMaterial3d(um.mirror_dull.clone()),
                     // Plane3d faces +Y: stand it up to face n.
                     Transform::from_translation(c)
-                        .with_rotation(q * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+                        .with_rotation(q * Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                         .with_scale(Vec3::new(w, 1.0, h)),
                     MirrorQuad { origin, rot, centre: c, normal: n, w, h, live: false },
                     bevy::light::NotShadowCaster,
@@ -648,7 +650,7 @@ pub fn spawn_specs(
                         Mesh3d(um.unit_quad.clone()),
                         MeshMaterial3d(um.dark_screen.clone()),
                         Transform::from_translation(centre + n * 0.004)
-                            .with_rotation(q * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+                            .with_rotation(q * Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
                             .with_scale(Vec3::new(w, 1.0, h)),
                         ChildOf(frame),
                     ))
@@ -1017,6 +1019,13 @@ fn ease(t: f32) -> f32 {
 fn animate_hinges(time: Res<Time>, mut q: Query<(&mut Hinge, &mut Transform, &mut Usable)>, mut walk: ResMut<Walkables>) {
     let dt = time.delta_secs();
     for (mut h, mut tr, mut u) in &mut q {
+        if !h.synced {
+            h.synced = true;
+            if h.door_id.is_some_and(|id| walk.open_doors.contains(&id)) {
+                h.open = true;
+                h.t = 0.999;
+            }
+        }
         let target = if h.open { 1.0 } else { 0.0 };
         if (h.t - target).abs() < 1e-4 && tr.rotation == Quat::from_axis_angle(h.axis, h.angle * ease(h.t)) {
             continue;

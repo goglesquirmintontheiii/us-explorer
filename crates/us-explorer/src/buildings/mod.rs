@@ -856,7 +856,21 @@ mod fixture_tests {
                             assert!(f.h.is_finite());
                         }
                     }
-                    None => none += 1,
+                    None => {
+                        none += 1;
+                        if none <= 6 {
+                            println!(
+                                "    no interior: {:?} {:.0} m² {} parts {} levels {} pts min_h {:.1} id {}",
+                                bl.kind,
+                                bl.area,
+                                bl.parts.len(),
+                                bl.levels,
+                                bl.outline.len(),
+                                bl.parts.iter().map(|q| q.min_h).fold(f32::MAX, f32::min),
+                                bl.id
+                            );
+                        }
+                    }
                 }
                 if let Some(pl) = plan::plan(bl, &exterior::doors(bl, &b.street[bi]), &[]) {
                     for f in &pl.floors {

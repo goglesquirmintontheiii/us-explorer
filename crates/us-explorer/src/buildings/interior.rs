@@ -131,7 +131,16 @@ pub fn exterior_solid(b: &Built, bi: u32, p: &PlacedRef) -> Solid {
         w = w.min(lo);
         e = e.max(lo);
     }
-    Solid { local, bbox: (s, w, nn, e), walls, floors, ramps: Vec::new() }
+    // Steps up to each doorway from the ground outside.
+    let mut ramps = Vec::new();
+    for d in doors.iter().filter(|d| d.3 != super::model::EntranceKind::Garage) {
+        let (a, c) = (ring[d.0], ring[(d.0 + 1) % n]);
+        let dir = (c - a).normalize_or(Vec2::X);
+        let out = -dir.perp();
+        let at = a + dir * d.1;
+        ramps.push(SRamp { c: at + out * 0.75, dir: -out, hl: 0.75, hw: d.2 * 0.5 + 0.2, h0: p.low.min(base - 0.05), h1: base });
+    }
+    Solid { local, bbox: (s, w, nn, e), walls, floors, ramps }
 }
 
 // ------------------------------------------------------------------ realise
@@ -1434,8 +1443,20 @@ fn furnish(cx: &mut Ctx, fi: usize) {
             }
             _ => {}
         }
-        // Outlets along the walls, ethernet in offices and bedrooms, a light switch by
-        // each door.
+        // A light switch beside each door into the room, on the room's side.
+        if !matches!(room.kind, RoomKind::Stair | RoomKind::Elevator | RoomKind::Attic) {
+            for d in fl.doors.iter().filter(|d| d.rooms.0 == r || d.rooms.1 == r) {
+                let nrm = d.along.perp();
+                let c0 = (a + bb) * 0.5;
+                let side = if (c0 - d.p).dot(nrm) >= 0.0 { 1.0 } else { -1.0 };
+                let f = d.p + d.along * (d.width * 0.5 + 0.18) + nrm * side * 0.065;
+                let c = cx.l(f);
+                let dd = cx.dir(nrm * side);
+                let xf = Affine3A::from_rotation_translation(Quat::from_rotation_y((-dd.x).atan2(-dd.y)), Vec3::new(c.x, fl.y + 1.2, c.y));
+                furniture::build(Item::LightSwitch, xf, seed, &mut cx.kit, &mut cx.specs);
+            }
+        }
+        // Outlets along the walls, ethernet in offices and bedrooms.
         if !matches!(room.kind, RoomKind::Stair | RoomKind::Elevator | RoomKind::Corridor | RoomKind::Attic) && fl.level >= -1 {
             for wi in 0..4 {
                 let len = rm.wall_len(wi);
@@ -2071,7 +2092,6 @@ fn choose_interiors(
     mut pool: ResMut<InteriorPool>,
     viewer: Res<Viewer>,
     inside: Res<Inside>,
-    walk: Res<Walkables>,
     settings: Res<crate::GameSettings>,
     mut commands: Commands,
     mut mats: ResMut<Assets<super::material::BuildingMaterial>>,
@@ -2079,7 +2099,6 @@ fn choose_interiors(
     mut timer: bevy::prelude::Local<f32>,
     time: Res<Time>,
 ) {
-    let _ = &walk;
     let Some(bl) = bl.as_deref_mut() else { return };
     *timer -= time.delta_secs();
     if *timer > 0.0 {
@@ -2249,7 +2268,7 @@ fn receive_interiors(
         let mut solid = exterior_solid(&d.built, k.1, &d.placed);
         solid.walls.extend(data.walls);
         solid.floors.extend(data.floors);
-        solid.ramps = data.ramps;
+        solid.ramps.extend(data.ramps);
         if let Some(l) = &data.lift {
             walk.lifts.entry(l.id).or_insert(d.placed.base + l.floors.first().copied().unwrap_or(0.0) as f64);
         }

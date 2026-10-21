@@ -395,6 +395,7 @@ pub enum Item {
     Painting { w: f32, h: f32 },
     Outlet,
     Ethernet,
+    LightSwitch,
     Pipe { len: f32, vertical: bool },
     Shelf { len: f32 },
 }
@@ -481,6 +482,7 @@ pub fn build(item: Item, at: Affine3A, seed: u64, kit: &mut Kit, specs: &mut Vec
                 k.cube(M::Wood, t(x, 0.37, -0.35), Vec3::new(0.04, 0.72, 0.66), WHITE);
             }
             computer(&mut k, &mut s, t(0.0, 0.76, -0.25));
+            phone(&mut k, t(0.5, 0.76, -0.2));
         }
         Item::OfficeChair => {
             let c = rgb(0.1, 0.1, 0.11);
@@ -945,7 +947,7 @@ pub fn build(item: Item, at: Affine3A, seed: u64, kit: &mut Kit, specs: &mut Vec
             k.cube(M::WhitePlastic, t(0.0, 0.73, -0.38), Vec3::new(1.7, 0.03, 0.7), rgb(0.85, 0.84, 0.8));
             k.cube(M::Metal, t(0.75, 0.36, -0.38), Vec3::new(0.4, 0.7, 0.6), rgb(0.5, 0.5, 0.52));
             computer(&mut k, &mut s, t(-0.1, 0.745, -0.25));
-            k.cube(M::Plastic, t(0.45, 0.76, -0.25), Vec3::new(0.2, 0.05, 0.2), rgb(0.1, 0.1, 0.1));
+            phone(&mut k, t(0.45, 0.745, -0.2));
             let mut sub = Kit::default();
             build(Item::OfficeChair, ty(-0.1, 0.0, -1.05, std::f32::consts::PI), seed ^ 5, &mut sub, &mut s);
             k.merge(sub);
@@ -1324,6 +1326,10 @@ pub fn build(item: Item, at: Affine3A, seed: u64, kit: &mut Kit, specs: &mut Vec
                 k.cube(M::Plastic, t(0.0, y, -0.009), Vec3::new(0.035, 0.035, 0.002), rgb(0.8, 0.8, 0.78));
             }
         }
+        Item::LightSwitch => {
+            k.cube(M::WhitePlastic, t(0.0, 0.0, -0.004), Vec3::new(0.075, 0.12, 0.008), WHITE);
+            k.cube(M::WhitePlastic, t(0.0, 0.0, -0.011), Vec3::new(0.022, 0.04, 0.008), rgb(0.95, 0.95, 0.93));
+        }
         Item::Ethernet => {
             k.cube(M::WhitePlastic, t(0.0, 0.0, -0.004), Vec3::new(0.07, 0.115, 0.008), WHITE);
             k.cube(M::Plastic, t(0.0, 0.0, -0.009), Vec3::new(0.018, 0.015, 0.002), rgb(0.1, 0.25, 0.6));
@@ -1398,6 +1404,50 @@ pub fn build(item: Item, at: Affine3A, seed: u64, kit: &mut Kit, specs: &mut Vec
 pub fn yaw_of(a: Affine3A) -> f32 {
     let f = a.transform_vector3(Vec3::NEG_Z);
     (-f.x).atan2(-f.z)
+}
+
+/// A desk phone: base with keypad and display, handset in its cradle, cord.
+fn phone(k: &mut Kit, at: Affine3A) {
+    let mut c = Kit::default();
+    let dark = rgb(0.09, 0.09, 0.1);
+    c.cube(
+        M::Plastic,
+        Affine3A::from_rotation_translation(Quat::from_rotation_x(0.25), Vec3::new(0.0, 0.03, 0.0)),
+        Vec3::new(0.2, 0.05, 0.19),
+        dark,
+    );
+    c.cube(
+        M::Screen,
+        Affine3A::from_rotation_translation(Quat::from_rotation_x(0.25), Vec3::new(0.03, 0.058, -0.03)),
+        Vec3::new(0.08, 0.005, 0.04),
+        WHITE,
+    );
+    for i in 0..4 {
+        for j in 0..3 {
+            c.cube(
+                M::Plastic,
+                Affine3A::from_rotation_translation(
+                    Quat::from_rotation_x(0.25),
+                    Vec3::new(0.0 + j as f32 * 0.022, 0.06, 0.02 + i as f32 * 0.018),
+                ),
+                Vec3::new(0.016, 0.006, 0.012),
+                rgb(0.3, 0.3, 0.32),
+            );
+        }
+    }
+    c.cube(M::Plastic, t(-0.065, 0.075, 0.0), Vec3::new(0.05, 0.04, 0.2), dark);
+    c.cube(M::Plastic, t(-0.065, 0.07, -0.085), Vec3::new(0.055, 0.05, 0.05), dark);
+    c.cube(M::Plastic, t(-0.065, 0.07, 0.085), Vec3::new(0.055, 0.05, 0.05), dark);
+    c.cube(M::Plastic, t(-0.11, 0.01, 0.06), Vec3::new(0.012, 0.012, 0.12), dark);
+    for (m, mb) in c.parts {
+        let b = k.mb(m);
+        let base = b.pos.len() as u32;
+        b.pos.extend(mb.pos.into_iter().map(|p| at.transform_point3(Vec3::from(p)).to_array()));
+        b.nrm.extend(mb.nrm.into_iter().map(|n| at.transform_vector3(Vec3::from(n)).to_array()));
+        b.uv.extend(mb.uv);
+        b.col.extend(mb.col);
+        b.idx.extend(mb.idx.into_iter().map(|i| i + base));
+    }
 }
 
 /// A monitor, keyboard and mouse on a desk top (origin at the desk surface).

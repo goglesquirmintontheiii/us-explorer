@@ -379,12 +379,12 @@ fn connect(fl: &mut FloorPlan, nx: usize, ny: usize, lo: Vec2, entry: Option<usi
     }
 }
 
-/// The whole plan for a building.
 /// Whether a building gets a basement (houses tagged or guessed to have one).
 pub fn has_basement(b: &Building) -> bool {
     b.basement && matches!(b.kind, Kind::House | Kind::Terrace)
 }
 
+/// The whole plan for a building.
 pub fn plan(b: &Building, doors: &[(usize, f32, f32, EntranceKind)], garages: &[(usize, f32, f32)]) -> Option<Plan> {
     let ring = &b.outline;
     if ring.len() < 3 || b.area < 8.0 || matches!(b.kind, Kind::Canopy | Kind::Carport) {

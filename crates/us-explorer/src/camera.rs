@@ -30,7 +30,7 @@ impl Plugin for CameraPlugin {
         app.init_resource::<InputBlocked>()
             .init_resource::<MouseLock>()
             .add_systems(Startup, spawn_camera)
-            .add_systems(Update, apply_fov)
+            .add_systems(Update, (apply_fov, atmosphere_for_altitude))
             .add_systems(PostUpdate, place_camera.after(crate::globe::GlobeSet).before(TransformSystems::Propagate));
     }
 }
@@ -58,6 +58,29 @@ fn apply_fov(settings: Res<crate::GameSettings>, mut q: Query<&mut Projection, W
     for mut p in &mut q {
         if let Projection::Perspective(pp) = &mut *p {
             pp.fov = settings.0.fov_deg.to_radians();
+        }
+    }
+}
+
+/// High up, the lookup-table atmosphere tints the ground red (its tables assume a
+/// viewer near the ground): ray-march it instead above about 12 km, and stretch the
+/// aerial-perspective range with height.
+fn atmosphere_for_altitude(viewer: Res<Viewer>, mut q: Query<&mut AtmosphereSettings, With<MainCamera>>) {
+    use bevy::pbr::AtmosphereMode;
+    let h = viewer.geo().h as f32;
+    for mut a in &mut q {
+        let mode = match a.rendering_method {
+            AtmosphereMode::LookupTexture if h > 12_000.0 => AtmosphereMode::Raymarched,
+            AtmosphereMode::Raymarched if h < 10_000.0 => AtmosphereMode::LookupTexture,
+            m => m,
+        };
+        let dist = (120_000.0f32).max(h * 8.0).min(1_200_000.0);
+        let dist = (dist / 20_000.0).round() * 20_000.0;
+        if (a.rendering_method as u32) != (mode as u32) {
+            a.rendering_method = mode;
+        }
+        if (a.aerial_view_lut_max_distance - dist).abs() > 1.0 {
+            a.aerial_view_lut_max_distance = dist;
         }
     }
 }
