@@ -30,9 +30,9 @@ name=bld-manhattan-skyline;lat=40.7400;lon=-73.9930;agl=220;heading=35;pitch=-6
 name=bld-empire-state;lat=40.7462;lon=-73.9893;agl=40;heading=45;pitch=12
 name=bld-suburb-denver;lat=39.6728;lon=-104.9705;agl=35;heading=20;pitch=-22
 name=bld-house-street;lat=39.67378;lon=-104.96860;agl=0;heading=270;pitch=0;camera=third
-name=bld-house-inside;lat=39.673788;lon=-104.969007;agl=0.8;heading=90;pitch=-8
-name=bld-supermarket-inside;lat=39.677531;lon=-104.972156;agl=0.8;heading=0;pitch=-6
+name=bld-house-inside;lat=39.673788;lon=-104.969007;agl=0;heading=90;pitch=-8
+name=bld-supermarket-inside;lat=39.677531;lon=-104.972156;agl=0;heading=0;pitch=-6
 name=bld-parking-safeway;lat=39.6767;lon=-104.9722;agl=45;heading=0;pitch=-40
-name=bld-office-inside-dc;lat=38.883438;lon=-77.009990;agl=0.8;heading=0;pitch=-5
-name=bld-mcdonalds-inside;lat=40.752478;lon=-73.992775;agl=0.8;heading=180;pitch=-5
+name=bld-office-inside-dc;lat=38.883438;lon=-77.009990;agl=0;heading=0;pitch=-5
+name=bld-mcdonalds-inside;lat=40.752478;lon=-73.992775;agl=0;heading=180;pitch=-5
 name=bld-night-suburb;lat=39.6728;lon=-104.9705;agl=35;heading=20;pitch=-22;time=2026-06-22T04:30:00Z

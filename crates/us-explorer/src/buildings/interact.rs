@@ -417,7 +417,7 @@ pub fn spawn_exterior_doors(
     p: &PlacedRef,
 ) -> Vec<Entity> {
     let bld = &b.buildings[key.1 as usize];
-    if bld.parts.len() != 1 {
+    if exterior::door_part(bld).is_none() {
         return Vec::new();
     }
     let doors = exterior::doors(bld, &b.street[key.1 as usize]);
@@ -559,25 +559,8 @@ pub fn spawn_specs(
             Some(q),
         );
     }
-    // Lights: the ones nearest the floor you're on (a few dozen at most).
-    let mut lights: Vec<(Vec3, f32)> =
-        specs.iter().filter_map(|s| if let Spec::Light { at, lumens } = s { Some((*at, *lumens)) } else { None }).collect();
-    lights.sort_by(|a, b| (a.0.y - near_y).abs().total_cmp(&(b.0.y - near_y).abs()));
-    lights.truncate(20);
-    for (at, lumens) in lights {
-        commands.spawn((
-            PointLight {
-                intensity: lumens * 4.0,
-                range: 9.0,
-                radius: 0.15,
-                shadow_maps_enabled: false,
-                color: Color::srgb(1.0, 0.94, 0.85),
-                ..default()
-            },
-            Transform::from_translation(at),
-            ChildOf(frame),
-        ));
-    }
+    // Real lights are placed by `interior::room_lights` for the building you're in.
+    let _ = near_y;
     for s in specs {
         match s {
             Spec::Hinged { kit, hinge, angle, kind, half, centre, flip_down, door_id, front } => {

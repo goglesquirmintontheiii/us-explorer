@@ -91,7 +91,7 @@ pub fn exterior_solid(b: &Built, bi: u32, p: &PlacedRef) -> Solid {
     let ring: Vec<Vec2> = bld.outline.iter().map(|q| *q - cen).collect();
     let base = p.base;
     let top = bld.parts.iter().map(|q| q.wall_top).fold(0.0f32, f32::max) as f64;
-    let doors = if bld.parts.len() == 1 { exterior::doors(bld, &b.street[bi as usize]) } else { Vec::new() };
+    let doors = if exterior::door_part(bld).is_some() { exterior::doors(bld, &b.street[bi as usize]) } else { Vec::new() };
     let key = (p.tile, bi);
     let mut walls = Vec::new();
     let n = ring.len();
@@ -1724,10 +1724,15 @@ fn attic(cx: &mut Ctx) {
         rgb(0.85, 0.75, 0.6),
     );
     // Rafters under the roof slope (simple gable pairs).
-    let rh = p.roof_h;
+    // Kept a little under the roof surface, and away from hipped ends.
+    let rh = (p.roof_h - 0.35).max(0.3);
+    let hipped = !matches!(p.roof, super::model::Roof::Gabled | super::model::Roof::Gambrel);
     let n = (half.x * 2.0 / 0.6) as i32;
     for k in 0..n {
         let x = -half.x + (k as f32 + 0.5) * 0.6;
+        if hipped && x.abs() > half.x - half.y {
+            continue;
+        }
         for side in [-1.0f32, 1.0] {
             let q = c + ax * x + ax.perp() * side * half.y * 0.5;
             let slope = (rh / half.y).atan();
@@ -2003,7 +2008,7 @@ pub fn realise(b: &Built, bi: u32, p: &PlacedRef, near_y: f32) -> Option<Interio
         doors: Vec::new(),
         room_col,
         house,
-        ext_doors: if bld.parts.len() == 1 { doors.clone() } else { Vec::new() },
+        ext_doors: if exterior::door_part(bld).is_some() { doors.clone() } else { Vec::new() },
     };
     // Big buildings are furnished on your floor and the ones next to it (a furnished
     // office floor is a lot of triangles); the rest get walls and lights.
@@ -2066,7 +2071,7 @@ pub fn plugin(app: &mut App) {
     let pool = WorkPool::new("interior", 2, |_, (b, bi, p, near_y, key): Job| (key, realise(&b, bi, &p, near_y)));
     app.init_resource::<Inside>()
         .insert_resource(InteriorPool { pool, pending: Default::default() })
-        .add_systems(Update, (track_inside, choose_interiors, receive_interiors).chain().after(super::manage_detail));
+        .add_systems(Update, (track_inside, choose_interiors, receive_interiors, room_lights).chain().after(super::manage_detail));
 }
 
 /// Rotation from the building's local frame (x east, y up, z south) to ECEF axes.
@@ -2282,6 +2287,68 @@ fn receive_interiors(
             walk.lifts.entry(l.id).or_insert(d.placed.base + l.floors.first().copied().unwrap_or(0.0) as f64);
         }
         walk.add_solid(super::solid_key(k), solid);
+    }
+}
+
+/// Ceiling lights that really light the room, for the building you're in only (each
+/// light costs every pixel near it): the few nearest you.
+fn room_lights(
+    inside: Res<Inside>,
+    player: Res<crate::player::Player>,
+    roots: Query<(Entity, &InteriorRoot, &GlobalTransform)>,
+    mut commands: Commands,
+    mut lit: bevy::prelude::Local<Option<((TileId, u32), u64, Vec<Entity>)>>,
+    origin: Res<crate::globe::WorldOrigin>,
+) {
+    let want = inside.0.and_then(|k| roots.iter().find(|r| r.1.key == k));
+    // Which lights: the 6 nearest the player (re-chosen as you move between rooms).
+    let pick = want.map(|(e, root, gt)| {
+        let me = Vec3::from(gt.affine().inverse().transform_point3(origin.local(player.feet + player.feet.normalize() * 1.6)));
+        let mut idx: Vec<usize> = (0..root.lights.len()).collect();
+        idx.sort_by(|&a, &b| root.lights[a].distance_squared(me).total_cmp(&root.lights[b].distance_squared(me)));
+        idx.truncate(6);
+        idx.sort();
+        let sig = idx.iter().fold(e.to_bits(), |a, &i| a.rotate_left(5) ^ i as u64);
+        (root.key, sig, e, idx)
+    });
+    let same = match (&*lit, &pick) {
+        (Some((_, s, _)), Some((_, s2, _, _))) => s == s2,
+        (None, None) => true,
+        _ => false,
+    };
+    if same {
+        return;
+    }
+    if let Some((_, _, old)) = lit.take() {
+        for e in old {
+            if let Ok(mut c) = commands.get_entity(e) {
+                c.despawn();
+            }
+        }
+    }
+    if let Some((key, sig, frame, idx)) = pick
+        && let Ok((_, root, _)) = roots.get(frame)
+    {
+        let es = idx
+            .iter()
+            .map(|&i| {
+                commands
+                    .spawn((
+                        PointLight {
+                            intensity: 1600.0,
+                            range: 7.0,
+                            radius: 0.15,
+                            shadow_maps_enabled: false,
+                            color: Color::srgb(1.0, 0.94, 0.85),
+                            ..default()
+                        },
+                        Transform::from_translation(root.lights[i]),
+                        ChildOf(frame),
+                    ))
+                    .id()
+            })
+            .collect();
+        *lit = Some((key, sig, es));
     }
 }
 

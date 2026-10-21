@@ -296,43 +296,63 @@ fn classify(t: &Tags, pois: &[&Tags], area: f32) -> (Kind, Option<String>) {
     let generic = matches!(b, "yes" | "commercial" | "retail" | "kiosk" | "civic" | "public");
     let own = [t];
     let from: &[&Tags] = if low && generic { pois } else { &[] };
+    // The most telling thing inside wins (a pharmacy counter doesn't make a supermarket
+    // a hospital): (priority, kind, detail).
+    let mut best: Option<(u8, Kind, Option<String>)> = None;
+    let mut offer = |pr: u8, k: Kind, d: Option<String>| {
+        if best.as_ref().is_none_or(|b| pr > b.0) {
+            best = Some((pr, k, d));
+        }
+    };
     for p in from.iter().chain(own.iter()) {
+        // The building's own tags count double.
+        let own_bonus = if std::ptr::eq(*p, t) { 20 } else { 0 };
         if let Some(a) = p.get("amenity") {
+            let c = p.get("cuisine").map(str::to_string);
             match a {
-                "fast_food" => return (Kind::FastFood, p.get("cuisine").map(str::to_string)),
-                "cafe" | "ice_cream" => return (Kind::Cafe, p.get("cuisine").map(str::to_string)),
-                "restaurant" | "food_court" => return (Kind::Restaurant, p.get("cuisine").map(str::to_string)),
-                "bar" | "pub" | "nightclub" | "biergarten" => return (Kind::Bar, None),
-                "school" | "college" | "university" | "kindergarten" | "library" => return (Kind::School, None),
-                "hospital" | "clinic" | "doctors" | "dentist" => return (Kind::Hospital, None),
-                "place_of_worship" => return (Kind::Church, p.get("religion").map(str::to_string)),
+                "fast_food" => offer(50 + own_bonus, Kind::FastFood, c),
+                "cafe" | "ice_cream" => offer(48 + own_bonus, Kind::Cafe, c),
+                "restaurant" | "food_court" => offer(52 + own_bonus, Kind::Restaurant, c),
+                "bar" | "pub" | "nightclub" | "biergarten" => offer(49 + own_bonus, Kind::Bar, None),
+                "school" | "college" | "university" | "kindergarten" | "library" => offer(80 + own_bonus, Kind::School, None),
+                "hospital" => offer(85 + own_bonus, Kind::Hospital, None),
+                "clinic" | "doctors" | "dentist" => offer(40 + own_bonus, Kind::Hospital, None),
+                "place_of_worship" => offer(75 + own_bonus, Kind::Church, p.get("religion").map(str::to_string)),
                 "townhall" | "courthouse" | "police" | "fire_station" | "post_office" | "community_centre" => {
-                    return (Kind::Civic, Some(a.to_string()));
+                    offer(70 + own_bonus, Kind::Civic, Some(a.to_string()))
                 }
-                "parking" if b != "yes" || t.get("parking").is_some_and(|v| v == "multi-storey") => return (Kind::ParkingGarage, None),
-                "fuel" => return (Kind::Canopy, Some("fuel".into())),
-                "bank" => return (Kind::Office, Some("bank".into())),
+                "parking" if b != "yes" || t.get("parking").is_some_and(|v| v == "multi-storey") => {
+                    offer(90 + own_bonus, Kind::ParkingGarage, None)
+                }
+                "fuel" => offer(60 + own_bonus, Kind::Canopy, Some("fuel".into())),
+                "bank" => offer(35 + own_bonus, Kind::Office, Some("bank".into())),
                 _ => {}
             }
         }
-        if let Some(s) = p.get("shop") {
-            return match s {
-                "supermarket" | "grocery" | "greengrocer" | "wholesale" | "department_store" => (Kind::Supermarket, Some(s.to_string())),
-                _ => (Kind::Retail, Some(s.to_string())),
-            };
+        if let Some(sh) = p.get("shop") {
+            match sh {
+                "supermarket" | "grocery" | "wholesale" | "department_store" => {
+                    offer(78 + own_bonus, Kind::Supermarket, Some(sh.to_string()))
+                }
+                "greengrocer" => offer(56 + own_bonus, Kind::Supermarket, Some(sh.to_string())),
+                _ => offer(55 + own_bonus, Kind::Retail, Some(sh.to_string())),
+            }
         }
         if p.get("office").is_some() {
-            return (Kind::Office, None);
+            offer(30 + own_bonus, Kind::Office, None);
         }
         if p.get("tourism").is_some_and(|v| matches!(v, "hotel" | "motel" | "hostel" | "guest_house")) {
-            return (Kind::Hotel, None);
+            offer(72 + own_bonus, Kind::Hotel, None);
         }
         if p.get("craft").is_some() {
-            return (Kind::Industrial, None);
+            offer(25 + own_bonus, Kind::Industrial, None);
         }
-        if p.get("healthcare").is_some() {
-            return (Kind::Hospital, None);
+        if p.get("healthcare").is_some() && p.get("amenity").is_none() && p.get("shop").is_none() {
+            offer(38 + own_bonus, Kind::Hospital, None);
         }
+    }
+    if let Some((_, k, d)) = best {
+        return (k, d);
     }
     let k = match b {
         "house" | "detached" | "semidetached_house" | "bungalow" | "cabin" | "farm" | "residential" | "static_caravan" | "dormitory"

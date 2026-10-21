@@ -744,6 +744,17 @@ pub fn garages(b: &Building, doors_all: &[(usize, f32, f32, EntranceKind)]) -> V
     garage
 }
 
+/// The part whose walls carry the building's doors: the only part, or a part on the
+/// ground with the building's own outline (towers on a podium). None: no doors.
+pub fn door_part(b: &Building) -> Option<usize> {
+    if b.parts.len() == 1 {
+        return Some(0);
+    }
+    b.parts.iter().position(|p| {
+        p.min_h < 0.5 && p.outer.len() == b.outline.len() && p.outer.iter().zip(&b.outline).all(|(a, c)| a.distance(*c) < 0.05)
+    })
+}
+
 /// Everything outside of one building.
 pub fn shell(b: &Building, opt: &Options) -> BGeom {
     let mut g = BGeom::default();
@@ -758,8 +769,9 @@ pub fn shell(b: &Building, opt: &Options) -> BGeom {
             p.roof_col = Some(opt.roof_col);
         }
         let main = pi == 0 && b.parts.len() == 1 || p.min_h < 0.5;
-        let my_openings: Vec<(usize, f32, f32, f32)> = if b.parts.len() == 1 { openings.clone() } else { Vec::new() };
-        let my_garage: Vec<(usize, f32, f32)> = if b.parts.len() == 1 { garage.clone() } else { Vec::new() };
+        let base_part = door_part(b) == Some(pi);
+        let my_openings: Vec<(usize, f32, f32, f32)> = if base_part { openings.clone() } else { Vec::new() };
+        let my_garage: Vec<(usize, f32, f32)> = if base_part { garage.clone() } else { Vec::new() };
         if matches!(b.kind, Kind::Canopy | Kind::Carport) && p.min_h < 0.5 {
             canopy(&mut g, &p, b.kind, seed);
             continue;
