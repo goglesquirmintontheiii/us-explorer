@@ -48,3 +48,17 @@ Open GitHub issues checked at the start of this phase: none.
 ### Release
 - [x] Settings: nature, details, sound and volume; F3 shows nature, conditions, moon and light pollution; credits for the new sources; offline download includes the nature layer
 - [x] v0.5.0 released (AppImage and Windows .exe); screenshots skipped as asked, CI and local runs used for checking
+
+## Bug sweep
+
+Found and fixed while checking the release (CI picture runs of San Francisco, Miami, San Antonio, a wind farm, a forest, a farm and a river, plus local runs):
+
+- A new land-cover class overflowed a tally and crashed the vegetation worker near beaches
+- Trees grew in shallow turquoise sea water (it read as green): the sea is now taken from the elevation model's bathymetry, and clearly blue-green water from its colour
+- Surf foam covered wide shallow flats; breakers now form only where the bottom shelves up to a shore
+- Far ocean waves aliased into rings; waves shorter than a few pixels fade out
+- Waterways mapped across the sea drew as ribbons over it; stream ribbons stop at the sea, and rivers and canals mapped as water areas aren't drawn twice
+- Dune thickets were planted with palms; they're low scrub now. Shrubs were a few sticks with floating leaves; they're dense bushes
+- Palm fronds read as solid paddles; leaflets are separate now
+- A two-node bridge over a street sagged to half clearance (the deck is straight between its nodes); both ends lift until the line clears
+- The planets' mesh was rebuilt in a way the renderer rejected (it vanished)

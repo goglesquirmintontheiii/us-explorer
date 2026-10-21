@@ -482,6 +482,22 @@ fn drape(ch: &FChunk, snap: &HeightSnap) -> Option<Draped> {
             nrm.push((q0 * v.n).to_array());
         }
         let n = pos.len();
+        // Stream ribbons stop at the sea (and wherever the ground isn't known).
+        let mut idx = g.i.clone();
+        if m == FMat::Water {
+            let wet: Vec<bool> = g
+                .v
+                .iter()
+                .map(|v| {
+                    let (la, lo) = ch_ll(ch, v.p);
+                    snap.natural(la, lo).is_none_or(|h| h < 0.3)
+                })
+                .collect();
+            idx = idx.chunks_exact(3).filter(|t| t.iter().all(|&k| !wet[k as usize])).flatten().copied().collect();
+            if idx.is_empty() {
+                continue;
+            }
+        }
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, pos);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, nrm);
@@ -501,7 +517,7 @@ fn drape(ch: &FChunk, snap: &HeightSnap) -> Option<Draped> {
         } else {
             mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, g.v.iter().map(|v| v.col).collect::<Vec<_>>());
         }
-        mesh.insert_indices(Indices::U32(g.i.clone()));
+        mesh.insert_indices(Indices::U32(idx));
         meshes.push((m, mesh));
     }
     let mut objs = Vec::new();

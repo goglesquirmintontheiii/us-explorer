@@ -294,8 +294,10 @@ pub fn build(tile: TileId, nat: &NatureData) -> FBuilt {
         if line.len() < 2 || !in_tile(line[0].0, line[0].1) {
             continue;
         }
+        // Rivers and canals are mostly mapped as water areas too (drawn with the roads);
+        // only narrow ones get a ribbon.
         let big = kind == "river" || kind == "canal";
-        if big && *width > 14.0 {
+        if big && *width > 7.0 {
             continue;
         }
         let speed = match kind.as_str() {

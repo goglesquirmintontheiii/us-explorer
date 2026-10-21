@@ -1222,6 +1222,7 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
         const DECK_GRADE: f32 = 0.07;
         let mut node_clear = vec![0.0f32; decks.p.len()];
         let mut raise = vec![0.0f32; decks.p.len()];
+        let mut crossings: Vec<(usize, usize, f32, f32, f32)> = Vec::new();
         let boundary_ids: Vec<Vec<usize>> = {
             let mut v = vec![Vec::new(); decks.nets as usize];
             for i in 0..decks.p.len() {
@@ -1279,6 +1280,7 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
                         target - line
                     );
                 }
+                crossings.push((i, j, t, target, c));
                 // The deck reaches the target here and slopes away from it at deck
                 // grade (so a viaduct over several roads stays smooth between them).
                 let len_ij = pa.distance(pb);
@@ -1331,10 +1333,45 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
                 }
             }
         }
+        // The deck is straight between its nodes: where a crossing falls between two
+        // nodes far apart (a two-node bridge), lift both until the line clears.
+        for _ in 0..2 {
+            let est = |k: usize, node_clear: &[f32], raise: &[f32]| -> f32 {
+                let g = ground[k].unwrap_or(0.0);
+                if decks.boundary[k] {
+                    if raise[k] != 0.0 { g + raise[k] } else { deck_h[k] }
+                } else if node_clear[k] > 0.0 {
+                    deck_h[k].max(g + node_clear[k] * 0.9)
+                } else if node_clear[k] < 0.0 {
+                    deck_h[k].min(g + node_clear[k] * 0.9)
+                } else {
+                    deck_h[k]
+                }
+            };
+            for &(i, j, t, target, c) in &crossings {
+                let line = est(i, &node_clear, &raise) * (1.0 - t) + est(j, &node_clear, &raise) * t;
+                let short = target - line;
+                if (c > 0.0 && short > 0.3) || (c < 0.0 && short < -0.3) {
+                    for k in [i, j] {
+                        let now = est(k, &node_clear, &raise) + short;
+                        let g = ground[k].unwrap_or(0.0);
+                        if decks.boundary[k] {
+                            raise[k] = now - g;
+                        } else {
+                            node_clear[k] = (now - g) / 0.9;
+                        }
+                    }
+                }
+            }
+        }
         for i in 0..decks.p.len() {
             decks.clear[i] = node_clear[i];
             if decks.boundary[i] && raise[i] != 0.0 {
                 decks.off[i] = raise[i];
+                if debug {
+                    let (la, lo) = local.ll(decks.p[i]);
+                    eprintln!("deck end at {la:.6},{lo:.6} raised {:.1} m", raise[i]);
+                }
             }
         }
         // Spread the seeds along roads on the ground at the ramp grade.
@@ -3271,8 +3308,12 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
             (pts[n - 1], (pts[n - 1] - pts[n - 2]).normalize_or(Vec2::X))
         };
         let seed = hash64(w.id as u64 ^ 0xca75 ^ (s.i0 as u64) << 32);
-        let urban = is_urban(pts[0]);
-        let busy = if urban { 0.55 } else { 0.22 } * (0.5 + hash01(seed ^ 1));
+        // Only in town: country roads have driveways, not cars along the verge.
+        let urban = is_urban(pts[0]) || is_urban(pts[pts.len() - 1]);
+        if !urban && !mapped("both") && !mapped("left") && !mapped("right") {
+            continue;
+        }
+        let busy = 0.55 * (0.5 + hash01(seed ^ 1));
         for (k, (side, name)) in [(1.0f32, "right"), (-1.0f32, "left")].into_iter().enumerate() {
             if banned(name) || (w.prof.oneway && side < 0.0 && !mapped(name)) {
                 continue;
@@ -4075,8 +4116,12 @@ mod tests {
         // Bridge ends must be raised to clear the street, and the approaches ramp up.
         let solved = solve_decks(&b.decks, &|_| 1600.0, &|i| b.decks.off[i]);
         assert!(b.decks.boundary.iter().filter(|&&x| x).count() == 2);
+        // Clearance over the street where it crosses; the ends ease down towards the
+        // approaches (no more than the deck grade allows).
+        let top = solved.iter().copied().fold(f32::MIN, f32::max);
+        assert!(top > 1600.0 + 5.0, "deck peak at {top}");
         for (i, h) in solved.iter().enumerate() {
-            assert!(*h > 1600.0 + 5.0, "deck node {i} at {h}");
+            assert!(*h > 1600.0 + 2.0, "deck node {i} at {h}");
         }
         let ramp = b.corridors.iter().flat_map(|c| c.off.iter()).copied().fold(0.0f32, f32::max);
         assert!(ramp > 5.0, "approach fill {ramp}");

@@ -749,6 +749,17 @@ mod dump {
             },
         };
         println!("nature data: {}", input.nature.is_some());
+        if let Some(n) = &input.nature {
+            for w in &n.waterways {
+                println!("waterway {} width {} pts {} id {}", w.0, w.2, w.1.len(), w.3);
+            }
+            for p in &n.piers {
+                println!("pier {} area {} width {} pts {}", p.kind, p.area, p.width, p.pts.len());
+            }
+            for b in &n.barriers {
+                println!("barrier {:?} pts {}", b.kind, b.pts.len());
+            }
+        }
         if let Some(i) = imagery(id, ImagerySource::Esri) {
             i.save("/tmp/cell_img.png").unwrap();
         }

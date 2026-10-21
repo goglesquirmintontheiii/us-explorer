@@ -292,7 +292,8 @@ fn update(
     let light_pollution = if lp.known { lp.level } else { 0.35 };
     let params = SkyParams {
         eq_from_world: Mat4::from_mat3(world_from_eq.transpose()),
-        moon: moon.extend(0.0045 * 1.5),
+        // Drawn a little larger than life (it looks small on a screen).
+        moon: moon.extend(0.0045 * 2.2),
         sun: sun.extend(2500.0),
         night: Vec4::new(dark, light_pollution, cond.cloud_cover, 0.0),
         aurora: mn.extend(strength),
