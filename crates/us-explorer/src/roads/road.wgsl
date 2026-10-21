@@ -19,6 +19,8 @@ struct RoadParams {
     wet: f32,
     time: f32,
     _pad: f32,
+    // Wind over lakes: direction of travel (east, south), strength 0..1.
+    wind: vec4<f32>,
 };
 
 @group(#{MATERIAL_BIND_GROUP}) @binding(100) var<uniform> road: RoadParams;
@@ -475,15 +477,31 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     if (hi & WATER) != 0u {
         let t = road.time;
         let w = in.uv;
-        // Two drifting ripple layers for the normal; deeper colour away from the light.
-        let r1 = vec2(vnoise(w * 0.35 + vec2(t * 0.21, t * 0.13)), vnoise(w.yx * 0.35 - vec2(t * 0.17, t * 0.09)));
-        let r2 = vec2(vnoise(w * 1.7 + vec2(-t * 0.5, t * 0.37)), vnoise(w.yx * 1.7 + vec2(t * 0.41, -t * 0.29)));
+        // Ripples drifting with the wind (chop grows with it), over a slow swirl.
+        var wd = road.wind.xy * (0.4 + 2.2 * road.wind.z);
+        // Rivers: the current carries the ripples downstream, stretched along the flow.
+        var flow = vec2(0.0);
+        var streak = 0.0;
+        if in.uv_b.x > 0.5 {
+            let code = in.uv_b.x - 1.0;
+            let sq = floor(code / 1024.0);
+            let a = (code - sq * 1024.0) / 1024.0 * 6.2831853;
+            flow = vec2(cos(a), sin(a)) * sq / 20.0;
+            wd = wd * 0.4 + flow;
+            let along = normalize(flow + vec2(1e-5, 0.0));
+            let fx = dot(w, along) - t * length(flow);
+            let fy = dot(w, vec2(-along.y, along.x));
+            streak = vnoise(vec2(fx * 0.12, fy * 1.3)) * min(length(flow) * 1.5, 1.0);
+        }
+        let r1 = vec2(vnoise(w * 0.35 - wd * t * 0.35 + vec2(t * 0.05, 0.0)), vnoise(w.yx * 0.35 - wd.yx * t * 0.3));
+        let r2 = vec2(vnoise(w * 1.7 - wd * t * 1.2 + vec2(-t * 0.2, t * 0.15)), vnoise(w.yx * 1.7 - wd.yx * t * 1.1));
         // Ripples fade out with distance (and wherever they get smaller than a pixel),
         // so far water is a smooth reflective surface instead of shimmering noise.
         let px = length(fwidth(w));
         let fine = 1.0 - smoothstep(0.08, 0.35, px);
         let coarse = 1.0 - smoothstep(0.6, 2.5, px);
-        let slope = (r1 - 0.5) * 0.16 * coarse + (r2 - 0.5) * 0.08 * fine;
+        let chop = 0.6 + 2.4 * road.wind.z;
+        let slope = ((r1 - 0.5) * 0.16 * coarse + (r2 - 0.5) * 0.08 * fine) * chop + vec2(streak - 0.5) * 0.06 * coarse * step(0.01, length(flow));
         let tn = normalize(cross(pbr_input.N, vec3(0.0, 0.0, 1.0)) + vec3(1e-4));
         let bn = cross(pbr_input.N, tn);
         pbr_input.N = normalize(pbr_input.N + tn * slope.x + bn * slope.y);

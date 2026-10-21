@@ -31,6 +31,8 @@ pub struct Conditions {
     /// OVATION aurora intensity overhead and towards the pole (0..100).
     pub aurora_here: f32,
     pub aurora_north: f32,
+    /// IANA time zone name (for the local clock), when known.
+    pub timezone: Option<String>,
     /// Where these numbers came from, for the debug overlay.
     pub source: String,
     /// When they were fetched (game seconds since start), None if never.
@@ -53,6 +55,7 @@ impl Default for Conditions {
             kp: 2.0,
             aurora_here: 0.0,
             aurora_north: 0.0,
+            timezone: None,
             source: "defaults (offline)".into(),
             fetched: None,
         }
@@ -70,7 +73,9 @@ pub struct ConditionsPlugin;
 
 impl Plugin for ConditionsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Conditions>().insert_resource(Fetcher { rx: None, last_pos: None, next_at: 2.0 }).add_systems(Update, refresh);
+        app.init_resource::<Conditions>()
+            .insert_resource(Fetcher { rx: None, last_pos: None, next_at: 2.0 })
+            .add_systems(Update, (refresh, to_waves).chain());
     }
 }
 
@@ -112,6 +117,8 @@ fn refresh(mut f: ResMut<Fetcher>, mut c: ResMut<Conditions>, viewer: Res<Viewer
 #[derive(serde::Deserialize)]
 struct OmCurrent<T> {
     current: T,
+    #[serde(default)]
+    timezone: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -140,9 +147,10 @@ struct Ovation {
 fn fetch(lat: f64, lon: f64, mut c: Conditions) -> Conditions {
     let mut sources = Vec::new();
     let w = format!(
-        "https://api.open-meteo.com/v1/forecast?latitude={lat:.3}&longitude={lon:.3}&current=wind_speed_10m,wind_direction_10m,cloud_cover,temperature_2m&wind_speed_unit=ms"
+        "https://api.open-meteo.com/v1/forecast?latitude={lat:.3}&longitude={lon:.3}&current=wind_speed_10m,wind_direction_10m,cloud_cover,temperature_2m&wind_speed_unit=ms&timezone=auto"
     );
     if let Ok(r) = usx_core::net::get_json::<OmCurrent<OmWeather>>(&w) {
+        c.timezone = r.timezone.filter(|t| t.contains('/'));
         let cur = r.current;
         c.wind_speed = cur.wind_speed_10m.unwrap_or(c.wind_speed);
         c.wind_from = cur.wind_direction_10m.unwrap_or(c.wind_from);
@@ -249,5 +257,28 @@ mod tests {
         assert_eq!(b.1, Some(8.0));
         assert_eq!(b.2, Some(76.0));
         assert!(nearest_buoy(t, 40.0, -74.0, 60.0).is_none());
+    }
+}
+
+/// Direction of travel (east, south) for something coming from `from` degrees.
+fn travel(from: f32) -> (f32, f32) {
+    let to = (from + 180.0).to_radians();
+    (to.sin(), -to.cos())
+}
+
+/// Hand the sea state to the ocean shader and the wind to lakes.
+fn to_waves(c: Res<Conditions>, mut waves: ResMut<crate::terrain::material::Waves>) {
+    if !c.is_changed() {
+        return;
+    }
+    let (sx, sy) = travel(c.swell_from);
+    let (wx, wy) = travel(c.wind_from);
+    let wind_sea = (c.wave_height * c.wave_height - c.swell_height * c.swell_height).max(0.0).sqrt().max(0.05 + c.wind_speed * 0.04);
+    let p = crate::terrain::material::TerrainParams {
+        swell: Vec4::new(sx, sy, c.swell_height.clamp(0.05, 8.0), c.swell_period.clamp(4.0, 20.0)),
+        wind: Vec4::new(wx, wy, c.wind_speed.clamp(0.0, 40.0), wind_sea.clamp(0.02, 6.0)),
+    };
+    if waves.0 != p {
+        waves.0 = p;
     }
 }

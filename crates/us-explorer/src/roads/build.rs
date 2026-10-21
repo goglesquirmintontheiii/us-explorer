@@ -220,6 +220,11 @@ pub enum PropKind {
     },
     /// Reserved (accessible) parking sign at the head of a stall.
     ParkingSign,
+    /// A parked car (see `cars`).
+    Car {
+        body: u8,
+        paint: u8,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -571,6 +576,25 @@ pub(crate) fn heading_of(d: Vec2) -> f32 {
 // ------------------------------------------------------------------ build
 
 pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>) -> Built {
+    build_with(tile, osm, dem, &[])
+}
+
+/// Flowing water nearby: centrelines (lat, lon) in the direction of flow, and speed (m/s).
+pub type Flows = [(Vec<(f64, f64)>, f32)];
+
+/// Encode a flow (local x, z metres per second) for a water vertex's `uv2.x`.
+pub fn encode_flow(v: Vec2) -> f32 {
+    let speed = v.length();
+    if speed < 0.02 {
+        return 0.0;
+    }
+    let a = v.y.atan2(v.x).rem_euclid(std::f32::consts::TAU);
+    let aq = ((a / std::f32::consts::TAU * 1024.0).round() as u32) % 1024;
+    let sq = ((speed * 20.0).round() as u32).min(80);
+    1.0 + (sq * 1024 + aq) as f32
+}
+
+pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>, flows: &Flows) -> Built {
     let (cla, clo) = tile.lat_lon_at(0.5, 0.5);
     let local = Local::new(cla, clo);
     let (tw, ts, te, tn) = tile.bounds();
@@ -2532,7 +2556,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                             PropKind::PedSignal { junction: ctl_id, group: group_of_arm[ai] },
                             pp,
                             ground(j.node),
-                            heading_of(-d),
+                            heading_of(rside),
                             id ^ 0x77,
                         );
                     }
@@ -3141,6 +3165,88 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
             }
         }
     }
+    // Cars parked along the curb of residential streets (unless mapped as no parking).
+    for s in &segs {
+        let w = &ways[s.way as usize];
+        if s.internal
+            || w.elevated()
+            || w.link
+            || w.construction
+            || !matches!(w.class, Class::Residential | Class::Unclassified | Class::Living | Class::Tertiary)
+        {
+            continue;
+        }
+        let hw = w.prof.half();
+        if hw < 3.4 {
+            continue;
+        }
+        let banned = |side: &str| {
+            let t = &w.tags;
+            let v = [
+                format!("parking:{side}"),
+                format!("parking:lane:{side}"),
+                "parking:both".to_string(),
+                "parking:lane:both".to_string(),
+            ];
+            v.iter().any(|k| matches!(t.get(k), Some("no" | "no_parking" | "no_stopping" | "separate" | "fire_lane")))
+        };
+        let mapped = |side: &str| {
+            let t = &w.tags;
+            [format!("parking:{side}"), format!("parking:lane:{side}"), "parking:both".into(), "parking:lane:both".into()]
+                .iter()
+                .any(|k| matches!(t.get(k), Some("lane" | "street_side" | "parallel" | "on_street" | "half_on_kerb" | "yes")))
+        };
+        // Main streets only where parking is mapped.
+        if w.class == Class::Tertiary && !mapped("left") && !mapped("right") && !mapped("both") {
+            continue;
+        }
+        let pts = cut(&w.pts[s.i0..=s.i1], s.trim0 + 9.0, s.trim1 + 9.0);
+        let len = polyline_len(&pts);
+        if len < 14.0 {
+            continue;
+        }
+        let at = |d: f32| -> (Vec2, Vec2) {
+            let mut acc = 0.0;
+            for q in pts.windows(2) {
+                let l = q[0].distance(q[1]);
+                if acc + l >= d {
+                    let t = ((d - acc) / l.max(1e-4)).clamp(0.0, 1.0);
+                    return (q[0].lerp(q[1], t), (q[1] - q[0]).normalize_or(Vec2::X));
+                }
+                acc += l;
+            }
+            let n = pts.len();
+            (pts[n - 1], (pts[n - 1] - pts[n - 2]).normalize_or(Vec2::X))
+        };
+        let seed = hash64(w.id as u64 ^ 0xca75 ^ (s.i0 as u64) << 32);
+        let urban = is_urban(pts[0]);
+        let busy = if urban { 0.55 } else { 0.22 } * (0.5 + hash01(seed ^ 1));
+        for (k, (side, name)) in [(1.0f32, "right"), (-1.0f32, "left")].into_iter().enumerate() {
+            if banned(name) || (w.prof.oneway && side < 0.0 && !mapped(name)) {
+                continue;
+            }
+            let mut d = hash01(seed ^ 7 ^ k as u64) * 6.0;
+            let mut n = 0u64;
+            while d < len {
+                let r = hash64(seed ^ (k as u64) << 40 ^ n);
+                let body = super::cars::body_for(hash01(r ^ 3));
+                let l = super::cars::length(body);
+                if d + l > len {
+                    break;
+                }
+                if hash01(r) < busy {
+                    let (p, dir) = at(d + l * 0.5);
+                    let pos = p + right(dir) * side * (hw - 1.05);
+                    // Parked with the traffic on that side.
+                    let face = if side > 0.0 { dir } else { -dir };
+                    let paint = super::cars::paint_for(hash01(r ^ 5));
+                    add(PropKind::Car { body, paint }, pos, H::Ground { off: 0.0 }, heading_of(face) + (hash01(r ^ 9) - 0.5) * 0.04, r);
+                }
+                d += l + 0.8 + hash01(r ^ 11) * 2.5 + if hash01(r ^ 13) < 0.15 { 6.0 } else { 0.0 };
+                n += 1;
+            }
+        }
+    }
     // Three sagging conductors per span, from the crossarm ends.
     for &(a, b, arm) in &wires {
         let mid = (a + b) * 0.5;
@@ -3190,6 +3296,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
             pr.kind,
             PropKind::Gantry { .. }
                 | PropKind::OverpassSign { .. }
+                | PropKind::Car { .. }
                 | PropKind::Cone
                 | PropKind::Barrel
                 | PropKind::Guardrail { .. }
@@ -3223,7 +3330,25 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let (sw, ne) = (local.xz(ts, tw), local.xz(tn, te));
         let (x0, x1, z0, z1) = (sw.x.min(ne.x), sw.x.max(ne.x), sw.y.min(ne.y), sw.y.max(ne.y));
         let pk = pack(elem::JUNCTION, 0, flag::WATER);
+        let flow_lines: Vec<(Vec<Vec2>, f32)> = flows.iter().map(|(l, sp)| (l.iter().map(|&(a, b)| local.xz(a, b)).collect(), *sp)).collect();
+        // The current at a point: along the nearest centreline within reach.
+        let flow_at = |p: Vec2| -> Vec2 {
+            let mut best = (f32::MAX, Vec2::ZERO);
+            for (line, sp) in &flow_lines {
+                for q in line.windows(2) {
+                    let d = q[1] - q[0];
+                    let l2 = d.length_squared().max(1e-4);
+                    let t = ((p - q[0]).dot(d) / l2).clamp(0.0, 1.0);
+                    let dist = p.distance(q[0] + d * t);
+                    if dist < best.0 {
+                        best = (dist, d.normalize_or(Vec2::ZERO) * *sp);
+                    }
+                }
+            }
+            if best.0 < 180.0 { best.1 } else { Vec2::ZERO }
+        };
         for area in osm.areas.iter().filter(|a| usx_core::osm::is_water(&a.tags)) {
+            let river = matches!(area.tags.get("water"), Some("river" | "canal" | "stream" | "rapids")) || area.tags.is("waterway", "riverbank");
             let tint = water_tint(&area.tags, cla, clo, area.id);
             let ring = |r: &Vec<(f64, f64)>| -> Vec<Vec2> {
                 let mut v: Vec<Vec2> = r.iter().map(|&(a, b)| local.xz(a, b)).collect();
@@ -3327,6 +3452,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                         }
                         let Ok(tris) = earcutr::earcut(&flat, &hole_idx, 2) else { continue };
                         let base = g.v.len() as u32;
+                        let flow = if river { encode_flow(flow_at(centre)) } else { 0.0 };
                         for k in 0..flat.len() / 2 {
                             let p = Vec2::new(flat[2 * k], flat[2 * k + 1]);
                             g.v.push(V {
@@ -3334,7 +3460,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                                 h: H::Water { at: p },
                                 dy: 0.05,
                                 uv: [p.x, p.y],
-                                uv2: [0.0, pk.0],
+                                uv2: [flow, pk.0],
                                 col: [tint[0], tint[1], pk.1, tint[2]],
                             });
                         }

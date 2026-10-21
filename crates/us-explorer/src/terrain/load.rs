@@ -478,7 +478,10 @@ fn build_mesh(id: TileId, g: &HeightGrid, holes: Option<&[bool]>) -> (MeshData, 
             normals.push(nrm.as_vec3().to_array());
             uvs.push([i as f32 / n as f32, j as f32 / n as f32]);
             let depth = g.floor.as_ref().map(|f| (g.h[k] - f[k]).max(0.0)).unwrap_or(0.0);
-            water.push([1.0, 1.0, 1.0, 1.0 / (1.0 + depth)]);
+            // Under water: 1 / (1 + depth). Land within 3 m of the sea (where the tile
+            // has sea): 1 + height, for wet sand and the swash on beaches.
+            let a = if depth <= 0.0 && g.floor.is_some() && g.h[k] < 3.0 { 1.0 + g.h[k].max(0.01) } else { 1.0 / (1.0 + depth) };
+            water.push([1.0, 1.0, 1.0, a]);
             detail_uvs.push(if id.z >= 12 {
                 let (lat, lon) = id.lat_lon_at(i as f64 / n as f64, j as f64 / n as f64);
                 let (x, y) = merc(lat, lon);

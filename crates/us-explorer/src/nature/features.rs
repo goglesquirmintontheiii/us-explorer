@@ -29,6 +29,9 @@ pub enum FMat {
     Leaves,
     /// Glowing lamps (lighthouse lanterns, buoy lights).
     Lamp,
+    /// Streams and small rivers (drawn with the road material's water); `col` holds
+    /// the current (x, z metres per second).
+    Water,
 }
 
 /// How a vertex's height is found.
@@ -42,6 +45,8 @@ pub enum FH {
     Water,
     /// The higher of the ground under it and the water.
     Surface,
+    /// The natural ground (before roads levelled it) at another point: a stream's bed.
+    WaterAt(Vec2),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -81,6 +86,8 @@ pub struct Obj {
 #[derive(Default)]
 pub struct FChunk {
     pub id: Option<TileId>,
+    /// The nature tile whose local frame the geometry is in.
+    pub tile: Option<TileId>,
     pub geoms: std::collections::BTreeMap<FMat, FGeom>,
     pub objs: Vec<Obj>,
     /// (s, w, n, e) of everything in it.
@@ -212,6 +219,7 @@ impl FGeom {
 /// Builder for one tile's features, sorted into zoom-17 chunks.
 struct B {
     local: Local,
+    tile: TileId,
     chunks: std::collections::HashMap<TileId, FChunk>,
 }
 
@@ -219,9 +227,10 @@ impl B {
     fn chunk(&mut self, p: Vec2) -> &mut FChunk {
         let (la, lo) = self.local.ll(p);
         let id = TileId::containing(la, lo, ZOOM).0;
+        let tile = self.tile;
         let c = self.chunks.entry(id).or_insert_with(|| {
             let (w, s, e, n) = id.bounds();
-            FChunk { id: Some(id), bbox: (s, w, n, e), ..Default::default() }
+            FChunk { id: Some(id), tile: Some(tile), bbox: (s, w, n, e), ..Default::default() }
         });
         let bb = &mut c.bbox;
         *bb = (bb.0.min(la), bb.1.min(lo), bb.2.max(la), bb.3.max(lo));
@@ -245,7 +254,7 @@ pub fn build(tile: TileId, nat: &NatureData) -> FBuilt {
     let local = Local::new(cla, clo);
     let (tw, ts, te, tn) = tile.bounds();
     let in_tile = |la: f64, lo: f64| la >= ts && la < tn && lo >= tw && lo < te;
-    let mut b = B { local, chunks: Default::default() };
+    let mut b = B { local, tile, chunks: Default::default() };
     for f in &nat.barriers {
         if f.pts.is_empty() || !in_tile(f.pts[0].0, f.pts[0].1) {
             continue;
@@ -280,6 +289,24 @@ pub fn build(tile: TileId, nat: &NatureData) -> FBuilt {
         }
         b.chunk(p).objs.push(Obj { kind: ObjKind::Buoy(s.clone()), p, h, yaw: hash01(s.id as u64) * 6.28, id: s.id });
     }
+    // Streams, ditches, canals and rivers too small to be mapped as water areas.
+    for (kind, line, width, id) in &nat.waterways {
+        if line.len() < 2 || !in_tile(line[0].0, line[0].1) {
+            continue;
+        }
+        let big = kind == "river" || kind == "canal";
+        if big && *width > 14.0 {
+            continue;
+        }
+        let speed = match kind.as_str() {
+            "river" => 0.9,
+            "stream" => 0.6,
+            "canal" => 0.2,
+            _ => 0.3,
+        };
+        let pts: Vec<Vec2> = line.iter().map(|&(a, c)| local.xz(a, c)).collect();
+        stream(&mut b, &pts, width.clamp(0.8, 14.0), speed, *id as u64);
+    }
     for p in &nat.piers {
         if p.pts.is_empty() || !in_tile(p.pts[0].0, p.pts[0].1) {
             continue;
@@ -311,6 +338,48 @@ pub fn build(tile: TileId, nat: &NatureData) -> FBuilt {
         }
     }
     FBuilt { local, chunks: b.chunks.into_values().collect() }
+}
+
+/// A ribbon of water down a stream's line, level across at the bed's height, in
+/// pieces of at most ~16 m so it follows the ground.
+fn stream(b: &mut B, pts: &[Vec2], width: f32, speed: f32, seed: u64) {
+    // Resample.
+    let mut line = vec![pts[0]];
+    for q in pts.windows(2) {
+        let n = (q[0].distance(q[1]) / 16.0).ceil().max(1.0) as usize;
+        for k in 1..=n {
+            line.push(q[0].lerp(q[1], k as f32 / n as f32));
+        }
+    }
+    if line.len() < 2 {
+        return;
+    }
+    // Width wanders a little.
+    let hw = |i: usize| width * 0.5 * (0.85 + 0.3 * hash01(seed ^ i as u64));
+    let dir = |i: usize| {
+        let a = line[i.saturating_sub(1)];
+        let c = line[(i + 1).min(line.len() - 1)];
+        (c - a).normalize_or(Vec2::X)
+    };
+    for i in 0..line.len() - 1 {
+        let (p0, p1) = (line[i], line[i + 1]);
+        let (d0, d1) = (dir(i), dir(i + 1));
+        let r0 = Vec2::new(-d0.y, d0.x) * hw(i);
+        let r1 = Vec2::new(-d1.y, d1.x) * hw(i + 1);
+        let flow = (p1 - p0).normalize_or(Vec2::X) * speed;
+        let col = [flow.x, flow.y, 0.0, 0.0];
+        let mid = (p0 + p1) * 0.5;
+        b.reach(mid, p0 - r0);
+        b.reach(mid, p1 + r1);
+        let g = b.geom(mid, FMat::Water);
+        let (h0, h1) = (FH::WaterAt(p0), FH::WaterAt(p1));
+        g.quad(
+            [(p0 - r0, h0, 0.02), (p0 + r0, h0, 0.02), (p1 + r1, h1, 0.02), (p1 - r1, h1, 0.02)],
+            Vec3::Y,
+            [p0 - r0, p0 + r0, p1 + r1, p1 - r1],
+            col,
+        );
+    }
 }
 
 /// Spots for lifeguard towers on a beach: every ~250 m along its seaward edge, set back
