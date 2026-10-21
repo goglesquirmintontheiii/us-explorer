@@ -83,7 +83,7 @@ jobs:
           else
             git worktree add --detach ../shots-branch && cd ../shots-branch && git checkout --orphan screenshots && git rm -rfq .
           fi
-          mkdir -p "runs/$SHA" && cp "$GITHUB_WORKSPACE"/shots/*.png "$GITHUB_WORKSPACE"/shots/log.txt "runs/$SHA/"
+          mkdir -p "runs/$SHA" && cp "$GITHUB_WORKSPACE"/shots/log.txt "runs/$SHA/"; cp "$GITHUB_WORKSPACE"/shots/*.png "runs/$SHA/" || true
           # Keep only the 12 most recent runs so the branch stays small.
           ls -1dt runs/*/ | tail -n +13 | xargs -r git rm -rq
           echo "$SHA" > latest.txt
