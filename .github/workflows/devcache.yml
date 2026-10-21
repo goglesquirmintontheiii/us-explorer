@@ -1,0 +1,53 @@
+name: Dev cache
+# Development aid: builds the game, visits a few places (taking a picture at each) so
+# their map data, elevation and imagery are downloaded, and pushes the download cache
+# and the pictures to the `devcache` branch for offline testing.
+on:
+  workflow_dispatch:
+    inputs:
+      shots:
+        description: "Shot specs separated by | (name=..;lat=..;lon=..;agl=..;heading=..;pitch=..)"
+        required: true
+      ref:
+        description: "Branch or commit to build"
+        required: false
+        default: "main"
+permissions:
+  contents: write
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: System libraries
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev mesa-vulkan-drivers xvfb libxkbcommon-x11-0 libxcursor1 libxi6 libxrandr2
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release -p us-explorer
+      - name: Visit
+        run: |
+          mkdir -p shots
+          args=()
+          IFS='|' read -ra specs <<< "${{ inputs.shots }}"
+          for s in "${specs[@]}"; do args+=(--shot "$s"); done
+          export XDG_RUNTIME_DIR=$(mktemp -d)
+          export USX_SHOT_TIMEOUT=300
+          timeout 100m xvfb-run -a -s "-screen 0 1280x720x24" target/release/us-explorer \
+            --window 1280x720 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | sed "s/\x1b\[[0-9;]*m//g" | grep -v XSETTINGS > shots/log.txt || true
+          tail -30 shots/log.txt
+          ls -l shots
+      - name: Push
+        run: |
+          cd ~/.cache && du -sh * || true
+          tar czf /tmp/cache.tgz --exclude=mesa_shader_cache -C ~/.cache us-explorer && ls -l /tmp/cache.tgz
+          mkdir /tmp/dc && cd /tmp/dc && git init -q -b devcache && split -b 45m /tmp/cache.tgz cache.tgz.part-
+          mkdir shots && for f in "$GITHUB_WORKSPACE"/shots/*.png; do [ -f "$f" ] && convert "$f" -quality 80 "shots/$(basename "${f%.png}").jpg" || true; done
+          cp "$GITHUB_WORKSPACE"/shots/log.txt shots/
+          git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm cache
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:devcache
