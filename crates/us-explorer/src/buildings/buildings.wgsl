@@ -102,7 +102,7 @@ struct Layout {
 };
 
 // Mirrors exterior::window_layout.
-fn layout(style: u32, len: f32, fh: f32) -> Layout {
+fn win_layout(style: u32, len: f32, fh: f32) -> Layout {
     var bay = 1.0;
     var w = 0.0;
     var sill = 0.0;
@@ -145,7 +145,7 @@ struct Win {
 
 fn windows(u: f32, v: f32, len: f32, fh: f32, style: u32, storefront: bool, wall_top: f32) -> Win {
     var r: Win;
-    let l = layout(style, len, fh);
+    let l = win_layout(style, len, fh);
     if l.bays < 0.5 || l.w <= 0.0 {
         return r;
     }

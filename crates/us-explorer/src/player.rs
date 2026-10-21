@@ -154,6 +154,7 @@ impl Plugin for PlayerPlugin {
             seat: None,
         };
         app.insert_resource(p)
+            .init_resource::<CameraClose>()
             .add_systems(Update, (toggle_lock, handle_teleports, look, simulate, choose_pose).chain().after(crate::ui::UiInput))
             .add_systems(PostUpdate, place_camera.before(crate::globe::GlobeSet));
     }
@@ -529,7 +530,18 @@ fn choose_pose(time: Res<Time>, mut p: ResMut<Player>) {
 }
 
 /// Camera position and look for the current view, written into [`Viewer`].
-fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain>, walk: Res<crate::walkable::Walkables>) {
+/// The third-person camera has been pulled in so close (walls, low ceilings) that the
+/// body would fill the view: it's hidden then.
+#[derive(Resource, Default)]
+pub struct CameraClose(pub bool);
+
+fn place_camera(
+    p: Res<Player>,
+    mut viewer: ResMut<Viewer>,
+    terrain: Res<Terrain>,
+    walk: Res<crate::walkable::Walkables>,
+    mut close: ResMut<CameraClose>,
+) {
     let g = p.geo();
     let frame = EnuFrame::at(g);
     let to_ecef = frame.ecef_to_local.transpose();
@@ -586,7 +598,12 @@ fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain
             let keep = (t * len - 0.25).max(0.05);
             ok *= (keep / (len - 0.25).max(0.05)).min(1.0);
         }
+        let full = (cam_ecef - pivot).length();
         cam_ecef = pivot.lerp(cam_ecef, ok);
+        let near = full * ok < 1.1 && view == CameraView::ThirdPerson;
+        if close.0 != near {
+            close.0 = near;
+        }
         let mut cg = Geodetic::from_ecef(cam_ecef);
         if let Some(h) = terrain.height_at(cg.lat, cg.lon)
             && cg.h < h + 0.4

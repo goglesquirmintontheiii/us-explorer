@@ -1971,7 +1971,7 @@ pub fn realise(b: &Built, bi: u32, p: &PlacedRef, near_y: f32) -> Option<Interio
     let doors = exterior::doors(bld, &b.street[bi as usize]);
     let garages = exterior::garages(bld, &doors);
     let mut plan = plan::plan(bld, &doors, &garages)?;
-    let partial = plan.floors.len() > 6;
+    let mut partial = plan.floors.len() > 6;
     // Keep at most six floors: the ones around where you are.
     if partial {
         plan.floors.sort_by(|a, c| (a.y - near_y).abs().total_cmp(&(c.y - near_y).abs()));
@@ -2005,6 +2005,11 @@ pub fn realise(b: &Built, bi: u32, p: &PlacedRef, near_y: f32) -> Option<Interio
         house,
         ext_doors: if bld.parts.len() == 1 { doors.clone() } else { Vec::new() },
     };
+    // Big buildings are furnished on your floor and the ones next to it (a furnished
+    // office floor is a lot of triangles); the rest get walls and lights.
+    let fh = bld.kind.floor_height();
+    let here = plan.floors.iter().map(|f| f.y).min_by(|a, c| (a - near_y).abs().total_cmp(&(c - near_y).abs())).unwrap_or(0.0);
+    let furnish_all = house || plan.floors.len() <= 3;
     for fi in 0..plan.floors.len() {
         slabs(&mut cx, fi);
         outer_walls(&mut cx, fi);
@@ -2013,7 +2018,11 @@ pub fn realise(b: &Built, bi: u32, p: &PlacedRef, near_y: f32) -> Option<Interio
         }
         partitions(&mut cx, fi);
         lights(&mut cx, fi);
-        furnish(&mut cx, fi);
+        if furnish_all || (plan.floors[fi].y - here).abs() < fh * 1.2 {
+            furnish(&mut cx, fi);
+        } else {
+            partial = true;
+        }
     }
     stairs(&mut cx);
     mapped_rooms(&mut cx);
@@ -2175,7 +2184,7 @@ fn choose_interiors(
     for (_, k) in scored {
         let Some(d) = bl.detail.get(&k) else { continue };
         let near_y = (g.h - d.placed.base) as f32;
-        let stale = d.interior_partial && (near_y - d.interior_y).abs() > 7.0;
+        let stale = d.interior_partial && (near_y - d.interior_y).abs() > 5.0;
         if d.interior.is_some() && !stale || pool.pending.contains(&k) {
             continue;
         }
