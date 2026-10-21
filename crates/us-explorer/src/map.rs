@@ -26,6 +26,8 @@ struct Entry {
     tex: Option<egui::TextureHandle>,
     missing: bool,
     last_used: u64,
+    /// Frame the request was made (to retry failures later).
+    asked: u64,
 }
 
 /// Map tiles as egui textures, loaded on a few worker threads.
@@ -61,13 +63,27 @@ impl MapTiles {
         while n < 12 {
             let Some((k, img)) = self.pool.try_recv() else { break };
             n += 1;
-            let e = self.tiles.entry(k).or_insert(Entry { tex: None, missing: false, last_used: self.frame });
+            let e = self.tiles.entry(k).or_insert(Entry { tex: None, missing: false, last_used: self.frame, asked: self.frame });
             match img {
                 Some(img) => {
                     e.tex = Some(ctx.load_texture(format!("map-{}-{}", k.imagery, k.id.path()), img, egui::TextureOptions::LINEAR))
                 }
                 None => e.missing = true,
             }
+        }
+        // Requests for tiles nobody has looked at for a second (the view moved on) are
+        // dropped so they don't hold up the tiles on screen now; failed ones are tried
+        // again after ten seconds.
+        let frame = self.frame;
+        let stale: Vec<MapKey> = self
+            .tiles
+            .iter()
+            .filter(|(_, e)| e.tex.is_none() && (!e.missing && frame - e.last_used > 60 || e.missing && frame - e.asked > 600))
+            .map(|(k, _)| *k)
+            .collect();
+        for k in stale {
+            self.pool.cancel(key_of(k));
+            self.tiles.remove(&k);
         }
         let with_tex = self.tiles.values().filter(|e| e.tex.is_some()).count();
         if with_tex > MAX_TEX {
@@ -84,9 +100,14 @@ impl MapTiles {
         let frame = self.frame;
         let k = MapKey { imagery, id };
         match self.tiles.get_mut(&k) {
-            Some(e) => e.last_used = frame,
+            Some(e) => {
+                e.last_used = frame;
+                if e.tex.is_none() && !e.missing {
+                    self.pool.reprioritize(key_of(k), priority);
+                }
+            }
             None => {
-                self.tiles.insert(k, Entry { tex: None, missing: false, last_used: frame });
+                self.tiles.insert(k, Entry { tex: None, missing: false, last_used: frame, asked: frame });
                 self.pool.submit(key_of(k), priority, k);
             }
         }

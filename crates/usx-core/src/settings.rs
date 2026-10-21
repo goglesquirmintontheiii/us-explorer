@@ -80,6 +80,63 @@ impl Outfit {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum HairStyle {
+    Short,
+    Buzz,
+    Curly,
+    Long,
+    Ponytail,
+    Bald,
+}
+
+impl HairStyle {
+    pub const ALL: [HairStyle; 6] = [Self::Short, Self::Buzz, Self::Curly, Self::Long, Self::Ponytail, Self::Bald];
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Short => "Short",
+            Self::Buzz => "Buzz cut",
+            Self::Curly => "Curly",
+            Self::Long => "Long",
+            Self::Ponytail => "Ponytail",
+            Self::Bald => "Bald",
+        }
+    }
+}
+
+/// How the player's character looks (the casual outfit uses these clothes colours).
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct Character {
+    pub skin: [u8; 3],
+    pub hair: [u8; 3],
+    pub hair_style: HairStyle,
+    pub shirt: [u8; 3],
+    pub pants: [u8; 3],
+    pub shoes: [u8; 3],
+    /// 0.9 .. 1.1 of average height.
+    pub height: f32,
+    /// 0.85 (slim) .. 1.2 (broad).
+    pub build: f32,
+    pub glasses: bool,
+}
+
+impl Default for Character {
+    fn default() -> Self {
+        Self {
+            skin: [219, 168, 133],
+            hair: [46, 31, 20],
+            hair_style: HairStyle::Short,
+            shirt: [46, 92, 158],
+            pants: [56, 61, 77],
+            shoes: [217, 217, 209],
+            height: 1.0,
+            build: 1.0,
+            glasses: false,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum CameraView {
     FirstPerson,
     ThirdPerson,
@@ -132,6 +189,11 @@ pub struct Settings {
     pub bookmarks: Vec<Bookmark>,
     pub recent_places: Vec<Bookmark>,
     pub outfit: Outfit,
+    pub character: Character,
+    /// Open on the title screen (off when starting at a place from the command line).
+    pub title_screen: bool,
+    /// Draw buildings (with interiors up close).
+    pub buildings: bool,
     pub camera_view: CameraView,
     /// Touching the ground while flying switches back to walking.
     pub land_on_touch: bool,
@@ -171,6 +233,9 @@ impl Default for Settings {
             bookmarks: Vec::new(),
             recent_places: Vec::new(),
             outfit: Outfit::Casual,
+            character: Character::default(),
+            title_screen: true,
+            buildings: true,
             camera_view: CameraView::ThirdPerson,
             land_on_touch: true,
             show_minimap: true,

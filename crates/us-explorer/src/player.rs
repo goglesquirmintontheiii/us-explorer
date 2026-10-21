@@ -40,6 +40,18 @@ pub enum Pose {
     Hover,
     Fly,
     Swim,
+    Sit,
+    Lie,
+}
+
+/// Sitting on a chair or sofa, or lying on a bed.
+#[derive(Clone, Copy, Debug)]
+pub struct Seat {
+    pub feet: DVec3,
+    pub heading: f64,
+    pub lie: bool,
+    /// Where you stood before sitting down (you get up there).
+    pub stand: DVec3,
 }
 
 #[derive(Resource)]
@@ -59,6 +71,9 @@ pub struct Player {
     pub in_water: bool,
     pub fly_speed: f64,
     pub view: CameraView,
+    /// Title and character screens: an orbit shot of the player (yaw, pitch, distance)
+    /// overriding the chosen camera.
+    pub showcase: Option<(f64, f64, f64)>,
     pub orbit_dist: f64,
     pub orbit_yaw: f64,
     pub orbit_pitch: f64,
@@ -71,6 +86,7 @@ pub struct Player {
     last_jump_tap: f64,
     /// Seconds spent off the ground.
     pub air_time: f32,
+    pub seat: Option<Seat>,
 }
 
 impl Player {
@@ -126,6 +142,7 @@ impl Plugin for PlayerPlugin {
             fly_speed: 20.0,
             view: s.camera_view,
             orbit_dist: 6.0,
+            showcase: None,
             orbit_yaw: 200.0,
             orbit_pitch: -15.0,
             pose: Pose::Idle,
@@ -134,6 +151,7 @@ impl Plugin for PlayerPlugin {
             ground: None,
             last_jump_tap: -10.0,
             air_time: 0.0,
+            seat: None,
         };
         app.insert_resource(p)
             .add_systems(Update, (toggle_lock, handle_teleports, look, simulate, choose_pose).chain().after(crate::ui::UiInput))
@@ -172,20 +190,22 @@ fn toggle_lock(
     mouse: Res<ButtonInput<MouseButton>>,
     blocked: Res<InputBlocked>,
     menus: Res<crate::ui::Menus>,
+    map: Res<crate::map::FullMap>,
     mut lock: ResMut<MouseLock>,
     mut cursor: Query<&mut bevy::window::CursorOptions, With<bevy::window::PrimaryWindow>>,
 ) {
+    let menus_open = menus.any_open() || map.open;
     if intent.lock_mouse {
         lock.0 = !lock.0;
     }
     // Clicking into the world grabs the mouse, like most games.
-    if mouse.just_pressed(MouseButton::Left) && !blocked.pointer && !menus.any_open() {
+    if mouse.just_pressed(MouseButton::Left) && !blocked.pointer && !menus_open {
         lock.0 = true;
     }
-    if keys.just_pressed(KeyCode::Escape) || menus.any_open() {
+    if keys.just_pressed(KeyCode::Escape) || menus_open {
         lock.0 = false;
     }
-    let want = lock.0 || (mouse.pressed(MouseButton::Right) && !blocked.pointer);
+    let want = lock.0 || (mouse.pressed(MouseButton::Right) && !blocked.pointer && !menus_open);
     for mut c in &mut cursor {
         let mode = if want { bevy::window::CursorGrabMode::Locked } else { bevy::window::CursorGrabMode::None };
         if c.grab_mode != mode {
@@ -227,7 +247,7 @@ fn look(
         let k = 1.25f64.powf(scroll.delta.y as f64);
         match (p.view, p.mode) {
             (CameraView::Orbit, _) => p.orbit_dist = (p.orbit_dist / k).clamp(2.0, 400.0),
-            (_, Mode::Fly | Mode::Noclip) => p.fly_speed = (p.fly_speed * k).clamp(WALK_SPEED, 278.0),
+            (_, Mode::Fly | Mode::Noclip) => p.fly_speed = (p.fly_speed * k).clamp(WALK_SPEED, MAX_FLY_SPEED),
             _ => {}
         }
     }
@@ -250,6 +270,9 @@ use bevy::math::DVec2;
 /// Ground under the feet: the terrain, plus any walkable surface (bridge decks from
 /// Phase 3) within a step's reach.
 const SEA_LEVEL: f64 = 0.0;
+/// Top flying speed set with the wheel: Mach 10 (about 7,600 mph), enough to cross the
+/// country in half an hour. Higher still is multiplied with height above the ground.
+const MAX_FLY_SPEED: f64 = 3_400.0;
 const SWIM_SPEED: f64 = 1.2;
 const SWIM_SPRINT: f64 = 2.2;
 
@@ -278,16 +301,33 @@ fn simulate(
 ) {
     let dt = time.delta_secs_f64().min(0.1);
     let now = time.elapsed_secs_f64();
+    // Seated: stay put until you move (or jump), then stand where you were.
+    if let Some(s) = p.seat {
+        if intent.move_axis.length() > 0.2 || intent.jump_pressed || p.mode != Mode::Walk {
+            p.seat = None;
+            p.feet = s.stand;
+            p.vel = DVec3::ZERO;
+        } else {
+            p.feet = s.feet;
+            p.vel = DVec3::ZERO;
+            p.on_ground = true;
+            p.air_time = 0.0;
+            p.body_heading = s.heading;
+            return;
+        }
+    }
     let mut g = p.geo();
     let frame = EnuFrame::at(g);
-    // Lakes and rivers: the terrain is their surface (elevation models record water),
-    // so give them a few metres of depth below it to swim in.
-    const LAKE_DEPTH: f64 = 3.0;
+    // Lakes and rivers: the surface is the natural ground (elevation models record the
+    // water), the bed is the terrain dug out under it. Where the detailed terrain
+    // hasn't been dug yet, assume a couple of metres.
     let ground_at = |g: Geodetic| -> (Option<(f64, u8)>, f64) {
         let gr = ground_height(&terrain, &walk, g);
         match gr {
             Some((h, z)) if lakes.contains(g.lat, g.lon) && walk.surface_below(g.lat, g.lon, g.h + 0.5).is_none_or(|(d, _)| d < h) => {
-                (Some((h - LAKE_DEPTH, z)), h + 0.22)
+                let surface = terrain.natural_at(g.lat, g.lon).unwrap_or(h).max(h);
+                let bed = if surface - h < 0.5 { surface - 2.5 } else { h };
+                (Some((bed, z)), surface + 0.05)
             }
             _ => (gr, SEA_LEVEL),
         }
@@ -299,10 +339,12 @@ fn simulate(
     if let (Some(agl), Some((h, z))) = (p.hold_agl, ground) {
         // Arriving somewhere with a bridge deck overhead: stand on the deck (tunnel
         // floors are under the terrain, so they never win here).
-        let h = match walk.surface_below(g.lat, g.lon, 1e7) {
+        let h = match walk.strip_surface(g.lat, g.lon, 1e7) {
             Some((d, false)) if d > h => d,
             _ => h,
         };
+        // In a building: the floor at about the height asked for (not the roof).
+        let h = walk.solid_surface(g.lat, g.lon, h + agl + 1.0).map_or(h, |f| f.max(h));
         g.h = h + agl;
         // Over deep water, float at the surface instead of standing on the bottom.
         p.in_water = h < surface - 1.2 && g.h < surface - 0.9;
@@ -450,6 +492,13 @@ fn simulate(
 fn choose_pose(time: Res<Time>, mut p: ResMut<Player>) {
     let hs = p.horizontal_speed();
     p.pose = match p.mode {
+        _ if p.seat.is_some() => {
+            if p.seat.is_some_and(|s| s.lie) {
+                Pose::Lie
+            } else {
+                Pose::Sit
+            }
+        }
         Mode::Walk if p.in_water => Pose::Swim,
         Mode::Fly | Mode::Noclip => {
             if hs > 3.0 {
@@ -480,22 +529,32 @@ fn choose_pose(time: Res<Time>, mut p: ResMut<Player>) {
 }
 
 /// Camera position and look for the current view, written into [`Viewer`].
-fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain>) {
+fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain>, walk: Res<crate::walkable::Walkables>) {
     let g = p.geo();
     let frame = EnuFrame::at(g);
     let to_ecef = frame.ecef_to_local.transpose();
-    let eye_local = DVec3::Y * EYE_HEIGHT;
     let look = look_rotation(p.heading, p.pitch);
-    let (cam_local, rot) = match p.view {
+    // Seated, the eyes are lower; lying down they're at the head of the bed.
+    let eye_local = match p.seat {
+        Some(s) if s.lie => {
+            let b = look_rotation(s.heading, 0.0) * DVec3::Z;
+            DVec3::Y * 0.42 + b * 0.75
+        }
+        Some(_) => DVec3::Y * (EYE_HEIGHT - 0.5),
+        None => DVec3::Y * EYE_HEIGHT,
+    };
+    let view = if p.showcase.is_some() { CameraView::Orbit } else { p.view };
+    let (oy, op, od) = p.showcase.unwrap_or((p.orbit_yaw, p.orbit_pitch, p.orbit_dist));
+    let (cam_local, rot) = match view {
         CameraView::FirstPerson => (eye_local + look * DVec3::new(0.0, 0.0, -0.15), look),
         CameraView::ThirdPerson => {
             let target = eye_local + look * DVec3::new(0.45, 0.15, 0.0);
             (target + look * DVec3::new(0.0, 0.0, 3.4), look)
         }
         CameraView::Orbit => {
-            let o = look_rotation(p.orbit_yaw, p.orbit_pitch);
+            let o = look_rotation(oy, op);
             let center = DVec3::Y * 1.0;
-            let cam = center + o * DVec3::new(0.0, 0.0, p.orbit_dist);
+            let cam = center + o * DVec3::new(0.0, 0.0, od);
             let dir = (center - cam).normalize();
             let heading = (-dir.x).atan2(dir.z).to_degrees() + 180.0;
             let pitch = dir.y.asin().to_degrees();
@@ -505,8 +564,8 @@ fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain
     let mut cam_ecef = to_ecef * cam_local + p.feet;
     // Keep third-person and orbit cameras out of the ground: like a spring arm, pull the
     // camera in toward the player if terrain (a cliff, a slope) is in the way.
-    if p.view != CameraView::FirstPerson {
-        let pivot = to_ecef * (DVec3::Y * if p.view == CameraView::Orbit { 1.0 } else { EYE_HEIGHT }) + p.feet;
+    if view != CameraView::FirstPerson {
+        let pivot = to_ecef * (DVec3::Y * if view == CameraView::Orbit { 1.0 } else { EYE_HEIGHT }) + p.feet;
         let steps = 24;
         let mut ok = 1.0;
         for k in 1..=steps {
@@ -518,6 +577,14 @@ fn place_camera(p: Res<Player>, mut viewer: ResMut<Viewer>, terrain: Res<Terrain
                 ok = ((k - 1) as f64 / steps as f64).max(0.08);
                 break;
             }
+        }
+        // Walls, floors and ceilings of buildings too (so the camera stays in the room).
+        let pg = Geodetic::from_ecef(pivot);
+        let probe = pivot.lerp(cam_ecef, ok) + (pivot.lerp(cam_ecef, ok) - pivot).normalize_or_zero() * 0.25;
+        if let Some(t) = walk.solid_hit(pg, Geodetic::from_ecef(probe)) {
+            let len = (probe - pivot).length();
+            let keep = (t * len - 0.25).max(0.05);
+            ok *= (keep / (len - 0.25).max(0.05)).min(1.0);
         }
         cam_ecef = pivot.lerp(cam_ecef, ok);
         let mut cg = Geodetic::from_ecef(cam_ecef);

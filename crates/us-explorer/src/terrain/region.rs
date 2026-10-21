@@ -58,7 +58,7 @@ impl RegionDownload {
                     mb += 0.07;
                 }
                 if t.z == usx_core::osm::ZOOM {
-                    mb += 0.04;
+                    mb += 0.1;
                 }
                 mb
             })
@@ -83,9 +83,10 @@ impl RegionDownload {
             if t.z == load::LIDAR_BLOCK_ZOOM && load::in_us(t) {
                 load::prefetch_lidar_block(t);
             }
-            // Roads and roadside objects.
+            // Roads and roadside objects, and buildings.
             if t.z == usx_core::osm::ZOOM {
                 ok &= usx_core::osm::load(t, load::cache()).is_ok();
+                ok &= usx_core::osm::load_layer(t, usx_core::osm::Layer::Buildings, load::cache()).is_ok();
             }
             if ok {
                 p2.done.fetch_add(1, Ordering::Relaxed);

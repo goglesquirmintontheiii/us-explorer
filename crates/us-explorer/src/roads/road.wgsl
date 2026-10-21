@@ -40,6 +40,7 @@ const STRUCTURE: u32 = 524288u;
 // High flags (bit 20 up) arrive shifted down by 20.
 const DECK: u32 = 1u;
 const TUNNEL_LIGHT: u32 = 2u;
+const LOT: u32 = 4u;
 const STEPS: u32 = 8u;
 const WATER: u32 = 16u;
 
@@ -136,6 +137,13 @@ fn lamp_pool(s: f32, v: f32, hw: f32, len: f32, glow: u32) -> f32 {
         total += exp(-dot(d, d) / (2.0 * 7.5 * 7.5));
     }
     return total;
+}
+
+fn seg_sdf(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
 }
 
 @fragment
@@ -412,6 +420,50 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         }
     }
 
+    // ---------------------------------------------------------------- parking lots
+    // uv_b.x says what: 0 surface, -2 white paint, -3 accessible stall (uv: metres
+    // across, metres in from the aisle), -4 hatched access aisle, -6 planted island.
+    if (hi & LOT) != 0u {
+        if len > -1.0 {
+            // A little greyer and patchier than streets, with oil drips where cars stand.
+            base *= 1.0 + 0.14 * fbm(q * 0.08 + 3.0);
+            let oil = smoothstep(0.74, 0.92, vnoise(q * 0.7 + 11.0)) * 0.3 * near;
+            base *= 1.0 - oil;
+        } else if len > -2.5 {
+            let wear = 0.8 + 0.2 * vnoise(q * 3.0);
+            paint = wear;
+            paint_col = vec3(0.9, 0.9, 0.87);
+        } else if len > -3.5 {
+            // Blue stall with the white access symbol, upright seen from the aisle.
+            let blue = vec3(0.03, 0.14, 0.42);
+            paint = 0.92;
+            paint_col = blue;
+            let p = (vec2(s, v) - vec2(1.35, 2.75)) / 1.7;
+            // Wheel ring, head, back, seat and leg as distance fields.
+            let wheel = abs(length(p - vec2(0.02, -0.16)) - 0.29) - 0.06;
+            let head = length(p - vec2(-0.04, 0.42)) - 0.09;
+            let back = seg_sdf(p, vec2(-0.06, 0.28), vec2(-0.03, -0.09)) - 0.05;
+            let seat = seg_sdf(p, vec2(-0.03, -0.09), vec2(0.24, -0.09)) - 0.05;
+            let leg = seg_sdf(p, vec2(0.24, -0.09), vec2(0.36, -0.4)) - 0.045;
+            let arm = seg_sdf(p, vec2(-0.05, 0.12), vec2(0.18, 0.12)) - 0.04;
+            let d = min(min(min(wheel, head), min(back, seat)), min(leg, arm));
+            if d < 0.0 {
+                paint_col = vec3(0.92, 0.92, 0.9);
+            }
+        } else if len > -4.5 {
+            // Diagonal blue hatching inside a blue outline.
+            let edge = 1.0 - band(s, 0.1, 2.48) * band(v, 0.1, 5.3);
+            let hatch = band(fract((s + v) / 0.7), 0.0, 0.22);
+            paint = max(edge, hatch) * (0.8 + 0.2 * vnoise(q * 3.0));
+            paint_col = vec3(0.05, 0.18, 0.5);
+        } else {
+            // Mulch and grass.
+            let g = fbm(q * 1.3);
+            base = mix(vec3(0.16, 0.11, 0.07), vec3(0.09, 0.2, 0.05), smoothstep(0.35, 0.6, g)) * (0.8 + 0.4 * grain);
+            rough = 0.97;
+        }
+    }
+
     // Wet roads: darker and glossier.
     let wet = road.wet * select(1.0, 0.6, surface >= 3u);
     base *= 1.0 - 0.45 * wet;
@@ -426,11 +478,21 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
         // Two drifting ripple layers for the normal; deeper colour away from the light.
         let r1 = vec2(vnoise(w * 0.35 + vec2(t * 0.21, t * 0.13)), vnoise(w.yx * 0.35 - vec2(t * 0.17, t * 0.09)));
         let r2 = vec2(vnoise(w * 1.7 + vec2(-t * 0.5, t * 0.37)), vnoise(w.yx * 1.7 + vec2(t * 0.41, -t * 0.29)));
-        let slope = (r1 - 0.5) * 0.16 + (r2 - 0.5) * 0.08 * (0.3 + 0.7 * near);
+        // Ripples fade out with distance (and wherever they get smaller than a pixel),
+        // so far water is a smooth reflective surface instead of shimmering noise.
+        let px = length(fwidth(w));
+        let fine = 1.0 - smoothstep(0.08, 0.35, px);
+        let coarse = 1.0 - smoothstep(0.6, 2.5, px);
+        let slope = (r1 - 0.5) * 0.16 * coarse + (r2 - 0.5) * 0.08 * fine;
         let tn = normalize(cross(pbr_input.N, vec3(0.0, 0.0, 1.0)) + vec3(1e-4));
         let bn = cross(pbr_input.N, tn);
         pbr_input.N = normalize(pbr_input.N + tn * slope.x + bn * slope.y);
-        painted = vec3(0.03, 0.085, 0.11) * (0.85 + 0.3 * fbm(w * 0.02));
+#ifdef VERTEX_COLORS
+        let tint = vec3(in.color.x, in.color.y, in.color.w);
+#else
+        let tint = vec3(0.03, 0.07, 0.08);
+#endif
+        painted = tint * (0.9 + 0.2 * fbm(w * 0.02));
         pbr_input.material.base_color = vec4(painted, 1.0);
         pbr_input.material.perceptual_roughness = 0.07 + 0.15 * road.wet;
         pbr_input.material.metallic = 0.0;

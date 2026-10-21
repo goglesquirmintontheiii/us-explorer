@@ -28,6 +28,9 @@ pub struct HeightGrid {
     pub max: f32,
     /// The real ground where it dips below the sea surface (sea floor), for wading and swimming.
     pub floor: Option<Box<[f32]>>,
+    /// The ground before it was levelled under roads and dug out under lakes (only kept
+    /// when it differs): roads and water surfaces are placed from this.
+    pub natural: Option<Box<[f32]>>,
 }
 
 impl HeightGrid {
@@ -40,6 +43,11 @@ impl HeightGrid {
     /// Like [`sample`](Self::sample) but under water it gives the sea floor.
     pub fn sample_floor(&self, u: f64, v: f64) -> f64 {
         Self::sample_in(self.floor.as_deref().unwrap_or(&self.h), u, v)
+    }
+
+    /// Like [`sample`](Self::sample) on the ground before roads and lakes reshaped it.
+    pub fn sample_natural(&self, u: f64, v: f64) -> f64 {
+        Self::sample_in(self.natural.as_deref().unwrap_or(&self.h), u, v)
     }
 
     fn sample_in(h: &[f32], u: f64, v: f64) -> f64 {
@@ -89,6 +97,8 @@ pub struct Loaded {
 pub struct TileData {
     /// Heights were conformed to the area's roads.
     pub conformed: bool,
+    /// The building pads the heights were dug for (see `conform::pads_sig`).
+    pub pad_sig: u64,
     pub center: DVec3,
     pub radius: f64,
     pub heights: Arc<HeightGrid>,
@@ -229,7 +239,7 @@ fn grid_from(h: Vec<f32>) -> HeightGrid {
         min = min.min(v);
         max = max.max(v);
     }
-    HeightGrid { h, min, max, floor: None }
+    HeightGrid { h, min, max, floor: None, natural: None }
 }
 
 /// Raw heights to a grid. Below sea level is sea (drawn at the surface, floor kept for
@@ -538,14 +548,25 @@ pub fn load(job: LoadJob) -> Loaded {
             };
             // Level the ground under roads (when this area's roads are known).
             let corridors = (id.z >= super::conform::CONFORM_ZOOM).then(|| crate::roads::corridors_for(id)).flatten();
-            let holes = corridors.as_ref().map(|c| super::conform::conform(id, &mut raw, c).holes);
-            let g = surface_grid(id, raw);
+            // And keep it below the floors of buildings.
+            let (pads, pad_sig) = if id.z >= super::conform::CONFORM_ZOOM { super::conform::pads_for(id) } else { (Vec::new(), 0) };
+            let any = corridors.is_some() || !pads.is_empty();
+            let before = any.then(|| raw.clone());
+            let holes = any.then(|| {
+                let (c, l) = corridors.as_ref().map(|c| (&c.0[..], &c.1[..])).unwrap_or((&[], &[]));
+                super::conform::conform(id, &mut raw, c, l, &pads).holes
+            });
+            let mut g = surface_grid(id, raw);
+            if let Some(b) = before {
+                g.natural = Some(b.iter().map(|x| if g.floor.is_some() { x.max(0.0) } else { *x }).collect());
+            }
             let (mesh, center, radius) = build_mesh(id, &g, holes.as_deref());
             let img = img_task.join().unwrap_or(None);
             degraded |= img.is_none();
             let imagery_zoom = img.as_ref().map(|i| i.1).unwrap_or(0);
             Ok(TileData {
-                conformed: holes.is_some(),
+                pad_sig,
+                conformed: corridors.is_some(),
                 center,
                 radius,
                 heights: Arc::new(g),

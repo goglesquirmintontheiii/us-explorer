@@ -61,15 +61,16 @@ fn right(d: Vec2) -> Vec2 {
 /// How a vertex gets its height.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum H {
-    /// On the ground (terrain under roads is flattened to match), raised by `off`
-    /// where the terrain hasn't been flattened (coarse tiles, or roads that arrived late).
+    /// On the visible ground (levelled under roads), raised by `off` where the terrain
+    /// hasn't been levelled (coarse tiles, or roads that arrived late). For objects.
     Ground { off: f32 },
-    /// Like `Ground`, but the height is taken at another point (sidewalks and curbs use
-    /// the road edge, so they stay level with the road on side slopes).
+    /// Road surfaces: the natural ground at `at` (the centre line, so a road is level
+    /// across) plus `off`. Independent of how the terrain was levelled, so a road
+    /// crossing over another isn't pulled down to the lower one's cutting.
     GroundAt { at: Vec2, off: f32 },
-    /// Raised by `off`, of which the terrain carries only `fill` (cities don't build big
-    /// embankments: the rest is a structure standing on retaining walls).
-    Raised { off: f32, fill: f32 },
+    /// Like `GroundAt`, raised by `off`, of which the terrain carries only `fill` (cities
+    /// don't build big embankments: the rest is a structure on retaining walls).
+    Raised { at: Vec2, off: f32, fill: f32 },
     /// The terrain itself, ignoring any road offsets (foot of walls and piers).
     Terrain,
     /// On a bridge or tunnel deck, between two deck nodes.
@@ -112,6 +113,8 @@ pub mod flag {
     pub const DECK: u32 = 1 << 20;
     pub const TUNNEL_LIGHT: u32 = 1 << 21;
     pub const STEPS: u32 = 1 << 23;
+    /// Parking lots: surface, paint and islands (the kind in `uv2[0]`).
+    pub const LOT: u32 = 1 << 22;
     /// Inland water surface (lakes, rivers).
     pub const WATER: u32 = 1 << 24;
 }
@@ -135,14 +138,14 @@ pub struct Geom {
 }
 
 impl Geom {
-    fn push(&mut self, v: V) -> u32 {
+    pub(crate) fn push(&mut self, v: V) -> u32 {
         self.v.push(v);
         (self.v.len() - 1) as u32
     }
-    fn tri(&mut self, a: u32, b: u32, c: u32) {
+    pub(crate) fn tri(&mut self, a: u32, b: u32, c: u32) {
         self.i.extend_from_slice(&[a, b, c]);
     }
-    fn quad(&mut self, a: u32, b: u32, c: u32, d: u32) {
+    pub(crate) fn quad(&mut self, a: u32, b: u32, c: u32, d: u32) {
         // a-b across one row (left to right of travel), c-d the next row: counter-
         // clockwise seen from above (x east, z south, y up).
         self.i.extend_from_slice(&[a, b, c, b, d, c]);
@@ -212,6 +215,8 @@ pub enum PropKind {
     Crossbuck {
         lights: bool,
     },
+    /// Reserved (accessible) parking sign at the head of a stall.
+    ParkingSign,
 }
 
 #[derive(Clone, Debug)]
@@ -248,6 +253,17 @@ pub struct Corridor {
     /// Holds the deck height per point (absolute, from the coarse DEM).
     pub tunnel: Option<Vec<f32>>,
     pub bbox: (f64, f64, f64, f64), // s, w, n, e
+}
+
+/// A lake, reservoir or river area for the terrain to dig a bed under (elevation
+/// models record the water surface, so without this the water has no depth).
+#[derive(Clone, Debug)]
+pub struct Lake {
+    pub outer: Vec<Vec<(f64, f64)>>,
+    pub inner: Vec<Vec<(f64, f64)>>,
+    pub bbox: (f64, f64, f64, f64), // s, w, n, e
+    /// Deepest point, metres below the surface; the bed slopes down from the shore.
+    pub depth: f32,
 }
 
 /// Bridge and tunnel deck nodes, solved for height when draping.
@@ -297,6 +313,8 @@ pub struct Built {
     pub lanes: Vec<Lane>,
     /// Water areas touching the tile (for swimming), as in the OSM data.
     pub water: Vec<usx_core::osm::Area>,
+    /// The same areas as beds for the terrain.
+    pub lakes: Vec<Lake>,
     /// Sign text atlas requests: (text, style) per sign; resolved by the sign painter.
     pub stats: BuildStats,
 }
@@ -309,6 +327,7 @@ pub struct BuildStats {
     pub tunnels: usize,
     pub props: usize,
     pub vertices: usize,
+    pub parking_stalls: usize,
 }
 
 // ------------------------------------------------------------------ input model
@@ -482,7 +501,7 @@ fn normals(p: &[Vec2], n0: Option<Vec2>, n1: Option<Vec2>) -> Vec<(Vec2, f32)> {
         .collect()
 }
 
-fn hash64(mut x: u64) -> u64 {
+pub(crate) fn hash64(mut x: u64) -> u64 {
     x ^= x >> 33;
     x = x.wrapping_mul(0xff51afd7ed558ccd);
     x ^= x >> 33;
@@ -490,7 +509,7 @@ fn hash64(mut x: u64) -> u64 {
     x ^ (x >> 33)
 }
 
-fn hash01(x: u64) -> f32 {
+pub(crate) fn hash01(x: u64) -> f32 {
     (hash64(x) & 0xffffff) as f32 / 16_777_216.0
 }
 
@@ -538,7 +557,7 @@ fn lamp_layout(w: &RWay) -> (f32, f32, bool, u32) {
     (spacing, spacing * (0.5 + 0.125 * q as f32), major, 1 | (major as u32) << 1 | q << 2)
 }
 
-fn heading_of(d: Vec2) -> f32 {
+pub(crate) fn heading_of(d: Vec2) -> f32 {
     // x east, z south: heading clockwise from north.
     d.x.atan2(-d.y)
 }
@@ -1280,6 +1299,51 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
     let infer_lamps = |w: &RWay, p0: Vec2| {
         !lamps_mapped && w.class.vehicle() && w.class <= Class::Residential && !w.tunnel && (is_urban(p0) || w.tags.is("lit", "yes"))
     };
+    // One bridge, one look: a carriageway mapped as two ways (or split into pieces)
+    // shares the network's type and paint, and each piece only builds the parts on
+    // its outer side.
+    let mut net_ways: HashMap<u32, Vec<usize>> = HashMap::new();
+    let mut net_style: HashMap<u32, (BridgeKind, Option<[f32; 3]>)> = HashMap::new();
+    let rank = |k: BridgeKind| match k {
+        BridgeKind::Beam => 0,
+        BridgeKind::Truss => 1,
+        BridgeKind::Arch => 2,
+        BridgeKind::CableStayed => 3,
+        BridgeKind::Suspension => 4,
+    };
+    for (wi, w) in ways.iter().enumerate().filter(|(_, w)| w.bridge) {
+        let Some(net) = w.nodes.iter().find_map(|n| deck_node.get(n)).map(|&d| decks.net[d as usize]) else { continue };
+        net_ways.entry(net).or_default().push(wi);
+        let k = bridge_kind(w, net_len.get(net as usize).copied().unwrap_or(0.0));
+        let e = net_style.entry(net).or_insert((k, None));
+        if rank(k) > rank(e.0) {
+            e.0 = k;
+        }
+        if e.1.is_none() {
+            e.1 = bridge_paint(w);
+        }
+    }
+    // Distance to another piece of the same bridge on one side of a way (if within 45 m).
+    let inner_gap = |wi: usize, net: u32, m: Vec2, dir: Vec2, side: f32| -> Option<f32> {
+        let mut best: Option<f32> = None;
+        for &o in net_ways.get(&net).into_iter().flatten() {
+            if o == wi {
+                continue;
+            }
+            for q in ways[o].pts.windows(2) {
+                let ab = q[1] - q[0];
+                let t = ((m - q[0]).dot(ab) / ab.length_squared().max(1e-6)).clamp(0.0, 1.0);
+                let c = q[0] + ab * t;
+                let d = m.distance(c);
+                // Running alongside (roughly parallel), on this side.
+                if d < 45.0 && d > 1.0 && ab.normalize_or(Vec2::X).dot(dir).abs() > 0.8 && right(dir).dot(c - m) * side > 0.0 {
+                    best = Some(best.map_or(d, |b| b.min(d)));
+                }
+            }
+        }
+        best
+    };
+
     for s in &segs {
         let w = &ways[s.way as usize];
         let full = &w.pts[s.i0..=s.i1];
@@ -1344,20 +1408,21 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                     let t = if b > a { ((dd - a) / (b - a)).clamp(0.0, 1.0) } else { 0.0 };
                     match (deck_node.get(&node_ids[k - 1]), deck_node.get(&node_ids[k])) {
                         (Some(&na), Some(&nb)) => H::Deck { a: na, b: nb, t },
-                        _ => H::Ground { off: 0.0 },
+                        _ => H::GroundAt { at: pts[(d / len.max(1e-3) * (pts.len() - 1) as f32) as usize], off: 0.0 },
                     }
                 })
                 .collect()
         } else {
             along
                 .iter()
-                .map(|&d| {
+                .enumerate()
+                .map(|(r, &d)| {
                     let o = off_at(d);
-                    if o > fill_cap { H::Raised { off: o, fill: fill_cap } } else { H::Ground { off: o } }
+                    if o > fill_cap { H::Raised { at: pts[r], off: o, fill: fill_cap } } else { H::GroundAt { at: pts[r], off: o } }
                 })
                 .collect()
         };
-        let raised = |r: usize| matches!(hrule[r], H::Raised { off, fill } if off - fill > 0.3);
+        let raised = |r: usize| matches!(hrule[r], H::Raised { off, fill, .. } if off - fill > 0.3);
         let (swl, swr) = sidewalks(w, sidewalks_mapped, urban_here);
         let (curb_l, curb_r) = curbs(w, (swl, swr), sidewalks_mapped, urban_here);
         let sw_w = 1.8;
@@ -1402,7 +1467,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 off: hrule
                     .iter()
                     .map(|h| match *h {
-                        H::Ground { off } => off,
+                        H::Ground { off } | H::GroundAt { off, .. } => off,
                         H::Raised { fill, .. } => fill,
                         _ => 0.0,
                     })
@@ -1556,23 +1621,22 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         // Height for something at the road edge (sidewalks, curbs): level with the road.
         let edge_h = |r: usize, side: f32| -> H {
             match hrule[r] {
-                H::Ground { off } => H::GroundAt { at: row_pt(r, side * hwr[r]), off },
+                H::Ground { off } => H::GroundAt { at: pts[r], off },
                 h => h,
             }
         };
-        let paint = bridge_paint(w);
-        let kind = bridge_kind(
-            w,
-            net_len
-                .get(
-                    hrule
-                        .iter()
-                        .find_map(|h| if let H::Deck { a, .. } = h { Some(decks.net[*a as usize] as usize) } else { None })
-                        .unwrap_or(usize::MAX),
-                )
-                .copied()
-                .unwrap_or(len),
-        );
+        let my_net = hrule.iter().find_map(|h| if let H::Deck { a, .. } = h { Some(decks.net[*a as usize]) } else { None });
+        let (kind, paint) = match my_net.and_then(|n| net_style.get(&n)) {
+            Some(&(k, p)) => (k, p),
+            None => (bridge_kind(w, len), bridge_paint(w)),
+        };
+        // Which sides face out (another piece of the same bridge isn't alongside).
+        let gap_on = |side: f32| -> Option<f32> {
+            let (m, d) = (pts[rows / 2], (pts[rows - 1] - pts[0]).normalize_or(Vec2::X));
+            my_net.and_then(|n| inner_gap(s.way as usize, n, m, d, side))
+        };
+        let gaps = [gap_on(-1.0), gap_on(1.0)];
+        let outer = |side: f32| gaps[(side > 0.0) as usize].is_none();
         let u_of = |r: usize| -> f32 {
             match hrule[r] {
                 H::Deck { a, b, t } => deck_dist[a as usize] + (deck_dist[b as usize] - deck_dist[a as usize]) * t,
@@ -1766,6 +1830,9 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                     _ => [0.62, 0.62, 0.6],
                 }));
                 for side in [-1.0f32, 1.0] {
+                    if !outer(side) {
+                        continue;
+                    }
                     let x = move |r: usize| side * (edge_out(r, side) + 0.1);
                     match kind {
                         BridgeKind::Truss => {
@@ -1947,12 +2014,18 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 };
                 let half = hw + side_w(1.0).max(side_w(-1.0)) + 1.6;
                 let col = st_col;
+                // Beams reach the outer legs, or halfway to the other carriageway.
+                let reach = |side: f32| gaps[(side > 0.0) as usize].map(|g| g * 0.5).unwrap_or(half);
+                let (a, bb) = (reach(-1.0), reach(1.0));
                 put(p, &mut |g| {
                     for side in [-1.0f32, 1.0] {
-                        prism(g, p + right(dir) * side * half, dir, 1.6, 1.6, (H::Terrain, -1.0), (h, lift + ht), col);
+                        if outer(side) {
+                            prism(g, p + right(dir) * side * half, dir, 1.6, 1.6, (H::Terrain, -1.0), (h, lift + ht), col);
+                        }
                     }
+                    let mid = p + right(dir) * (bb - a) * 0.5;
                     for y in [lift - 3.0, lift + ht * 0.55, lift + ht - 3.0] {
-                        prism(g, p, right(dir), half, 1.2, (h, y - 1.5), (h, y), col);
+                        prism(g, mid, right(dir), (a + bb) * 0.5, 1.2, (h, y - 1.5), (h, y), col);
                     }
                 });
             }
@@ -1971,6 +2044,9 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                     let (p, dir, h, hw) = at_d(d);
                     let u = u_at(d);
                     for side in [-1.0f32, 1.0] {
+                        if !outer(side) {
+                            continue;
+                        }
                         let x = side * (hw + side_w(side) + 0.1);
                         let q = p + right(dir) * x;
                         match kind {
@@ -2085,10 +2161,10 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let w0 = &ways[segs[j0.arms[0].0].way as usize];
         let fl = flag::JUNCTION | (w0.surface as u32) << flag::SURFACE_SHIFT | (w0.smooth.min(7) as u32) << flag::SMOOTH_SHIFT;
         let pk = pack(elem::JUNCTION, (hash64(j0.node as u64) & 0xff) as u32, fl);
-        let h = H::Ground { off };
         let cid = chunk_of(c);
         let g = &mut chunks.entry(cid).or_insert_with(|| new_chunk(cid)).geom;
-        let mk = |p: Vec2| V { p, h, dy: lift - 0.004, uv: [p.x, p.y], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] };
+        let mk =
+            |p: Vec2| V { p, h: H::GroundAt { at: p, off }, dy: lift - 0.06, uv: [p.x, p.y], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] };
         let ci = g.push(mk(c));
         let ring: Vec<u32> = hull.iter().map(|&q| g.push(mk(q))).collect();
         for k in 0..ring.len() {
@@ -2109,10 +2185,23 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let h = if elevated {
             match deck_node.get(&j.node) {
                 Some(&n) => H::Deck { a: n, b: n, t: 0.0 },
-                None => H::Ground { off: 0.0 },
+                None => H::GroundAt { at: j.p, off: 0.0 },
             }
         } else {
-            H::Ground { off: node_off.get(&j.node).copied().unwrap_or(0.0) }
+            H::GroundAt { at: j.p, off: node_off.get(&j.node).copied().unwrap_or(0.0) }
+        };
+        // Ring points take the height of the arm they belong to, at that distance out,
+        // so the surface meets each road's end exactly on side slopes.
+        let h_for = |q: Vec2| -> H {
+            match h {
+                H::GroundAt { off, .. } => {
+                    let r = q - j.p;
+                    let best = j.arms.iter().max_by(|a, b| a.2.dot(r).total_cmp(&b.2.dot(r)));
+                    let at = best.map(|a| j.p + a.2 * a.2.dot(r).max(0.0)).unwrap_or(j.p);
+                    H::GroundAt { at, off }
+                }
+                other => other,
+            }
         };
         let fl = (flag::JUNCTION | (surface as u32) << flag::SURFACE_SHIFT | (smooth as u32) << flag::SMOOTH_SHIFT) as f32;
         let seed = (hash64(j.node as u64) & 0xfff) as u32;
@@ -2120,7 +2209,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let chunk = chunks.entry(cid).or_insert_with(|| new_chunk(cid));
         let g = &mut chunk.geom;
         let pk = pack(elem::JUNCTION, seed, fl as u32);
-        let mk = |p: Vec2| V { p, h, dy: lift, uv: [p.x, p.y], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] };
+        let mk = |p: Vec2| V { p, h: h_for(p), dy: lift, uv: [p.x, p.y], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] };
         let c = g.push(mk(j.p));
         let ring: Vec<u32> = j.poly.iter().map(|&q| g.push(mk(j.p + q))).collect();
         for k in 0..ring.len() {
@@ -2161,8 +2250,14 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 if n.dot(q - j.p) < 0.0 {
                     n = -n;
                 }
-                let mk =
-                    |p: Vec2, dy: f32, s: f32, pk: (f32, f32)| V { p, h, dy, uv: [s, along], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] };
+                let mk = |p: Vec2, dy: f32, s: f32, pk: (f32, f32)| V {
+                    p,
+                    h: h_for(q),
+                    dy,
+                    uv: [s, along],
+                    uv2: [0.0, pk.0],
+                    col: [0.0, 0.0, pk.1, 0.0],
+                };
                 let i0 = g.push(mk(q, lift + curb, 0.0, fl_sw));
                 let i1 = g.push(mk(q + n * width, lift + curb, width, fl_sw));
                 let c0 = g.push(mk(q, lift - 0.02, 0.0, fl_curb));
@@ -2186,8 +2281,14 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                 let ta = d.perp_dot(db) / cross;
                 let corner = j.p + pa + da * ta;
                 if corner.distance(j.p) < 40.0 && ta > 0.0 {
-                    let ci =
-                        g.push(V { p: corner, h, dy: lift + curb, uv: [width, 0.0], uv2: [0.0, fl_sw.0], col: [0.0, 0.0, fl_sw.1, 0.0] });
+                    let ci = g.push(V {
+                        p: corner,
+                        h: h_for(corner),
+                        dy: lift + curb,
+                        uv: [width, 0.0],
+                        uv2: [0.0, fl_sw.0],
+                        col: [0.0, 0.0, fl_sw.1, 0.0],
+                    });
                     for w in outer.windows(2) {
                         g.tri(ci, w[0], w[1]);
                     }
@@ -2214,10 +2315,15 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let chunk = chunks.entry(cid).or_insert_with(|| new_chunk(cid));
         let g = &mut chunk.geom;
         let fl = (flag::JUNCTION | (w.surface as u32) << flag::SURFACE_SHIFT) as f32;
-        let h = H::Ground { off: node_off.get(&nd.id).copied().unwrap_or(0.0) };
+        let off = node_off.get(&nd.id).copied().unwrap_or(0.0);
+        let arm_dir = {
+            let a = &n.arms[0];
+            let j = (a.idx as i64 + a.dir as i64) as usize;
+            (w.pts[j] - w.pts[a.idx as usize]).normalize_or(Vec2::X)
+        };
         let mk = |p: Vec2| V {
             p,
-            h,
+            h: H::GroundAt { at: n.p + arm_dir * (p - n.p).dot(arm_dir).max(0.0), off },
             dy: w.class.lift() - 0.003,
             uv: [p.x, p.y],
             uv2: [0.0, pack(elem::JUNCTION, 0, fl as u32).0],
@@ -2962,6 +3068,48 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
             }
         }
     }
+    // ---- surface parking lots
+    {
+        let (sw, ne) = (local.xz(ts, tw), local.xz(tn, te));
+        let bounds = (sw.x.min(ne.x), sw.x.max(ne.x), sw.y.min(ne.y), sw.y.max(ne.y));
+        let lots = super::parking::lots(osm, &local, bounds, &in_tile, &nearest_road);
+        stats.parking_stalls = lots.stalls;
+        for (c, pg) in lots.pieces {
+            let cid = chunk_of(c);
+            let g = &mut chunks.entry(cid).or_insert_with(|| new_chunk(cid)).geom;
+            let base = g.v.len() as u32;
+            g.v.extend(pg.v);
+            g.i.extend(pg.i.into_iter().map(|i| i + base));
+        }
+        props.extend(lots.props);
+    }
+    // Nothing stands in a roadway: objects that ended up on a road (exit signs on a
+    // junction node of another carriageway, lamps of crossing streets...) step out to
+    // the nearest edge.
+    for pr in props.iter_mut() {
+        if matches!(
+            pr.kind,
+            PropKind::Gantry { .. }
+                | PropKind::OverpassSign { .. }
+                | PropKind::Cone
+                | PropKind::Barrel
+                | PropKind::Guardrail { .. }
+                | PropKind::Bollard
+        ) || matches!(pr.h, H::Deck { .. })
+        {
+            continue;
+        }
+        if let Some((c, d, dir)) = nearest_road(pr.p)
+            && d < 0.4
+        {
+            let hw = c.distance(pr.p) - d;
+            let mut n = (pr.p - c).normalize_or(Vec2::ZERO);
+            if n == Vec2::ZERO {
+                n = right(dir);
+            }
+            pr.p = c + n * (hw + 1.3);
+        }
+    }
     stats.props = props.len();
     for p in props {
         let cid = chunk_of(p.p);
@@ -2977,6 +3125,7 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         let (x0, x1, z0, z1) = (sw.x.min(ne.x), sw.x.max(ne.x), sw.y.min(ne.y), sw.y.max(ne.y));
         let pk = pack(elem::JUNCTION, 0, flag::WATER);
         for area in osm.areas.iter().filter(|a| usx_core::osm::is_water(&a.tags)) {
+            let tint = water_tint(&area.tags, cla, clo, area.id);
             let ring = |r: &Vec<(f64, f64)>| -> Vec<Vec2> {
                 let mut v: Vec<Vec2> = r.iter().map(|&(a, b)| local.xz(a, b)).collect();
                 if v.len() > 1 && v[0].distance(v[v.len() - 1]) < 0.01 {
@@ -3081,7 +3230,14 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
                         let base = g.v.len() as u32;
                         for k in 0..flat.len() / 2 {
                             let p = Vec2::new(flat[2 * k], flat[2 * k + 1]);
-                            g.v.push(V { p, h: H::Terrain, dy: 0.22, uv: [p.x, p.y], uv2: [0.0, pk.0], col: [0.0, 0.0, pk.1, 0.0] });
+                            g.v.push(V {
+                                p,
+                                h: H::GroundAt { at: p, off: 0.0 },
+                                dy: 0.05,
+                                uv: [p.x, p.y],
+                                uv2: [0.0, pk.0],
+                                col: [tint[0], tint[1], pk.1, tint[2]],
+                            });
                         }
                         for t in tris.chunks_exact(3) {
                             g.tri(base + t[0] as u32, base + t[1] as u32, base + t[2] as u32);
@@ -3116,7 +3272,33 @@ pub fn build(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<f64>)
         stats.vertices += c.geom.v.len();
     }
     let water: Vec<usx_core::osm::Area> = osm.areas.iter().filter(|a| usx_core::osm::is_water(&a.tags)).cloned().collect();
-    Built { tile, local, chunks: out_chunks, decks, corridors, controllers, lanes, water, stats }
+    let lakes: Vec<Lake> = water
+        .iter()
+        .map(|a| {
+            let (mut s0, mut w0, mut n0, mut e0) = (90.0f64, 180.0f64, -90.0f64, -180.0f64);
+            let mut area_m2 = 0.0f64;
+            for r in &a.outer {
+                for &(la, lo) in r {
+                    s0 = s0.min(la);
+                    n0 = n0.max(la);
+                    w0 = w0.min(lo);
+                    e0 = e0.max(lo);
+                }
+                let pts: Vec<Vec2> = r.iter().map(|&(la, lo)| local.xz(la, lo)).collect();
+                area_m2 += pts.windows(2).map(|q| q[0].perp_dot(q[1]) as f64).sum::<f64>().abs() * 0.5;
+            }
+            // Rivers are shallower than lakes of the same size.
+            let river = a.tags.is("water", "river") || a.tags.is("waterway", "riverbank") || a.tags.is("water", "canal");
+            let k = if river { 0.012 } else { 0.02 };
+            Lake {
+                outer: a.outer.clone(),
+                inner: a.inner.clone(),
+                bbox: (s0, w0, n0, e0),
+                depth: ((area_m2.sqrt() * k) as f32).clamp(1.5, if river { 6.0 } else { 18.0 }),
+            }
+        })
+        .collect();
+    Built { tile, local, chunks: out_chunks, decks, corridors, controllers, lanes, water, lakes, stats }
 }
 
 fn default_stats() -> BuildStats {
@@ -3168,7 +3350,42 @@ fn sidewalks(w: &RWay, mapped: bool, urban: bool) -> (bool, bool) {
     (on, on)
 }
 
-fn point_in_ring(r: &[Vec2], p: Vec2) -> bool {
+/// Water colour (linear RGB of the water body seen from above) by region and type:
+/// tea-brown blackwater in the Southeast, green lakes on the farm belt, clear blue in
+/// the mountains and desert reservoirs, silty rivers.
+pub fn water_tint(t: &Tags, lat: f64, lon: f64, id: i64) -> [f32; 3] {
+    let mut c: [f32; 3] = if lon < -114.0 && lat > 42.0 {
+        [0.018, 0.055, 0.065] // Pacific Northwest
+    } else if lon < -103.0 && lat < 37.5 {
+        [0.015, 0.05, 0.10] // desert Southwest reservoirs
+    } else if lon < -104.0 {
+        [0.02, 0.06, 0.09] // mountain West
+    } else if lat < 35.5 && lon > -98.0 {
+        [0.055, 0.06, 0.035] // Southeast blackwater and Gulf coast
+    } else if lon > -80.0 && lat > 38.0 {
+        [0.03, 0.055, 0.06] // Northeast
+    } else {
+        [0.04, 0.075, 0.05] // Plains and Midwest
+    };
+    let mix = |c: &mut [f32; 3], o: [f32; 3], k: f32| {
+        for i in 0..3 {
+            c[i] = c[i] * (1.0 - k) + o[i] * k;
+        }
+    };
+    if t.is("water", "river") || t.is("waterway", "riverbank") || t.is("water", "canal") {
+        mix(&mut c, [0.085, 0.075, 0.048], 0.45); // silt
+    } else if t.is("water", "pond") || t.is("landuse", "basin") || t.is("water", "wastewater") || t.is("water", "basin") {
+        mix(&mut c, [0.045, 0.08, 0.035], 0.5); // algae
+    } else if t.is("water", "reservoir") || t.is("landuse", "reservoir") {
+        mix(&mut c, [0.015, 0.05, 0.09], 0.3);
+    } else if t.is("water", "lagoon") {
+        mix(&mut c, [0.03, 0.09, 0.09], 0.5);
+    }
+    let v = 0.85 + 0.3 * hash01(id as u64 ^ 0x3a7e);
+    c.map(|x| x * v)
+}
+
+pub(crate) fn point_in_ring(r: &[Vec2], p: Vec2) -> bool {
     let mut c = false;
     let n = r.len();
     let mut j = n - 1;
@@ -3183,7 +3400,7 @@ fn point_in_ring(r: &[Vec2], p: Vec2) -> bool {
 }
 
 /// Sutherland-Hodgman: a ring clipped to an axis-aligned rectangle.
-fn clip_rect(r: &[Vec2], x0: f32, z0: f32, x1: f32, z1: f32) -> Vec<Vec2> {
+pub(crate) fn clip_rect(r: &[Vec2], x0: f32, z0: f32, x1: f32, z1: f32) -> Vec<Vec2> {
     let mut out: Vec<Vec2> = r.to_vec();
     let planes: [(Vec2, f32); 4] = [(Vec2::X, x0), (-Vec2::X, -x1), (Vec2::Y, z0), (-Vec2::Y, -z1)];
     for (n, d) in planes {
@@ -3329,7 +3546,7 @@ fn cable_dy(u: f32, l: f32, hw: f32) -> f32 {
 
 /// A box with its long axis along `dir`: half length `hl`, half width `hw`, from
 /// `bottom` to `top` (height rules with an extra lift each).
-fn prism(g: &mut Geom, c: Vec2, dir: Vec2, hl: f32, hw: f32, bottom: (H, f32), top: (H, f32), color: Option<[f32; 3]>) {
+pub(crate) fn prism(g: &mut Geom, c: Vec2, dir: Vec2, hl: f32, hw: f32, bottom: (H, f32), top: (H, f32), color: Option<[f32; 3]>) {
     let r = right(dir);
     let corners = [c + dir * hl + r * hw, c + dir * hl - r * hw, c - dir * hl - r * hw, c - dir * hl + r * hw];
     let pk = pack(elem::STRUCTURE, 0, flag::STRUCTURE);
@@ -3629,7 +3846,7 @@ mod fixture_tests {
             if let Ok(seed) = std::env::var("USX_SEED_CACHE") {
                 for (dx, dy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
                     let child = TileId { z: 15, x: tile.x * 2 + dx, y: tile.y * 2 + dy };
-                    let path = std::path::Path::new(&seed).join(format!("osm/v2/{}.bin", child.path()));
+                    let path = std::path::Path::new(&seed).join(format!("osm/v3/{}.bin", child.path()));
                     std::fs::create_dir_all(path.parent().unwrap()).unwrap();
                     std::fs::write(path, &bin).unwrap();
                 }

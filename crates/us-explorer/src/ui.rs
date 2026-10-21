@@ -42,11 +42,17 @@ pub struct Menus {
     pub typing: bool,
     /// Waiting for a key press to bind to this action.
     rebinding: Option<Action>,
+    /// The title screen is up (set by the title module).
+    pub title: bool,
 }
 
 impl Menus {
     pub fn any_open(&self) -> bool {
-        self.pause || self.teleport || self.settings || self.credits || self.region
+        self.pause || self.teleport || self.settings || self.credits || self.region || self.title
+    }
+    /// Start editing a copy of the settings in the Settings window.
+    pub fn open_settings_draft(&mut self, s: &usx_core::settings::Settings) {
+        self.draft = Some(s.clone());
     }
 }
 
@@ -99,7 +105,7 @@ fn hotkeys(
             menus.settings = false;
             menus.credits = false;
             menus.region = false;
-        } else {
+        } else if !menus.title {
             menus.pause = !menus.pause;
         }
     }
@@ -164,6 +170,7 @@ struct World<'w> {
     terrain: ResMut<'w, Terrain>,
     stats: Res<'w, TerrainStats>,
     roads: Res<'w, crate::roads::RoadStats>,
+    bstats: Res<'w, crate::buildings::BuildingStats>,
     sysinfo: Option<Res<'w, bevy::diagnostic::SystemInfo>>,
     adapter: Option<Res<'w, bevy::render::renderer::RenderAdapterInfo>>,
     link: Res<'w, WeatherLink>,
@@ -191,7 +198,7 @@ fn draw(
     o: Out,
     mut commands: Commands,
 ) -> Result {
-    let World { viewer, player, mut terrain, stats, roads, sysinfo, adapter, link, mut region, mut clock, diagnostics, map } = w;
+    let World { viewer, player, mut terrain, stats, roads, bstats, sysinfo, adapter, link, mut region, mut clock, diagnostics, map } = w;
     let Out { mut blocked, mut lock, mut tp, mut exit } = o;
     let ctx = contexts.ctx_mut()?;
     let units = settings.0.units;
@@ -268,7 +275,8 @@ fn draw(
                     ));
                 }
                 if let Some(a) = &adapter {
-                    ui.label(format!("GPU {} ({:?}, {:?})", a.0.name, a.0.backend, a.0.device_type));
+                    let busy = crate::gpu_usage::percent().map(|v| format!(" · {v}% busy")).unwrap_or_default();
+                    ui.label(format!("GPU {} ({:?}, {:?}){busy}", a.0.name, a.0.backend, a.0.device_type));
                 }
                 let r = &*roads;
                 if r.tiles_ready + r.tiles_loading > 0 {
@@ -279,6 +287,18 @@ fn draw(
                         r.chunks_drawn,
                         r.props,
                         if r.jobs > 0 { format!(", {} jobs", r.jobs) } else { String::new() }
+                    ));
+                }
+                let b = &*bstats;
+                if b.tiles_ready + b.tiles_loading > 0 {
+                    ui.label(format!(
+                        "buildings {} tiles{}, {} chunks, {} buildings, {} detailed, {} interiors",
+                        b.tiles_ready,
+                        if b.tiles_loading > 0 { format!(" (+{} loading)", b.tiles_loading) } else { String::new() },
+                        b.chunks_drawn,
+                        b.buildings,
+                        b.detailed,
+                        b.interiors
                     ));
                 }
                 ui.label(match &link.state {
@@ -316,11 +336,11 @@ fn draw(
     }
 
     // Controls hint.
-    if !menus.pause && !map.open {
+    if !menus.pause && !map.open && !menus.title {
         egui::Area::new("hint".into()).anchor(egui::Align2::LEFT_BOTTOM, [10.0, -10.0]).interactable(false).show(ctx, |ui| {
             egui::Frame::new().fill(egui::Color32::from_black_alpha(120)).inner_margin(egui::Margin::symmetric(8, 4)).corner_radius(4.0).show(ui, |ui| {
                 ui.visuals_mut().override_text_color = Some(egui::Color32::from_gray(225));
-                ui.small("Click to look · WASD move · Space jump (double-tap: fly) · Shift down · Ctrl sprint · wheel fly speed · V camera · M map · T go to · B bookmark · Esc menu · F3 info");
+                ui.small("Click to look · Right-click use · WASD move · Space jump (double-tap: fly) · Shift down · Ctrl sprint · wheel fly speed · V camera · M map · T go to · B bookmark · Esc menu · F3 info");
             });
         });
     }
@@ -499,6 +519,9 @@ fn draw(
                         ui.label("Roads");
                         ui.checkbox(&mut draft.roads, "Roads, bridges and street furniture (OpenStreetMap)");
                         ui.end_row();
+                        ui.label("Buildings");
+                        ui.checkbox(&mut draft.buildings, "Buildings with interiors, doors and furniture (OpenStreetMap)");
+                        ui.end_row();
                         ui.label("Units");
                         ui.horizontal(|ui| {
                             ui.radio_value(&mut draft.units, Units::Imperial, "Imperial");
@@ -672,7 +695,7 @@ fn draw(
             .default_pos(ctx.content_rect().center())
             .default_width(380.0)
             .show(ctx, |ui| {
-                ui.label("Save the area around you to the cache so it works without a connection: imagery, elevation (lidar from detail 17) and roads.");
+                ui.label("Save the area around you to the cache so it works without a connection: imagery, elevation (lidar from detail 17), roads and buildings.");
                 ui.add(egui::Slider::new(&mut menus.region_radius_km, 1.0..=60.0).text("radius (km)"));
                 ui.add(egui::Slider::new(&mut menus.region_zoom, 12..=19).text("detail (zoom level)"));
                 let plan = RegionDownload::plan(geo.lat, geo.lon, menus.region_radius_km, menus.region_zoom);
@@ -766,9 +789,10 @@ fn draw(
 
     let any_menu = menus.any_open();
     menus.typing = ctx.egui_wants_keyboard_input();
-    blocked.keyboard = menus.typing || menus.teleport || menus.rebinding.is_some();
+    blocked.keyboard = menus.typing || menus.teleport || menus.title || menus.rebinding.is_some();
     blocked.pointer = ctx.is_pointer_over_egui() || ctx.egui_wants_pointer_input();
-    if any_menu {
+    // The full map wants the pointer too.
+    if any_menu || map.open {
         lock.0 = false;
     }
     Ok(())

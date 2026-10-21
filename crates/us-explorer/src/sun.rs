@@ -79,6 +79,9 @@ fn place_sun(
     mut q: Query<&mut Transform, With<Sun>>,
     mut cams: Query<&mut Exposure, With<crate::camera::MainCamera>>,
     ambient: Option<ResMut<GlobalAmbientLight>>,
+    inside: Option<Res<crate::buildings::interior::Inside>>,
+    time: Res<Time>,
+    mut indoor: Local<f32>,
 ) {
     let dir = origin.frame.dir_to_local(sun_dir_ecef(clock.time())).as_vec3();
     for mut t in &mut q {
@@ -88,8 +91,12 @@ fn place_sun(
     // dusk through civil and nautical twilight, then a moonlit night that stays readable
     // until real night lighting (moon, stars, street lights) arrives in Phase 5.
     let elev = dir.y.asin().to_degrees();
-    let ev = night_ev(elev);
-    let dark = ((13.5 - ev) / 10.5).clamp(0.0, 1.0);
+    let ev_sky = night_ev(elev);
+    let dark = ((13.5 - ev_sky) / 10.5).clamp(0.0, 1.0);
+    // Indoors your eyes adapt to room light (about EV 9) over a couple of seconds.
+    let target = if inside.is_some_and(|i| i.0.is_some()) { 1.0 } else { 0.0 };
+    *indoor += (target - *indoor) * (time.delta_secs() * 1.5).min(1.0);
+    let ev = ev_sky + (ev_sky.min(9.0) - ev_sky) * *indoor;
     if (day_night.dark - dark).abs() > 0.002 || (day_night.elevation - elev).abs() > 0.05 {
         *day_night = DayNight { elevation: elev, dark };
     }

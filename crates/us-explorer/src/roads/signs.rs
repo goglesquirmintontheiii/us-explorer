@@ -416,6 +416,57 @@ pub fn speed_limit(mph: u32) -> Face {
     Face { canvas: c, w_m, h_m }
 }
 
+/// R7-8: "RESERVED PARKING" in green over the blue accessibility symbol.
+pub fn accessible_parking() -> Face {
+    let (w_m, h_m) = (0.3, 0.45);
+    let (w, h) = (px(w_m), px(h_m));
+    let (wf, hf) = (w as f32, h as f32);
+    let mut c = Canvas::new(w, h);
+    c.round_rect(0.0, 0.0, wf, hf, 5.0, WHITE);
+    c.round_rect(3.0, 3.0, wf - 6.0, hf - 6.0, 4.0, GREEN);
+    c.round_rect(6.0, 6.0, wf - 12.0, hf - 12.0, 3.0, WHITE);
+    c.text(wf * 0.5, hf * 0.14, wf * 0.8, hf * 0.11, "RESERVED", GREEN);
+    c.text(wf * 0.5, hf * 0.27, wf * 0.8, hf * 0.11, "PARKING", GREEN);
+    // The blue square with the wheelchair symbol.
+    let s = wf * 0.62;
+    let (x0, y0) = (wf * 0.5 - s * 0.5, hf * 0.38);
+    c.rect(x0 as i32, y0 as i32, s as i32, s as i32, BLUE);
+    accessibility_symbol(&mut c, x0 + s * 0.5, y0 + s * 0.5, s * 0.8, WHITE, BLUE);
+    Face { canvas: c, w_m, h_m }
+}
+
+fn disc(c: &mut Canvas, cx: f32, cy: f32, r: f32, col: Rgba) {
+    let pts: Vec<(f32, f32)> = (0..24)
+        .map(|k| {
+            let a = k as f32 / 24.0 * std::f32::consts::TAU;
+            (cx + r * a.cos(), cy + r * a.sin())
+        })
+        .collect();
+    c.poly(0, 0, &pts, col);
+}
+
+fn bar(c: &mut Canvas, a: (f32, f32), b: (f32, f32), w: f32, col: Rgba) {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let l = (dx * dx + dy * dy).sqrt().max(1e-3);
+    let (nx, ny) = (-dy / l * w * 0.5, dx / l * w * 0.5);
+    c.poly(0, 0, &[(a.0 + nx, a.1 + ny), (b.0 + nx, b.1 + ny), (b.0 - nx, b.1 - ny), (a.0 - nx, a.1 - ny)], col);
+}
+
+/// The International Symbol of Access, `s` pixels tall, centred.
+pub fn accessibility_symbol(c: &mut Canvas, cx: f32, cy: f32, s: f32, fg: Rgba, bg: Rgba) {
+    let u = s / 10.0;
+    let (ox, oy) = (cx - 0.2 * u, cy);
+    // Wheel.
+    disc(c, ox + 0.2 * u, oy + 1.6 * u, 3.0 * u, fg);
+    disc(c, ox + 0.2 * u, oy + 1.6 * u, 2.25 * u, bg);
+    // Head, back, seat, leg.
+    disc(c, ox - 0.4 * u, oy - 4.0 * u, 0.95 * u, fg);
+    bar(c, (ox - 0.6 * u, oy - 2.6 * u), (ox - 0.3 * u, oy + 0.9 * u), 1.0 * u, fg);
+    bar(c, (ox - 0.3 * u, oy + 0.9 * u), (ox + 2.4 * u, oy + 0.9 * u), 1.0 * u, fg);
+    bar(c, (ox + 2.4 * u, oy + 0.9 * u), (ox + 3.6 * u, oy + 3.9 * u), 0.9 * u, fg);
+    bar(c, (ox - 0.5 * u, oy - 1.2 * u), (ox + 1.8 * u, oy - 1.2 * u), 0.8 * u, fg);
+}
+
 pub fn bus_stop() -> Face {
     let (w_m, h_m) = (0.45, 0.6);
     let (w, h) = (px(w_m), px(h_m));

@@ -2,15 +2,18 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 mod body;
+mod buildings;
 mod camera;
 mod controls;
 mod globe;
+mod gpu_usage;
 mod map;
 mod player;
 mod roads;
 mod shot;
 mod sun;
 mod terrain;
+mod title;
 mod ui;
 mod updater;
 mod walkable;
@@ -87,6 +90,10 @@ fn main() {
     let (w, h) = args.window.unwrap_or((1600, 900));
 
     let mut app = App::new();
+    // Landmark models come from their own folder (see buildings::landmark).
+    let landmarks = buildings::landmark::dir();
+    let _ = std::fs::create_dir_all(&landmarks);
+    app.register_asset_source("landmarks", bevy::asset::io::AssetSourceBuilder::platform_default(&landmarks.to_string_lossy(), None));
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
@@ -119,6 +126,11 @@ fn main() {
         ui::UiPlugin,
         shot::ShotPlugin,
     ));
-    app.add_plugins((roads::RoadsPlugin, bevy::diagnostic::SystemInformationDiagnosticsPlugin));
+    app.add_plugins((
+        roads::RoadsPlugin,
+        buildings::BuildingsPlugin,
+        bevy::diagnostic::SystemInformationDiagnosticsPlugin,
+        title::TitlePlugin,
+    ));
     app.run();
 }

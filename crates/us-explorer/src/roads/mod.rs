@@ -9,6 +9,7 @@ pub mod build;
 pub mod classify;
 pub mod drape;
 pub mod material;
+pub mod parking;
 pub mod props;
 pub mod signs;
 
@@ -46,22 +47,51 @@ const MAX_AGL_M: f64 = 1_500.0;
 
 // ------------------------------------------------------------------ corridors
 
-type CorridorMap = (HashMap<TileId, Arc<Vec<Corridor>>>, VecDeque<TileId>);
+/// What a road tile asks of the terrain: corridors to level and lakes to dig out.
+pub type ConformData = (Vec<Corridor>, Vec<build::Lake>);
+type CorridorMap = (HashMap<TileId, Arc<ConformData>>, VecDeque<TileId>);
 
 fn corridors() -> &'static RwLock<CorridorMap> {
     static C: OnceLock<RwLock<CorridorMap>> = OnceLock::new();
     C.get_or_init(|| RwLock::new((HashMap::new(), VecDeque::new())))
 }
 
-/// Road corridors covering a terrain tile, once that area's roads are known.
-pub fn corridors_for(id: TileId) -> Option<Arc<Vec<Corridor>>> {
+/// Road corridors and lakes covering a terrain tile, once that area's roads are known.
+/// Includes the neighbouring road tiles' corridors that reach into it (roads just
+/// across a tile border are wide enough to matter).
+pub fn corridors_for(id: TileId) -> Option<Arc<ConformData>> {
     if id.z < osm::ZOOM {
         return None;
     }
-    corridors().read().ok()?.0.get(&id.ancestor(osm::ZOOM)).cloned()
+    let m = corridors().read().ok()?;
+    let own = id.ancestor(osm::ZOOM);
+    let base = m.0.get(&own)?.clone();
+    let (w, s, e, n) = id.bounds();
+    let pad = 0.0006;
+    let hits = |b: (f64, f64, f64, f64)| !(b.0 > n + pad || b.2 < s - pad || b.1 > e + pad || b.3 < w - pad);
+    let mut out: Option<ConformData> = None;
+    for dy in -1i64..=1 {
+        for dx in -1i64..=1 {
+            if dx == 0 && dy == 0 {
+                continue;
+            }
+            let (x, y) = (own.x as i64 + dx, own.y as i64 + dy);
+            if x < 0 || y < 0 {
+                continue;
+            }
+            let Some(other) = m.0.get(&TileId::new(own.z, x as u32, y as u32)) else { continue };
+            for c in other.0.iter().filter(|c| hits(c.bbox)) {
+                out.get_or_insert_with(|| (base.0.clone(), base.1.clone())).0.push(c.clone());
+            }
+            for l in other.1.iter().filter(|l| hits(l.bbox)) {
+                out.get_or_insert_with(|| (base.0.clone(), base.1.clone())).1.push(l.clone());
+            }
+        }
+    }
+    Some(out.map(Arc::new).unwrap_or(base))
 }
 
-fn set_corridors(id: TileId, c: Arc<Vec<Corridor>>) {
+fn set_corridors(id: TileId, c: Arc<ConformData>) {
     let Ok(mut m) = corridors().write() else { return };
     if m.0.insert(id, c).is_none() {
         m.1.push_back(id);
@@ -220,7 +250,16 @@ fn setup(
 ) {
     let Some((fetch, work)) = holder.0.take() else { return };
     let material = mats.add(RoadMaterial {
-        base: StandardMaterial { perceptual_roughness: 0.9, reflectance: 0.3, cull_mode: None, double_sided: true, ..default() },
+        base: StandardMaterial {
+            perceptual_roughness: 0.9,
+            reflectance: 0.3,
+            cull_mode: None,
+            double_sided: true,
+            // Win depth ties with the terrain under it, by a margin that grows with
+            // distance (coarse terrain far away is only roughly levelled).
+            depth_bias: 30_000.0,
+            ..default()
+        },
         extension: RoadExt { params: RoadParams::default() },
     });
     commands.insert_resource(Roads {
@@ -400,7 +439,7 @@ fn receive(
                     p.built.stats.props,
                     p.built.stats.vertices
                 );
-                set_corridors(id, Arc::new(p.built.corridors.clone()));
+                set_corridors(id, Arc::new((p.built.corridors.clone(), p.built.lakes.clone())));
                 if !p.built.water.is_empty() {
                     water.tiles.insert(id, p.built.water.clone());
                 }

@@ -24,17 +24,14 @@ pub struct Draped {
 
 /// Deck heights for every bridge/tunnel node of the tile, against this snapshot.
 fn deck_heights(b: &Built, snap: &HeightSnap) -> Vec<f32> {
-    let ground = |i: usize| {
-        let (la, lo) = b.local.ll(b.decks.p[i]);
-        snap.ground(la, lo).map(|(h, c)| (h as f32, c))
-    };
-    let g: Vec<Option<(f32, bool)>> = (0..b.decks.p.len()).map(ground).collect();
-    solve_decks(
-        &b.decks,
-        &|i| g[i].map(|x| x.0).unwrap_or(0.0),
-        // Ground already levelled (and filled) under roads: the offset is in the terrain.
-        &|i| if g[i].is_some_and(|x| x.1) { 0.0 } else { b.decks.off[i] },
-    )
+    // From the natural ground, as the roads leading onto the decks are.
+    let g: Vec<Option<f32>> = (0..b.decks.p.len())
+        .map(|i| {
+            let (la, lo) = b.local.ll(b.decks.p[i]);
+            snap.natural(la, lo).map(|h| h as f32)
+        })
+        .collect();
+    solve_decks(&b.decks, &|i| g[i].unwrap_or(0.0), &|i| b.decks.off[i])
 }
 
 pub fn drape(b: &Built, chunk: usize, snap: &HeightSnap) -> Option<Draped> {
@@ -56,13 +53,9 @@ pub fn drape(b: &Built, chunk: usize, snap: &HeightSnap) -> Option<Draped> {
                 let (g, conformed) = ground(p)?;
                 g + if conformed { 0.0 } else { off as f64 }
             }
-            H::GroundAt { at, off } => {
-                let (g, conformed) = ground(at)?;
-                g + if conformed { 0.0 } else { off as f64 }
-            }
-            H::Raised { off, fill } => {
-                let (g, conformed) = ground(p)?;
-                g + if conformed { (off - fill) as f64 } else { off as f64 }
+            H::GroundAt { at, off } | H::Raised { at, off, .. } => {
+                let (la, lo) = b.local.ll(at);
+                snap.natural(la, lo)? + off as f64
             }
             H::Terrain => ground(p)?.0,
             H::Deck { a, b: bb, t } => {

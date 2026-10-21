@@ -97,6 +97,45 @@ const KEEP: &[&str] = &[
     "landuse",
     "intermittent",
     "type",
+    "parking",
+    "capacity",
+    "capacity:disabled",
+    "building",
+    "building:part",
+    "building:levels",
+    "building:levels:underground",
+    "building:min_level",
+    "building:colour",
+    "building:material",
+    "building:use",
+    "levels",
+    "min_level",
+    "max_level",
+    "repeat_on",
+    "height",
+    "min_height",
+    "roof:shape",
+    "roof:height",
+    "roof:levels",
+    "roof:colour",
+    "roof:material",
+    "roof:orientation",
+    "roof:direction",
+    "roof:angle",
+    "shop",
+    "cuisine",
+    "office",
+    "craft",
+    "tourism",
+    "leisure",
+    "healthcare",
+    "religion",
+    "entrance",
+    "door",
+    "indoor",
+    "wikidata",
+    "start_date",
+    "historic",
 ];
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -153,6 +192,37 @@ pub struct OsmTile {
     pub areas: Vec<Area>,
 }
 
+/// Which kind of data a tile holds (they're fetched and cached separately).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Layer {
+    /// Roads, railways, roadside objects, water, parking lots.
+    Roads,
+    /// Buildings and building parts, entrances, indoor mapping, and the shops and
+    /// amenities that say what a building is used for.
+    Buildings,
+}
+
+/// A surface parking lot (or any parking area) drawn as an area.
+pub fn is_parking(t: &Tags) -> bool {
+    t.is("amenity", "parking") && t.get("highway").is_none()
+}
+
+pub fn is_building(t: &Tags) -> bool {
+    t.get("building").is_some_and(|v| v != "no") || t.get("building:part").is_some_and(|v| v != "no")
+}
+
+pub fn is_indoor(t: &Tags) -> bool {
+    t.get("indoor").is_some_and(|v| matches!(v, "room" | "corridor" | "area" | "level"))
+}
+
+/// Closed ways and multipolygons kept as areas for a layer.
+pub fn is_area(t: &Tags, layer: Layer) -> bool {
+    match layer {
+        Layer::Roads => is_water(t) || is_parking(t),
+        Layer::Buildings => is_building(t) || is_indoor(t),
+    }
+}
+
 /// Whether tags describe standing or flowing water drawn as a surface.
 pub fn is_water(t: &Tags) -> bool {
     t.is("natural", "water")
@@ -175,6 +245,7 @@ way[railway~\"^(rail|light_rail|subway|tram|narrow_gauge|monorail)$\"]({b});\
 way[barrier=guard_rail]({b});\
 way[power=minor_line]({b});\
 way[natural=water]({b});way[waterway=riverbank]({b});way[landuse=reservoir]({b});\
+way[amenity=parking]({b});relation[amenity=parking](if:count_members()<100)({b});\
 relation[natural=water](if:count_members()<250)({b});\
 relation[waterway=riverbank](if:count_members()<250)({b});\
 relation[landuse=reservoir](if:count_members()<250)({b});\
@@ -186,6 +257,25 @@ node[power=pole]({b});\
 node[man_made=surveillance]({b});\
 node[barrier~\"^(bollard|traffic_cone)$\"]({b});\
 node[highway=motorway_junction]({wide});\
+);out body geom qt;"
+    )
+}
+
+/// The Overpass QL for one tile's buildings: footprints and parts (whole, even where
+/// they cross the tile edge), entrances, indoor mapping, and the points of interest
+/// that say what each building is used for.
+pub fn query_buildings(id: TileId) -> String {
+    let (w, s, e, n) = id.bounds();
+    let b = format!("{s:.6},{w:.6},{n:.6},{e:.6}");
+    format!(
+        "[out:json][timeout:90];(\
+way[building]({b});\
+relation[building](if:count_members()<400)({b});\
+way[\"building:part\"]({b});\
+relation[\"building:part\"](if:count_members()<200)({b});\
+way[indoor~\"^(room|corridor|area|level)$\"]({b});\
+node[entrance]({b});node[door]({b});\
+node[shop]({b});node[amenity]({b});node[office]({b});node[craft]({b});node[tourism]({b});node[healthcare]({b});\
 );out body geom qt;"
     )
 }
@@ -257,8 +347,13 @@ fn assemble(mut pieces: Vec<Vec<(f64, f64)>>) -> Vec<Vec<(f64, f64)>> {
     rings
 }
 
-/// Parse an Overpass JSON answer.
+/// Parse an Overpass JSON answer (road layer).
 pub fn parse(json: &[u8]) -> Result<OsmTile, String> {
+    parse_layer(json, Layer::Roads)
+}
+
+/// Parse an Overpass JSON answer for a layer.
+pub fn parse_layer(json: &[u8], layer: Layer) -> Result<OsmTile, String> {
     let r: OpResponse = serde_json::from_slice(json).map_err(|e| format!("bad Overpass answer: {e}"))?;
     let mut out = OsmTile::default();
     for el in r.elements {
@@ -280,10 +375,13 @@ pub fn parse(json: &[u8]) -> Result<OsmTile, String> {
                         pts.push((p.lat, p.lon));
                     }
                 }
-                if is_water(&tags) && tags.get("highway").is_none() {
+                if is_area(&tags, layer) && tags.get("highway").is_none() {
                     if pts.len() >= 4 && el.nodes.first() == el.nodes.last() && pts.len() == el.nodes.len() {
                         out.areas.push(Area { id: el.id, outer: vec![pts], inner: Vec::new(), tags });
                     }
+                    continue;
+                }
+                if layer == Layer::Buildings {
                     continue;
                 }
                 if pts.len() >= 2 {
@@ -292,7 +390,7 @@ pub fn parse(json: &[u8]) -> Result<OsmTile, String> {
             }
             "relation" => {
                 let tags = keep_tags(el.tags);
-                if !is_water(&tags) {
+                if !is_area(&tags, layer) {
                     continue;
                 }
                 let (mut outer, mut inner) = (Vec::new(), Vec::new());
@@ -316,6 +414,10 @@ pub fn parse(json: &[u8]) -> Result<OsmTile, String> {
 
 /// Parse an OpenStreetMap API `map` answer (XML), keeping what the Overpass query would.
 pub fn parse_osm_xml(xml: &[u8]) -> Result<OsmTile, String> {
+    parse_osm_xml_layer(xml, Layer::Roads)
+}
+
+pub fn parse_osm_xml_layer(xml: &[u8], layer: Layer) -> Result<OsmTile, String> {
     use quick_xml::events::Event;
     let mut rd = quick_xml::Reader::from_reader(xml);
     let mut buf = Vec::new();
@@ -392,10 +494,10 @@ pub fn parse_osm_xml(xml: &[u8]) -> Result<OsmTile, String> {
         buf.clear();
     }
     let wanted_way = |t: &Tags| {
-        t.get("highway").is_some()
+        layer == Layer::Roads && t.get("highway").is_some()
             || t.get("railway").is_some_and(|r| matches!(r, "rail" | "light_rail" | "subway" | "tram" | "narrow_gauge" | "monorail"))
-            || t.is("barrier", "guard_rail")
-            || t.is("power", "minor_line")
+            || layer == Layer::Roads && t.is("barrier", "guard_rail")
+            || layer == Layer::Roads && t.is("power", "minor_line")
     };
     let mut out = OsmTile { nodes, ..Default::default() };
     let mut way_geom: HashMap<i64, Vec<(f64, f64)>> = HashMap::new();
@@ -404,7 +506,7 @@ pub fn parse_osm_xml(xml: &[u8]) -> Result<OsmTile, String> {
         if pts.len() != nds.len() || pts.len() < 2 {
             continue;
         }
-        if is_water(&tags) {
+        if is_area(&tags, layer) {
             if nds.first() == nds.last() && pts.len() >= 4 {
                 out.areas.push(Area { id, outer: vec![pts.clone()], inner: Vec::new(), tags: tags.clone() });
             }
@@ -414,7 +516,7 @@ pub fn parse_osm_xml(xml: &[u8]) -> Result<OsmTile, String> {
         way_geom.insert(id, pts);
     }
     for (id, members, tags) in rels {
-        if !is_water(&tags) {
+        if !is_area(&tags, layer) {
             continue;
         }
         let (mut outer, mut inner) = (Vec::new(), Vec::new());
@@ -442,19 +544,26 @@ fn encode_query(q: &str) -> String {
         .collect()
 }
 
-fn overpass_once(ep: &str, enc: &str) -> Result<OsmTile, NetError> {
+fn overpass_once(ep: &str, enc: &str, layer: Layer) -> Result<OsmTile, NetError> {
     let b = net::get_timeout(&format!("{ep}?data={enc}"), "application/json", 150, |_, _| {})?;
     // Overpass reports timeouts and overload inside a 200 answer as a "remark".
     if b.len() < 4096 && String::from_utf8_lossy(&b).contains("\"remark\"") {
         return Err(NetError::Io("Overpass query timed out".into()));
     }
-    parse(&b).map_err(NetError::Io)
+    parse_layer(&b, layer).map_err(NetError::Io)
 }
 
 /// Download one tile: Overpass servers raced (a second is asked if the first is slow,
 /// a third if both are), then the OpenStreetMap API.
 pub fn download(id: TileId) -> Result<OsmTile, NetError> {
-    let enc = encode_query(&query(id));
+    download_layer(id, Layer::Roads)
+}
+
+pub fn download_layer(id: TileId, layer: Layer) -> Result<OsmTile, NetError> {
+    let enc = encode_query(&match layer {
+        Layer::Roads => query(id),
+        Layer::Buildings => query_buildings(id),
+    });
     let start = NEXT_ENDPOINT.fetch_add(1, Ordering::Relaxed);
     let (tx, rx) = std::sync::mpsc::channel::<Result<OsmTile, NetError>>();
     let mut launched = 0;
@@ -465,7 +574,7 @@ pub fn download(id: TileId) -> Result<OsmTile, NetError> {
         let ep = ENDPOINTS[(start + k) % ENDPOINTS.len()];
         let enc = enc.clone();
         std::thread::spawn(move || {
-            let _ = tx.send(overpass_once(ep, &enc));
+            let _ = tx.send(overpass_once(ep, &enc, layer));
         });
     };
     launch(0);
@@ -494,7 +603,7 @@ pub fn download(id: TileId) -> Result<OsmTile, NetError> {
     let (w, s, e, n) = id.bounds();
     let url = format!("https://api.openstreetmap.org/api/0.6/map?bbox={w:.6},{s:.6},{e:.6},{n:.6}");
     match net::get_timeout(&url, "application/xml", 90, |_, _| {}) {
-        Ok(b) => parse_osm_xml(&b).map_err(NetError::Io),
+        Ok(b) => parse_osm_xml_layer(&b, layer).map_err(NetError::Io),
         Err(e2) => {
             log::warn!("OSM fallback failed for {}: {e2}", id.path());
             Err(last)
@@ -502,23 +611,34 @@ pub fn download(id: TileId) -> Result<OsmTile, NetError> {
     }
 }
 
-fn cache_key(id: TileId) -> String {
-    format!("osm/v2/{}.bin", id.path())
+fn cache_key(id: TileId, layer: Layer) -> String {
+    match layer {
+        Layer::Roads => format!("osm/v3/{}.bin", id.path()),
+        Layer::Buildings => format!("bld/v1/{}.bin", id.path()),
+    }
 }
 
 /// A tile from the disk cache, or downloaded and cached.
 pub fn load(id: TileId, cache: &DiskCache) -> Result<OsmTile, NetError> {
-    if let Some(t) = cached(id, cache) {
+    load_layer(id, Layer::Roads, cache)
+}
+
+pub fn load_layer(id: TileId, layer: Layer, cache: &DiskCache) -> Result<OsmTile, NetError> {
+    if let Some(t) = cached_layer(id, layer, cache) {
         return Ok(t);
     }
-    let t = download(id)?;
-    cache.put(&cache_key(id), &encode(&t));
+    let t = download_layer(id, layer)?;
+    cache.put(&cache_key(id, layer), &encode(&t));
     Ok(t)
 }
 
 /// Cached copy only (no network).
 pub fn cached(id: TileId, cache: &DiskCache) -> Option<OsmTile> {
-    cache.get(&cache_key(id)).filter(|b| b != MISSING).and_then(|b| decode(&b))
+    cached_layer(id, Layer::Roads, cache)
+}
+
+pub fn cached_layer(id: TileId, layer: Layer, cache: &DiskCache) -> Option<OsmTile> {
+    cache.get(&cache_key(id, layer)).filter(|b| b != MISSING).and_then(|b| decode(&b))
 }
 
 // ---------------------------------------------------------------- binary codec

@@ -1,6 +1,6 @@
 # Progress: Phase 3.1 (Hotfix: roads, lights and water), v0.3.1-hotfix
 
-**Status:** complete · released as [v0.3.1-hotfix](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.1-hotfix) on 2026-10-21 · previous phase: [Phase 3](progress/progress_phase_3.md) (released [v0.3.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.0))
+**Status:** complete · released as [v0.3.1-hotfix](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.1-hotfix) on 2026-10-21 · previous phase: [Phase 3](progress_phase_3.md) (released [v0.3.0](https://github.com/goglesquirmintontheiii/us-explorer/releases/tag/v0.3.0))
 
 Goal: fix what testing of 0.3.0 turned up and add the requested road, sign, light and water features. Linux AppImage only for this release.
 
@@ -54,6 +54,6 @@ From the CI screenshot run (software rendering, so frame rates in the overlay ar
 
 | | |
 |---|---|
-| ![Times Square: turn arrows at real size, coloured signals](docs/screenshots/phase3_1/roads-times-square.jpg) | ![Golden Gate: suspension towers, cables and suspenders, no piers in the main span](docs/screenshots/phase3_1/roads-golden-gate-deck.jpg) |
-| ![The South Platte beside I-25: river water, poles and wires](docs/screenshots/phase3_1/roads-freeway-i25.jpg) | ![A downtown Denver corner at night](docs/screenshots/phase3_1/night-street-denver.jpg) |
-| ![The Mousetrap: raised roads on retaining walls](docs/screenshots/phase3_1/roads-mousetrap.jpg) | ![Lake Union](docs/screenshots/phase3_1/water-lake-union.jpg) |
+| ![Times Square: turn arrows at real size, coloured signals](../docs/screenshots/phase3_1/roads-times-square.jpg) | ![Golden Gate: suspension towers, cables and suspenders, no piers in the main span](../docs/screenshots/phase3_1/roads-golden-gate-deck.jpg) |
+| ![The South Platte beside I-25: river water, poles and wires](../docs/screenshots/phase3_1/roads-freeway-i25.jpg) | ![A downtown Denver corner at night](../docs/screenshots/phase3_1/night-street-denver.jpg) |
+| ![The Mousetrap: raised roads on retaining walls](../docs/screenshots/phase3_1/roads-mousetrap.jpg) | ![Lake Union](../docs/screenshots/phase3_1/water-lake-union.jpg) |

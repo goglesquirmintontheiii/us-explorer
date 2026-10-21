@@ -6,10 +6,11 @@
 
 use crate::globe::{GlobeSet, WorldOrigin};
 use crate::player::{Player, Pose};
+use bevy::camera::visibility::RenderLayers;
 use bevy::math::DQuat;
 use bevy::prelude::*;
 use usx_core::geo::EnuFrame;
-use usx_core::settings::{CameraView, Outfit};
+use usx_core::settings::{CameraView, Character, HairStyle, Outfit};
 
 #[derive(Component)]
 pub struct BodyRoot;
@@ -37,13 +38,35 @@ pub struct HeadPart;
 #[derive(Component)]
 pub struct OutfitPart(pub &'static [Outfit]);
 
+/// Character look pieces: one hair style's parts, or glasses.
+#[derive(Component, Clone, Copy, PartialEq)]
+pub enum Look {
+    Hair(HairStyle),
+    Glasses,
+}
+
+impl Look {
+    fn shown(self, outfit: Outfit, ch: &Character) -> bool {
+        match self {
+            // Hats and hoods cover the hair, except what hangs below them.
+            Look::Hair(st) => {
+                st == ch.hair_style && (matches!(outfit, Outfit::Casual) || matches!(st, HairStyle::Long | HairStyle::Ponytail))
+            }
+            Look::Glasses => ch.glasses,
+        }
+    }
+}
+
 #[derive(Resource)]
 struct BodyMaterials {
     shirt: Handle<StandardMaterial>,
     pants: Handle<StandardMaterial>,
     shoes: Handle<StandardMaterial>,
     hat: Handle<StandardMaterial>,
+    skin: Handle<StandardMaterial>,
+    hair: Handle<StandardMaterial>,
     outfit: Outfit,
+    character: Character,
 }
 
 pub struct BodyPlugin;
@@ -56,12 +79,14 @@ impl Plugin for BodyPlugin {
     }
 }
 
-fn outfit_colors(o: Outfit) -> (Color, Color, Color, Color) {
+fn rgb(c: [u8; 3]) -> Color {
+    Color::srgb_u8(c[0], c[1], c[2])
+}
+
+fn outfit_colors(o: Outfit, ch: &Character) -> (Color, Color, Color, Color) {
     // shirt, pants, shoes, hat
     match o {
-        Outfit::Casual => {
-            (Color::srgb(0.18, 0.36, 0.62), Color::srgb(0.22, 0.24, 0.3), Color::srgb(0.85, 0.85, 0.82), Color::srgb(0.6, 0.15, 0.12))
-        }
+        Outfit::Casual => (rgb(ch.shirt), rgb(ch.pants), rgb(ch.shoes), Color::srgb(0.6, 0.15, 0.12)),
         Outfit::Rain => {
             (Color::srgb(0.95, 0.72, 0.1), Color::srgb(0.16, 0.18, 0.22), Color::srgb(0.12, 0.12, 0.12), Color::srgb(0.95, 0.72, 0.1))
         }
@@ -81,12 +106,14 @@ fn spawn_body(
     settings: Res<crate::GameSettings>,
 ) {
     let o = settings.0.outfit;
-    let (c_shirt, c_pants, c_shoes, c_hat) = outfit_colors(o);
+    let ch = settings.0.character.clone();
+    let (c_shirt, c_pants, c_shoes, c_hat) = outfit_colors(o, &ch);
     let mat = |m: &mut Assets<StandardMaterial>, c: Color, rough: f32| {
         m.add(StandardMaterial { base_color: c, perceptual_roughness: rough, ..default() })
     };
-    let skin = mat(&mut mats, Color::srgb(0.86, 0.66, 0.52), 0.6);
-    let hair = mat(&mut mats, Color::srgb(0.18, 0.12, 0.08), 0.8);
+    let skin = mat(&mut mats, rgb(ch.skin), 0.6);
+    let hair = mat(&mut mats, rgb(ch.hair), 0.8);
+    let lens = mat(&mut mats, Color::srgb(0.05, 0.05, 0.06), 0.2);
     let shirt = mat(&mut mats, c_shirt, 0.85);
     let pants = mat(&mut mats, c_pants, 0.9);
     let shoes = mat(&mut mats, c_shoes, 0.7);
@@ -96,8 +123,14 @@ fn spawn_body(
         pants: pants.clone(),
         shoes: shoes.clone(),
         hat: hat.clone(),
+        skin: skin.clone(),
+        hair: hair.clone(),
         outfit: o,
+        character: ch.clone(),
     });
+    let frame = meshes.add(Cuboid::new(0.07, 0.035, 0.012));
+    let bridge = meshes.add(Cuboid::new(0.03, 0.01, 0.01));
+    let long_back = meshes.add(Cuboid::new(0.2, 0.26, 0.05));
 
     let cap = |m: &mut Assets<Mesh>, r: f32, len: f32| m.add(Capsule3d::new(r, len).mesh().rings(2).latitudes(6).longitudes(10));
     let torso = cap(&mut meshes, 0.17, 0.32);
@@ -110,6 +143,7 @@ fn spawn_body(
     let hand = meshes.add(Sphere::new(0.045).mesh().uv(8, 5));
     let foot = meshes.add(Cuboid::new(0.1, 0.07, 0.25));
     let neck = cap(&mut meshes, 0.05, 0.05);
+    let tail = cap(&mut meshes, 0.035, 0.16);
     let beanie = meshes.add(Sphere::new(0.122).mesh().uv(12, 6));
     let brim = meshes.add(Cylinder::new(0.15, 0.015).mesh().resolution(14));
     let hood = meshes.add(Sphere::new(0.135).mesh().uv(12, 8));
@@ -149,12 +183,32 @@ fn spawn_body(
                 spine.spawn((Joint::Neck, Transform::from_xyz(0.0, 0.58, 0.0), Visibility::Inherited)).with_children(|n| {
                     n.spawn((Mesh3d(neck.clone()), MeshMaterial3d(skin.clone()), Transform::from_xyz(0.0, 0.03, 0.0), HeadPart));
                     n.spawn((Mesh3d(head.clone()), MeshMaterial3d(skin.clone()), Transform::from_xyz(0.0, 0.15, 0.0), HeadPart));
+                    // Hair styles (one shows) and glasses.
+                    let h = |n: &mut ChildSpawnerCommands, m: &Handle<Mesh>, t: Transform, st: HairStyle| {
+                        n.spawn((Mesh3d(m.clone()), MeshMaterial3d(hair.clone()), t, HeadPart, Look::Hair(st)));
+                    };
+                    h(n, &head, Transform::from_xyz(0.0, 0.17, 0.015).with_scale(Vec3::new(1.04, 0.92, 1.04)), HairStyle::Short);
+                    h(n, &head, Transform::from_xyz(0.0, 0.158, 0.008).with_scale(Vec3::new(1.015, 0.93, 1.02)), HairStyle::Buzz);
+                    h(n, &head, Transform::from_xyz(0.0, 0.18, 0.015).with_scale(Vec3::new(1.16, 1.0, 1.14)), HairStyle::Curly);
+                    h(n, &head, Transform::from_xyz(0.0, 0.17, 0.015).with_scale(Vec3::new(1.05, 0.95, 1.06)), HairStyle::Long);
+                    h(n, &long_back, Transform::from_xyz(0.0, 0.07, 0.075), HairStyle::Long);
+                    h(n, &head, Transform::from_xyz(0.0, 0.17, 0.015).with_scale(Vec3::new(1.04, 0.93, 1.04)), HairStyle::Ponytail);
+                    h(n, &tail, Transform::from_xyz(0.0, 0.1, 0.13).with_rotation(Quat::from_rotation_x(0.35)), HairStyle::Ponytail);
+                    for x in [-0.045f32, 0.045] {
+                        n.spawn((
+                            Mesh3d(frame.clone()),
+                            MeshMaterial3d(lens.clone()),
+                            Transform::from_xyz(x, 0.16, -0.108),
+                            HeadPart,
+                            Look::Glasses,
+                        ));
+                    }
                     n.spawn((
-                        Mesh3d(head.clone()),
-                        MeshMaterial3d(hair.clone()),
-                        Transform::from_xyz(0.0, 0.17, 0.015).with_scale(Vec3::new(1.04, 0.92, 1.04)),
+                        Mesh3d(bridge.clone()),
+                        MeshMaterial3d(lens.clone()),
+                        Transform::from_xyz(0.0, 0.165, -0.11),
                         HeadPart,
-                        OutfitPart(&[Outfit::Casual]),
+                        Look::Glasses,
                     ));
                     n.spawn((
                         Mesh3d(beanie.clone()),
@@ -275,6 +329,29 @@ fn animate(time: Res<Time>, p: Res<Player>, mut joints: Query<(&Joint, &mut Tran
             set(&mut target, Joint::ShoulderR, Vec3::new(0.3, 0.0, 0.25));
             set(&mut target, Joint::Neck, Vec3::new(0.9, 0.0, 0.0));
         }
+        Pose::Sit => {
+            // Thighs forward, shins down, hands on the lap.
+            drop = 0.45;
+            set(&mut target, Joint::HipL, Vec3::new(1.5, 0.0, -0.05));
+            set(&mut target, Joint::HipR, Vec3::new(1.5, 0.0, 0.05));
+            set(&mut target, Joint::KneeL, Vec3::new(-1.5, 0.0, 0.0));
+            set(&mut target, Joint::KneeR, Vec3::new(-1.5, 0.0, 0.0));
+            set(&mut target, Joint::ShoulderL, Vec3::new(0.45, 0.0, -0.08));
+            set(&mut target, Joint::ShoulderR, Vec3::new(0.45, 0.0, 0.08));
+            set(&mut target, Joint::ElbowL, Vec3::new(0.9, 0.0, 0.0));
+            set(&mut target, Joint::ElbowR, Vec3::new(0.9, 0.0, 0.0));
+            set(&mut target, Joint::Spine, Vec3::new(-0.05, 0.0, 0.0));
+        }
+        Pose::Lie => {
+            // On the back: hips tipped back so the body lies flat, legs straight.
+            lean = -1.5;
+            drop = 0.82;
+            let b = (t * 1.1).sin() * 0.01;
+            set(&mut target, Joint::Spine, Vec3::new(b, 0.0, 0.0));
+            set(&mut target, Joint::ShoulderL, Vec3::new(0.05, 0.0, -0.12));
+            set(&mut target, Joint::ShoulderR, Vec3::new(0.05, 0.0, 0.12));
+            set(&mut target, Joint::Neck, Vec3::new(-0.2, 0.0, 0.0));
+        }
         Pose::Swim => {
             lean = 1.4;
             // Raise the hips so the body lies along the surface while the feet hang below.
@@ -308,29 +385,50 @@ fn place_body(
     p: Res<Player>,
     origin: Res<WorldOrigin>,
     mut root: Query<(&mut Transform, &mut Visibility), With<BodyRoot>>,
-    mut heads: Query<&mut Visibility, (With<HeadPart>, Without<BodyRoot>, Without<OutfitPart>)>,
-    mut outfit_heads: Query<(&mut Visibility, &OutfitPart), (With<HeadPart>, Without<BodyRoot>)>,
+    mut heads: Query<&mut Visibility, (With<HeadPart>, Without<BodyRoot>, Without<OutfitPart>, Without<Look>)>,
+    mut outfit_heads: Query<(&mut Visibility, &OutfitPart), (With<HeadPart>, Without<BodyRoot>, Without<Look>)>,
+    mut looks: Query<(&mut Visibility, &Look), (Without<BodyRoot>, Without<OutfitPart>)>,
     settings: Res<crate::GameSettings>,
+    head_ents: Query<Entity, With<HeadPart>>,
+    mut commands: Commands,
+    mut last_first: Local<Option<bool>>,
 ) {
-    let first = p.view == CameraView::FirstPerson;
+    let first = p.view == CameraView::FirstPerson && p.showcase.is_none();
     let frame = EnuFrame::at(p.geo());
     let m = origin.frame.ecef_to_local * frame.ecef_to_local.transpose();
     let rot = (DQuat::from_mat3(&m) * DQuat::from_rotation_y(-p.body_heading.to_radians())).as_quat();
+    let ch = &settings.0.character;
     for (mut t, mut v) in &mut root {
         t.translation = origin.local(p.feet);
         t.rotation = rot;
+        t.scale = Vec3::new(ch.build.clamp(0.8, 1.25), ch.height.clamp(0.85, 1.15), ch.build.clamp(0.8, 1.25).sqrt());
         *v = Visibility::Visible;
     }
-    let head_vis = if first { Visibility::Hidden } else { Visibility::Inherited };
+    for (mut v, look) in &mut looks {
+        let want = if look.shown(settings.0.outfit, ch) { Visibility::Inherited } else { Visibility::Hidden };
+        if *v != want {
+            *v = want;
+        }
+    }
+    // In first person the head stays out of your own view (it's on a layer only the
+    // mirror camera draws), so mirrors still show it.
+    let head_vis = Visibility::Inherited;
     for mut v in &mut heads {
         if *v != head_vis {
             *v = head_vis;
         }
     }
     for (mut v, part) in &mut outfit_heads {
-        let want = if !first && part.0.contains(&settings.0.outfit) { Visibility::Inherited } else { Visibility::Hidden };
+        let want = if part.0.contains(&settings.0.outfit) { Visibility::Inherited } else { Visibility::Hidden };
         if *v != want {
             *v = want;
+        }
+    }
+    if *last_first != Some(first) {
+        *last_first = Some(first);
+        let layer = if first { RenderLayers::layer(1) } else { RenderLayers::layer(0) };
+        for e in &head_ents {
+            commands.entity(e).insert(layer.clone());
         }
     }
 }
@@ -349,12 +447,14 @@ fn apply_outfit(
             *v = want;
         }
     }
-    if bm.outfit == o {
+    let ch = &settings.0.character;
+    if bm.outfit == o && bm.character == *ch {
         return;
     }
     bm.outfit = o;
-    let (a, b, c, d) = outfit_colors(o);
-    for (h, col) in [(&bm.shirt, a), (&bm.pants, b), (&bm.shoes, c), (&bm.hat, d)] {
+    bm.character = ch.clone();
+    let (a, b, c, d) = outfit_colors(o, ch);
+    for (h, col) in [(&bm.shirt, a), (&bm.pants, b), (&bm.shoes, c), (&bm.hat, d), (&bm.skin, rgb(ch.skin)), (&bm.hair, rgb(ch.hair))] {
         if let Some(mut m) = mats.get_mut(h) {
             m.base_color = col;
         }

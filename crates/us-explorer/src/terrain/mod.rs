@@ -52,6 +52,8 @@ struct Tile {
     refreshing: bool,
     /// Heights were levelled under this area's roads.
     conformed: bool,
+    /// Building pads the heights were dug for.
+    pad_sig: u64,
     /// Bumped every time the tile's mesh is replaced.
     generation: u64,
 }
@@ -86,6 +88,16 @@ impl HeightSnap {
             let (id, u, v) = TileId::containing(lat, lon, z);
             if let Some((g, c)) = self.tiles.get(&id) {
                 return Some((g.sample(u, v), *c));
+            }
+        }
+        None
+    }
+    /// The ground before it was levelled under roads (and dug out under lakes).
+    pub fn natural(&self, lat: f64, lon: f64) -> Option<f64> {
+        for &z in &self.zooms {
+            let (id, u, v) = TileId::containing(lat, lon, z);
+            if let Some((g, _)) = self.tiles.get(&id) {
+                return Some(g.sample_natural(u, v));
             }
         }
         None
@@ -173,6 +185,11 @@ impl Terrain {
         self.lookup(lat, lon, |h, u, v| h.sample(u, v))
     }
 
+    /// The ground before roads levelled it and lakes were dug out (lake surfaces).
+    pub fn natural_at(&self, lat: f64, lon: f64) -> Option<f64> {
+        self.lookup(lat, lon, |h, u, v| h.sample_natural(u, v)).map(|x| x.0)
+    }
+
     /// Ground you stand on: the sea floor under water.
     pub fn floor_and_zoom(&self, lat: f64, lon: f64) -> Option<(f64, u8)> {
         self.lookup(lat, lon, |h, u, v| h.sample_floor(u, v))
@@ -223,6 +240,7 @@ impl Terrain {
                 refresh_at: None,
                 refreshing: false,
                 conformed: false,
+                pad_sig: 0,
                 generation: 0,
             }
         });
@@ -428,6 +446,7 @@ fn receive(
                     commands.entity(old).despawn();
                 }
                 t.conformed = data.conformed;
+                t.pad_sig = data.pad_sig;
                 t.generation = generation;
                 t.refreshing = false;
                 t.refresh_at = data.degraded.then_some(now + 30.0);
@@ -579,11 +598,10 @@ fn select(
         .iter()
         .filter(|(id, t)| {
             id.z >= conform::CONFORM_ZOOM
-                && !t.conformed
                 && !t.refreshing
                 && matches!(t.state, State::Ready { .. })
                 && now - t.last_wanted < 2.0
-                && crate::roads::corridors_for(**id).is_some()
+                && (!t.conformed && crate::roads::corridors_for(**id).is_some() || conform::pads_sig(**id) != t.pad_sig)
         })
         .map(|(id, _)| *id)
         .take(24)

@@ -6,7 +6,7 @@
 //! tile-loading worker threads.
 
 use super::load::GRID;
-use crate::roads::build::{Corridor, Local};
+use crate::roads::build::{Corridor, Lake, Local};
 use bevy::math::Vec2;
 use usx_core::tile::TileId;
 
@@ -44,10 +44,83 @@ fn uv(id: TileId, lat: f64, lon: f64) -> (f64, f64) {
     (fx - id.x as f64, fy - id.y as f64)
 }
 
-pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor]) -> Conformed {
+/// Ground under a building to keep below its floor (or basement), so the terrain never
+/// shows inside: a footprint (lat, lon, a little inside the walls) and the highest the
+/// ground may be there.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Pad {
+    pub ring: Vec<(f64, f64)>,
+    /// (s, w, n, e)
+    pub bbox: (f64, f64, f64, f64),
+    pub top: f32,
+}
+
+type PadMap = std::collections::HashMap<TileId, (std::sync::Arc<Vec<Pad>>, u64)>;
+
+fn pads() -> &'static std::sync::RwLock<PadMap> {
+    static P: std::sync::OnceLock<std::sync::RwLock<PadMap>> = std::sync::OnceLock::new();
+    P.get_or_init(Default::default)
+}
+
+/// Buildings of one building tile (zoom 15) ask for these pads (`sig` sums them up).
+pub fn set_pads(tile: TileId, list: Vec<Pad>, sig: u64) {
+    let Ok(mut m) = pads().write() else { return };
+    if m.get(&tile).is_some_and(|x| x.1 == sig) {
+        return;
+    }
+    m.insert(tile, (std::sync::Arc::new(list), sig));
+    if m.len() > 600 {
+        let far: Vec<TileId> = m.keys().filter(|k| k.x.abs_diff(tile.x) > 12 || k.y.abs_diff(tile.y) > 12).copied().collect();
+        for k in far {
+            m.remove(&k);
+        }
+    }
+}
+
+/// The building tiles whose pads can reach a terrain tile.
+fn pad_tiles(id: TileId) -> Vec<TileId> {
+    let z = usx_core::osm::ZOOM;
+    if id.z < z {
+        return Vec::new();
+    }
+    let own = id.ancestor(z);
+    let mut out = Vec::with_capacity(9);
+    for dy in -1i64..=1 {
+        for dx in -1i64..=1 {
+            let (x, y) = (own.x as i64 + dx, own.y as i64 + dy);
+            if x >= 0 && y >= 0 {
+                out.push(TileId::new(z, x as u32, y as u32));
+            }
+        }
+    }
+    out
+}
+
+/// What the pads around a terrain tile add up to (changes when any of them do).
+pub fn pads_sig(id: TileId) -> u64 {
+    let Ok(m) = pads().read() else { return 0 };
+    pad_tiles(id).iter().filter_map(|t| m.get(t)).fold(0u64, |a, x| a.rotate_left(7) ^ x.1)
+}
+
+/// Pads touching a terrain tile, and their signature.
+pub fn pads_for(id: TileId) -> (Vec<Pad>, u64) {
+    let Ok(m) = pads().read() else { return (Vec::new(), 0) };
+    let (w, s, e, n) = id.bounds();
+    let mut out = Vec::new();
+    let mut sig = 0u64;
+    for t in pad_tiles(id) {
+        if let Some((list, ts)) = m.get(&t) {
+            sig = sig.rotate_left(7) ^ ts;
+            out.extend(list.iter().filter(|p| !(p.bbox.0 > n || p.bbox.2 < s || p.bbox.1 > e || p.bbox.3 < w)).cloned());
+        }
+    }
+    (out, sig)
+}
+
+pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor], lakes: &[Lake], pads: &[Pad]) -> Conformed {
     let q = GRID - 1;
     let mut holes = vec![false; q * q];
-    if id.z < CONFORM_ZOOM || corridors.is_empty() {
+    if id.z < CONFORM_ZOOM || corridors.is_empty() && lakes.is_empty() && pads.is_empty() {
         return Conformed { holes };
     }
     let (w, s, e, nn) = id.bounds();
@@ -76,7 +149,11 @@ pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor]) -> Conformed {
         let pts: Vec<Vec2> = c.pts.iter().map(|&(a, b)| local.xz(a, b)).collect();
         let max_off = c.off.iter().fold(0.0f32, |m, o| m.max(o.abs()));
         let blend = (max_off * 1.8 + 2.5).max(spacing * 1.3).max(3.0);
-        let reach = c.half + blend;
+        // Fully level one lattice step past the road edge: a triangle reaching across
+        // the edge then has no corner left at the natural (higher) ground to poke up
+        // through the road.
+        let full = c.half + spacing * 0.9;
+        let reach = full + blend;
         for k in 0..pts.len() - 1 {
             let (a, b) = (pts[k], pts[k + 1]);
             let ab = b - a;
@@ -102,14 +179,19 @@ pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor]) -> Conformed {
                     if c.tunnel.is_some() {
                         continue;
                     }
-                    let wgt = if d <= c.half { 1.0 } else { 1.0 - smoothstep(c.half, reach, d) };
+                    let wgt = if d <= full { 1.0 } else { 1.0 - smoothstep(full, reach, d) };
                     let (cu, cv) = {
                         let (la, lo) = local.ll(cp);
                         uv(id, la, lo)
                     };
                     let target = sample(&raw, cu, cv) + c.off[k] + (c.off[k + 1] - c.off[k]) * t;
                     let bv = &mut best[vi];
-                    if wgt > bv.0 + 1e-4 || (wgt >= bv.0 - 1e-4 && d < bv.2) {
+                    // Where two roads both claim the ground fully (a road crossing over
+                    // another), the lower one shapes it; the upper one is drawn above.
+                    if wgt > bv.0 + 1e-4
+                        || (wgt >= 0.999 && bv.0 >= 0.999 && target < bv.1)
+                        || (wgt < 0.999 && wgt >= bv.0 - 1e-4 && d < bv.2)
+                    {
                         *bv = (wgt, target, d);
                     }
                 }
@@ -153,6 +235,81 @@ pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor]) -> Conformed {
             h[vi] = raw[vi] + (target - raw[vi]) * wgt;
         }
     }
+    // Lake and river beds: down from the shore at about 1 in 6 to the lake's depth.
+    for l in lakes {
+        if l.bbox.0 > nn || l.bbox.2 < s || l.bbox.1 > e || l.bbox.3 < w {
+            continue;
+        }
+        let outer: Vec<Vec<Vec2>> = l.outer.iter().map(|r| r.iter().map(|&(a, b)| local.xz(a, b)).collect()).collect();
+        let inner: Vec<Vec<Vec2>> = l.inner.iter().map(|r| r.iter().map(|&(a, b)| local.xz(a, b)).collect()).collect();
+        let inside = |r: &[Vec2], p: Vec2| {
+            let mut c = false;
+            let n = r.len();
+            if n < 3 {
+                return false;
+            }
+            let mut j = n - 1;
+            for i in 0..n {
+                let (a, b) = (r[i], r[j]);
+                if (a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x {
+                    c = !c;
+                }
+                j = i;
+            }
+            c
+        };
+        let shore_cap = l.depth * 6.0;
+        for (vi, &p) in vpos.iter().enumerate() {
+            if !outer.iter().any(|r| inside(r, p)) || inner.iter().any(|r| inside(r, p)) {
+                continue;
+            }
+            // Distance to the nearest shore, capped (only needed up to full depth).
+            let mut d = shore_cap;
+            for r in outer.iter().chain(inner.iter()) {
+                for k in 0..r.len().saturating_sub(1) {
+                    let (a, b) = (r[k], r[k + 1]);
+                    if (p.x - a.x.min(b.x)) > d && (a.x.max(b.x) - p.x) < -d {
+                        continue;
+                    }
+                    let ab = b - a;
+                    let t = ((p - a).dot(ab) / ab.length_squared().max(1e-6)).clamp(0.0, 1.0);
+                    d = d.min(p.distance(a + ab * t));
+                }
+            }
+            let dig = (d / 6.0).min(l.depth) + 0.3;
+            h[vi] = h[vi].min(raw[vi] - dig);
+        }
+    }
+    // Under buildings: no higher than the floor.
+    for pd in pads {
+        if pd.bbox.0 > nn || pd.bbox.2 < s || pd.bbox.1 > e || pd.bbox.3 < w {
+            continue;
+        }
+        let r: Vec<Vec2> = pd.ring.iter().map(|&(a, b)| local.xz(a, b)).collect();
+        let (mut lo, mut hi) = (Vec2::splat(f32::MAX), Vec2::splat(f32::MIN));
+        for p in &r {
+            lo = lo.min(*p);
+            hi = hi.max(*p);
+        }
+        for (vi, &p) in vpos.iter().enumerate() {
+            if p.x < lo.x || p.y < lo.y || p.x > hi.x || p.y > hi.y || h[vi] <= pd.top {
+                continue;
+            }
+            let mut c = false;
+            let n = r.len();
+            let mut j = n - 1;
+            for i in 0..n {
+                let (a, b) = (r[i], r[j]);
+                if (a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x {
+                    c = !c;
+                }
+                j = i;
+            }
+            if c {
+                h[vi] = pd.top;
+            }
+        }
+    }
     Conformed { holes }
 }
 
@@ -179,7 +336,7 @@ mod tests {
             tunnel: None,
             bbox: (la1 - 0.01, lo_mid - 0.01, la0 + 0.01, lo_mid + 0.01),
         };
-        conform(id, &mut h, &[c]);
+        conform(id, &mut h, &[c], &[], &[]);
         let mid = GRID / 2;
         let row = 10 * GRID;
         // Centre vertex raised by the fill; neighbours across the road level with it.

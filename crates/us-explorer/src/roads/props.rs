@@ -104,7 +104,10 @@ impl Part {
 }
 
 /// Signal lamp colours (red, amber, green), saturated so they read as colours.
-pub const SIGNAL_COLOURS: [Color; 3] = [Color::srgb(1.0, 0.04, 0.02), Color::srgb(1.0, 0.42, 0.0), Color::srgb(0.0, 1.0, 0.62)];
+pub const SIGNAL_COLOURS: [Color; 3] = [Color::srgb(1.0, 0.04, 0.02), Color::srgb(1.0, 0.42, 0.0), Color::srgb(0.0, 0.9, 0.42)];
+/// Brightness of each signal colour (nits, daytime units). Green is dimmer: the eye
+/// (and the tone mapper) sees it as much brighter, and at the same level it washes out.
+const SIGNAL_NITS: [f32; 3] = [9_000.0, 8_000.0, 3_500.0];
 /// Pedestrian symbols: Portland orange hand, lunar white walking person.
 pub const PED_COLOURS: [Color; 2] = [Color::srgb(1.0, 0.38, 0.02), Color::srgb(0.92, 0.95, 1.0)];
 
@@ -118,6 +121,8 @@ pub enum StdSign {
     Bus,
     /// Crossbuck blades: "RAILROAD" and "CROSSING".
     Rail(u8),
+    /// Reserved parking with the accessibility symbol.
+    Accessible,
 }
 
 #[derive(Resource)]
@@ -230,6 +235,36 @@ pub fn setup(
         if mat == Mat::Glass {
             sm.alpha_mode = AlphaMode::Blend;
         }
+        if mat == Mat::Panel {
+            // Solar cells: a 6 x 10 grid of dark blue cells with silver busbars.
+            let (w, h) = (96u32, 64u32);
+            let mut px = vec![0u8; (w * h * 4) as usize];
+            for y in 0..h {
+                for x in 0..w {
+                    let (cx, cy) = (x % 16, y % 11);
+                    let gap = cx == 0 || cy == 0;
+                    let bus = !gap && (cx == 5 || cx == 11);
+                    let c: [u8; 4] = if gap {
+                        [200, 205, 210, 255]
+                    } else if bus {
+                        [120, 125, 135, 255]
+                    } else {
+                        [18, 28, 58, 255]
+                    };
+                    let i = ((y * w + x) * 4) as usize;
+                    px[i..i + 4].copy_from_slice(&c);
+                }
+            }
+            let img = Image::new(
+                Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+                TextureDimension::D2,
+                px,
+                TextureFormat::Rgba8UnormSrgb,
+                RenderAssetUsages::RENDER_WORLD,
+            );
+            sm.base_color = Color::WHITE;
+            sm.base_color_texture = Some(images.add(img));
+        }
         m.insert(mat, mats.add(sm));
     }
     let lamp = |mats: &mut Assets<StandardMaterial>, c: Color, on: bool| {
@@ -258,7 +293,8 @@ pub fn setup(
     let ped_off = [sym(&mut mats, &mut images, false, PED_COLOURS[0], false), sym(&mut mats, &mut images, true, PED_COLOURS[1], false)];
 
     // Standard signs in one shared atlas.
-    let mut order: Vec<StdSign> = vec![StdSign::Stop, StdSign::AllWay, StdSign::Yield, StdSign::Bus, StdSign::Rail(0), StdSign::Rail(1)];
+    let mut order: Vec<StdSign> =
+        vec![StdSign::Stop, StdSign::AllWay, StdSign::Yield, StdSign::Bus, StdSign::Rail(0), StdSign::Rail(1), StdSign::Accessible];
     order.extend((5..=85).step_by(5).map(StdSign::Speed));
     let faces: Vec<signs::Face> = order
         .iter()
@@ -269,6 +305,7 @@ pub fn setup(
             StdSign::Bus => signs::bus_stop(),
             StdSign::Speed(n) => signs::speed_limit(*n),
             StdSign::Rail(k) => signs::crossbuck_blade(if *k == 0 { "RAILROAD" } else { "CROSSING" }),
+            StdSign::Accessible => signs::accessible_parking(),
         })
         .collect();
     let atlas = signs::pack(faces).expect("standard signs fit");
@@ -339,6 +376,7 @@ pub fn solids(kind: &PropKind) -> Vec<(Vec2, f32, f32)> {
         PropKind::Crossbuck { .. } => one(0.1, 3.6),
         PropKind::Gantry { span, .. } => vec![(Vec2::new(-span * 0.5, 0.0), 0.3, 8.0), (Vec2::new(span * 0.5, 0.0), 0.3, 8.0)],
         PropKind::OverpassSign { .. } => Vec::new(),
+        PropKind::ParkingSign => one(0.05, 2.3),
     }
 }
 
@@ -431,42 +469,80 @@ fn parts(kind: &PropKind) -> Vec<Part> {
             }
         }
         PropKind::Alpr => {
-            // Flock-style: a slim black pole, a small solar panel tilted to the sky on
-            // top, a battery box, and the camera on a short arm aimed at traffic.
-            p.push(cyl(0.045, 4.4, Black, Vec3::new(0.0, 2.2, 0.0)));
+            // Flock Safety style unit: a slim black pole with a base plate and cap; a solar
+            // panel in an aluminium frame on a tilt bracket at the top; the camera (a
+            // small dark housing with a sun hood, lens and infrared ring) on a short arm
+            // aimed down at the lane; a cable loop between them.
+            use std::f32::consts::FRAC_PI_2;
+            let rx = |a: f32| Quat::from_rotation_x(a);
+            p.push(cyl(0.18, 0.02, Black, Vec3::new(0.0, 0.01, 0.0)));
+            p.push(cyl(0.055, 2.4, Black, Vec3::new(0.0, 1.2, 0.0)));
+            p.push(cyl(0.045, 2.2, Black, Vec3::new(0.0, 3.5, 0.0)));
+            p.push(cyl(0.05, 0.04, Black, Vec3::new(0.0, 4.62, 0.0)));
+            // Panel: tilt bracket, frame, cells (textured), facing up and slightly back.
+            p.push(bx(0.06, 0.24, 0.06, Black, Vec3::new(0.0, 4.72, 0.04)));
+            let tilt = rx(-0.62);
+            let c = Vec3::new(0.0, 4.86, 0.1);
             p.push(Part {
-                shape: Shape::Box(560, 25, 400),
-                mat: Panel,
-                t: Transform::from_xyz(0.0, 4.5, 0.08).with_rotation(Quat::from_rotation_x(-0.55)),
-                tag: None,
-            });
-            p.push(Part {
-                shape: Shape::Box(580, 20, 420),
+                shape: Shape::Box(620, 35, 470),
                 mat: Galvanized,
-                t: Transform::from_xyz(0.0, 4.49, 0.09).with_rotation(Quat::from_rotation_x(-0.55)),
+                t: Transform::from_translation(c).with_rotation(tilt),
                 tag: None,
             });
-            p.push(bx(0.05, 0.3, 0.05, Black, Vec3::new(0.0, 4.32, 0.06)));
-            p.push(bx(0.2, 0.3, 0.14, Black, Vec3::new(0.0, 3.55, 0.09)));
-            p.push(bx(0.04, 0.04, 0.2, Black, Vec3::new(0.0, 3.95, -0.1)));
             p.push(Part {
-                shape: Shape::Box(110, 120, 190),
+                shape: Shape::Quad(560),
+                mat: Panel,
+                t: Transform::from_translation(c + tilt * Vec3::new(0.0, 0.02, 0.0))
+                    .with_rotation(tilt * rx(-FRAC_PI_2))
+                    .with_scale(Vec3::new(1.0, 0.76, 1.0)),
+                tag: None,
+            });
+            // Arm toward the road and the camera.
+            p.push(bx(0.04, 0.04, 0.34, Black, Vec3::new(0.0, 3.86, -0.17)));
+            p.push(bx(0.06, 0.1, 0.06, Black, Vec3::new(0.0, 3.82, -0.33)));
+            let cam = Vec3::new(0.0, 3.72, -0.38);
+            let aim = rx(0.18);
+            let at = |v: Vec3| cam + aim * v;
+            p.push(Part {
+                shape: Shape::Box(130, 125, 230),
                 mat: CameraGrey,
-                t: Transform::from_xyz(0.0, 3.9, -0.24).with_rotation(Quat::from_rotation_x(0.12)),
+                t: Transform::from_translation(at(Vec3::ZERO)).with_rotation(aim),
                 tag: None,
             });
             p.push(Part {
-                shape: Shape::Box(130, 12, 220),
+                shape: Shape::Box(150, 14, 270),
                 mat: CameraGrey,
-                t: Transform::from_xyz(0.0, 3.97, -0.26).with_rotation(Quat::from_rotation_x(0.12)),
+                t: Transform::from_translation(at(Vec3::new(0.0, 0.07, -0.03))).with_rotation(aim),
+                tag: None,
+            });
+            for x in [-0.07f32, 0.07] {
+                p.push(Part {
+                    shape: Shape::Box(12, 70, 120),
+                    mat: CameraGrey,
+                    t: Transform::from_translation(at(Vec3::new(x, 0.035, -0.12))).with_rotation(aim),
+                    tag: None,
+                });
+            }
+            p.push(Part {
+                shape: Shape::Box(120, 115, 8),
+                mat: Black,
+                t: Transform::from_translation(at(Vec3::new(0.0, 0.0, -0.118))).with_rotation(aim),
                 tag: None,
             });
             p.push(Part {
-                shape: Shape::Cyl(32, 20),
+                shape: Shape::Cyl(38, 14),
+                mat: Black,
+                t: Transform::from_translation(at(Vec3::new(0.0, -0.005, -0.124))).with_rotation(aim * rx(FRAC_PI_2)),
+                tag: None,
+            });
+            p.push(Part {
+                shape: Shape::Cyl(24, 6),
                 mat: Glass,
-                t: Transform::from_xyz(0.0, 3.89, -0.34).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2 + 0.12)),
+                t: Transform::from_translation(at(Vec3::new(0.0, -0.005, -0.133))).with_rotation(aim * rx(FRAC_PI_2)),
                 tag: None,
             });
+            // Cable down the arm into the pole.
+            p.push(cyl(0.008, 0.25, Black, Vec3::new(0.035, 3.97, -0.05)));
         }
         PropKind::MileMarker { .. } => {
             p.push(bx(0.05, 1.5, 0.03, Galvanized, Vec3::new(0.0, 0.75, 0.02)));
@@ -563,6 +639,9 @@ fn parts(kind: &PropKind) -> Vec<Part> {
             p.push(cyl(0.1, 1.0, Yellow, Vec3::new(0.0, 0.5, 0.0)));
             p.push(cyl(0.102, 0.08, Black, Vec3::new(0.0, 0.85, 0.0)));
         }
+        PropKind::ParkingSign => {
+            p.push(cyl(0.03, 2.2, Galvanized, Vec3::new(0.0, 1.1, 0.03)));
+        }
     }
     p
 }
@@ -607,6 +686,7 @@ pub fn spawn(
         PropKind::Yield => std_face(StdSign::Yield, 2.2, &mut children, assets, meshes),
         PropKind::SpeedLimit { mph } => std_face(StdSign::Speed((mph / 5 * 5).clamp(5, 85)), 2.1, &mut children, assets, meshes),
         PropKind::BusStop { .. } => std_face(StdSign::Bus, 2.4, &mut children, assets, meshes),
+        PropKind::ParkingSign => std_face(StdSign::Accessible, 1.95, &mut children, assets, meshes),
         PropKind::Crossbuck { .. } => {
             // Two blades crossed at 90 degrees, readable from the front.
             for (k, a) in [(0u8, 0.785f32), (1, -0.785)] {
@@ -749,14 +829,15 @@ pub fn run_signals(
         let on = |c: Color, s: f32| c.to_linear() * (s * k);
         // About as bright as a real LED head: well above a sunlit wall, but not so far
         // above that the tone mapper bleaches the colour to white.
-        for (h, c) in assets.lamp_on.iter().zip(SIGNAL_COLOURS) {
+        for ((h, c), n) in assets.lamp_on.iter().zip(SIGNAL_COLOURS).zip(SIGNAL_NITS) {
             if let Some(mut m) = mats.get_mut(h) {
-                m.emissive = on(c, 9_000.0);
+                m.emissive = on(c, n);
             }
         }
+        // Pedestrian symbols are small and must read in full sun.
         for (h, c) in assets.ped_on.iter().zip(PED_COLOURS) {
             if let Some(mut m) = mats.get_mut(h) {
-                m.emissive = on(c, 6_000.0);
+                m.emissive = on(c, 30_000.0);
             }
         }
     }
@@ -827,7 +908,7 @@ pub fn run_lamps(
     assets: Option<Res<PropAssets>>,
     mut mats: ResMut<Assets<StandardMaterial>>,
     cams: Query<&GlobalTransform, With<crate::camera::MainCamera>>,
-    sources: Query<&GlobalTransform, With<LampSource>>,
+    mut sources: Query<(&GlobalTransform, &mut Transform), (With<LampSource>, Without<LampLight>)>,
     mut lights: Query<(&mut Transform, &mut PointLight, &mut Visibility), With<LampLight>>,
     mut timer: Local<f32>,
     time: Res<Time>,
@@ -848,8 +929,17 @@ pub fn run_lamps(
     }
     *timer = 0.4;
     let Some(cam) = cams.iter().next().map(|c| c.translation()) else { return };
+    // Far lamp heads are smaller than a pixel and twinkle as you move; grow them with
+    // distance so they stay about a pixel or two across.
+    for (g, mut t) in &mut sources {
+        let d = g.translation().distance(cam);
+        let s = (d / 140.0).clamp(1.0, 7.0);
+        if (t.scale.x - s).abs() > 0.05 * s {
+            t.scale = Vec3::splat(s);
+        }
+    }
     let mut near: Vec<(f32, Vec3)> = if on > 0.0 {
-        sources.iter().map(|g| (g.translation().distance_squared(cam), g.translation())).filter(|(d, _)| *d < 260.0 * 260.0).collect()
+        sources.iter().map(|(g, _)| (g.translation().distance_squared(cam), g.translation())).filter(|(d, _)| *d < 260.0 * 260.0).collect()
     } else {
         Vec::new()
     };
