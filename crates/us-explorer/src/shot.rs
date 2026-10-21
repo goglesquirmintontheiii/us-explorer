@@ -99,6 +99,7 @@ fn run(
     mut exit: MessageWriter<AppExit>,
     mut menus: ResMut<crate::ui::Menus>,
     mut clock: ResMut<crate::sun::SimClock>,
+    mut settings: ResMut<crate::GameSettings>,
     args: Res<crate::Args>,
 ) {
     r.frame += 1;
@@ -115,6 +116,8 @@ fn run(
             Some("orbit") => CameraView::Orbit,
             _ => CameraView::FirstPerson,
         };
+        // The look system follows the setting, so set that too (shots don't save it).
+        settings.bypass_change_detection().0.camera_view = player.view;
         player.orbit_yaw = next.heading + 160.0;
         player.orbit_pitch = next.pitch;
         player.orbit_dist = 5.0;

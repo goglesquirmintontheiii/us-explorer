@@ -506,8 +506,17 @@ fn manage_detail(
     want.sort_by(|a, b| a.0.total_cmp(&b.0));
     want.truncate(24);
     let want_set: HashSet<(TileId, u32)> = want.iter().map(|w| w.1).collect();
-    // Drop details no longer wanted.
-    let drop: Vec<(TileId, u32)> = bl.detail.keys().filter(|k| !want_set.contains(k)).copied().collect();
+    // Drop details no longer wanted, and rebuild ones whose building has been set at a
+    // new height since (finer terrain arrived): they come back below.
+    let drop: Vec<(TileId, u32)> = bl
+        .detail
+        .iter()
+        .filter(|(k, d)| {
+            !want_set.contains(k)
+                || bl.placed.get(k).is_some_and(|p| (p.base - d.placed.base).abs() > 0.05 || (p.low - d.placed.low).abs() > 0.3)
+        })
+        .map(|(k, _)| *k)
+        .collect();
     for k in drop {
         if let Some(d) = bl.detail.remove(&k) {
             commands.entity(d.entity).despawn();
@@ -595,7 +604,9 @@ fn pad_of(b: &Built, bi: u32, base: f64) -> Option<crate::terrain::conform::Pad>
         w = w.min(lo);
         e = e.max(lo);
     }
-    let depth = if plan::has_basement(bld) { 2.6 + 0.45 } else { 0.15 };
+    // Only humps under the floor: basements needn't be dug (the terrain is invisible
+    // from below), and a deep dig shows as a crater around the walls.
+    let depth = 0.15;
     Some(crate::terrain::conform::Pad { ring, bbox: (s, w, n, e), top: ((base - depth) * 20.0).round() as f32 / 20.0 })
 }
 
@@ -824,11 +835,28 @@ mod fixture_tests {
                 b.vertices,
                 t_build.as_secs_f64() * 1000.0
             );
+            // Detailed shells.
+            let mut bad = 0;
+            for (bi, bl) in b.buildings.iter().enumerate() {
+                let g = exterior::shell(
+                    bl,
+                    &exterior::Options { detailed: true, roof_col: b.roof_col[bi], street_edges: b.street[bi].clone() },
+                );
+                let ok = g.v.iter().all(|v| v.p.is_finite()) && g.i.iter().all(|&i| (i as usize) < g.v.len()) && !g.i.is_empty();
+                if !ok {
+                    bad += 1;
+                }
+            }
+            println!("  detailed shells: {bad} bad");
             // Interiors for every building.
             let (mut ok, mut none, mut tris, mut worst) = (0usize, 0usize, 0usize, (0.0f64, String::new()));
             let mut total = 0.0;
             let mut rooms: BTreeMap<String, usize> = BTreeMap::new();
+            let only_b: Option<i64> = std::env::var("USX_BID").ok().and_then(|v| v.parse().ok());
             for (bi, bl) in b.buildings.iter().enumerate() {
+                if only_b.is_some_and(|x| x != bl.id) {
+                    continue;
+                }
                 let cen = geom::centroid(&bl.outline);
                 let (la, lo) = b.local.ll(cen);
                 let p = PlacedRef { tile, b: bi as u32, base: 100.0, low: 99.0, origin: Geodetic::new(la, lo, 100.0).to_ecef() };
