@@ -49,7 +49,7 @@ jobs:
           cd ~/.cache && du -sh * || true
           tar czf /tmp/cache.tgz --exclude=mesa_shader_cache -C ~/.cache us-explorer && ls -l /tmp/cache.tgz
           mkdir /tmp/dc && cd /tmp/dc && git init -q -b devcache && split -b 45m /tmp/cache.tgz cache.tgz.part-
-          mkdir shots && for f in "$GITHUB_WORKSPACE"/shots/*.png; do [ -f "$f" ] && convert "$f" -quality 80 "shots/$(basename "${f%.png}").jpg" || true; done
+          mkdir shots && cp "$GITHUB_WORKSPACE"/shots/*.png shots/ || true
           cp "$GITHUB_WORKSPACE"/shots/log.txt shots/
           git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm cache
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:devcache

@@ -30,6 +30,8 @@ pub struct Title {
     spin: f64,
     /// Character being edited (saved on Done).
     draft: Option<(Character, Outfit)>,
+    /// The first line of a crash report left by the last session.
+    crash: Option<String>,
 }
 
 /// Well-known places to start from.
@@ -53,10 +55,12 @@ pub struct TitlePlugin;
 impl Plugin for TitlePlugin {
     fn build(&self, app: &mut App) {
         let args = app.world().resource::<crate::Args>().clone();
-        let s = &app.world().resource::<crate::GameSettings>().0;
-        let open = s.title_screen && args.shots.is_empty() && args.start.is_none();
-        app.insert_resource(Title { open, ..default() })
-            .add_systems(Update, showcase.before(crate::ui::UiInput))
+        // Always shown at start (scripted screenshots and --at skip it).
+        let open = args.shots.is_empty() && args.start.is_none();
+        let crash = std::fs::read_to_string(crate::crash_log_path()).ok().map(|t| t.lines().take(4).collect::<Vec<_>>().join("\n"));
+        app.insert_resource(Title { open, crash, ..default() })
+            .add_systems(Update, (showcase.before(crate::ui::UiInput), light_render))
+            .add_systems(Last, frame_cap)
             .add_systems(EguiPrimaryContextPass, draw.before(crate::ui::DrawUi));
     }
 }
@@ -107,10 +111,39 @@ fn draw(
     }
     let ctx = contexts.ctx_mut()?;
     let screen = ctx.content_rect();
-    // A dark band down the left so the menu reads over any scenery.
+    // The world isn't drawn behind the menu (see `light_render`): a plain backdrop with
+    // faint contour lines, and a dark band down the left while customising (where the
+    // character is drawn on the right).
     egui::Area::new("title-shade".into()).fixed_pos(screen.min).order(egui::Order::Background).interactable(false).show(ctx, |ui| {
-        let r = egui::Rect::from_min_size(screen.min, egui::vec2(380.0, screen.height()));
-        ui.painter().rect_filled(r, 0.0, egui::Color32::from_black_alpha(150));
+        let p = ui.painter();
+        if title.page == Page::Customize {
+            let r = egui::Rect::from_min_size(screen.min, egui::vec2(380.0, screen.height()));
+            p.rect_filled(r, 0.0, egui::Color32::from_black_alpha(150));
+        } else {
+            let steps = 24;
+            for i in 0..steps {
+                let t = i as f32 / steps as f32;
+                let r = egui::Rect::from_min_max(
+                    egui::pos2(screen.min.x, screen.min.y + screen.height() * t),
+                    egui::pos2(screen.max.x, screen.min.y + screen.height() * (t + 1.0 / steps as f32) + 1.0),
+                );
+                let c = |a: f32, b: f32| (a + (b - a) * t) as u8;
+                p.rect_filled(r, 0.0, egui::Color32::from_rgb(c(18.0, 34.0), c(28.0, 46.0), c(44.0, 58.0)));
+            }
+            // Contour lines of an imaginary hill, like a topographic map.
+            let c = egui::pos2(screen.min.x + screen.width() * 0.68, screen.min.y + screen.height() * 0.55);
+            for k in 1..14 {
+                let r = k as f32 * 38.0;
+                let pts: Vec<egui::Pos2> = (0..=96)
+                    .map(|i| {
+                        let a = i as f32 / 96.0 * std::f32::consts::TAU;
+                        let w = 1.0 + 0.18 * (3.0 * a + k as f32 * 0.7).sin() + 0.08 * (5.0 * a - k as f32).cos();
+                        egui::pos2(c.x + a.cos() * r * w * 1.35, c.y + a.sin() * r * w)
+                    })
+                    .collect();
+                p.add(egui::Shape::line(pts, egui::Stroke::new(1.0, egui::Color32::from_rgba_unmultiplied(150, 190, 210, 22))));
+            }
+        }
     });
     let mut close = false;
     egui::Area::new("title".into()).fixed_pos(screen.min + egui::vec2(48.0, 70.0)).show(ctx, |ui| {
@@ -146,11 +179,18 @@ fn draw(
                 if big_button(ui, "Quit") {
                     exit.write(AppExit::Success);
                 }
-                ui.add_space(18.0);
-                let mut show = settings.0.title_screen;
-                if ui.checkbox(&mut show, "Show this screen when the game starts").changed() {
-                    settings.0.title_screen = show;
-                    settings.0.save();
+                if let Some(c) = title.crash.clone() {
+                    ui.add_space(18.0);
+                    egui::Frame::group(ui.style()).show(ui, |ui| {
+                        ui.colored_label(egui::Color32::from_rgb(240, 180, 90), "The game closed unexpectedly last time.");
+                        ui.small(c);
+                        ui.small(format!("The full report is in {}", crate::crash_log_path().display()));
+                        if ui.button("Dismiss").clicked() {
+                            let p = crate::crash_log_path();
+                            let _ = std::fs::rename(&p, p.with_file_name("crash-previous.log"));
+                            title.crash = None;
+                        }
+                    });
                 }
             }
             Page::Play => {
@@ -291,4 +331,44 @@ fn draw(
         title.page = Page::Main;
     }
     Ok(())
+}
+
+/// While the menu is up (other than the character page) the world isn't drawn: the
+/// camera looks at an empty render layer. Saves the GPU for nothing on screen.
+fn light_render(
+    title: Res<Title>,
+    mut cams: Query<(Entity, Option<&bevy::camera::visibility::RenderLayers>), With<crate::camera::MainCamera>>,
+    mut commands: Commands,
+    mut saved: Local<Option<Option<bevy::camera::visibility::RenderLayers>>>,
+) {
+    let hide = title.open && title.page != Page::Customize;
+    let Ok((e, layers)) = cams.single_mut() else { return };
+    match (hide, saved.is_some()) {
+        (true, false) => {
+            *saved = Some(layers.cloned());
+            commands.entity(e).insert(bevy::camera::visibility::RenderLayers::layer(31));
+        }
+        (false, true) => {
+            match saved.take().flatten() {
+                Some(l) => commands.entity(e).insert(l),
+                None => commands.entity(e).remove::<bevy::camera::visibility::RenderLayers>(),
+            };
+        }
+        _ => {}
+    }
+}
+
+/// The menu runs at 30 frames a second at most.
+fn frame_cap(title: Res<Title>, mut last: Local<Option<std::time::Instant>>) {
+    let now = std::time::Instant::now();
+    if title.open
+        && let Some(l) = *last
+    {
+        let frame = std::time::Duration::from_secs_f64(1.0 / 30.0);
+        let spent = now - l;
+        if spent < frame {
+            std::thread::sleep(frame - spent);
+        }
+    }
+    *last = Some(std::time::Instant::now());
 }

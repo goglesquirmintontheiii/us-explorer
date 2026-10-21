@@ -310,6 +310,7 @@ fn receive(mut bl: Option<ResMut<Buildings>>, time: Res<Time>, settings: Res<cra
             Out::Built(id, b) => {
                 let Some(t) = bl.tiles.get_mut(&id) else { continue };
                 info!("buildings {}: {} buildings, {} vertices", id.path(), b.buildings.len(), b.vertices);
+                set_footprints(id, &b);
                 t.chunks = (0..b.chunks.len()).map(|_| ChunkState::default()).collect();
                 t.state = TileState::Ready(Arc::from(b));
             }
@@ -346,6 +347,49 @@ fn receive(mut bl: Option<ResMut<Buildings>>, time: Res<Time>, settings: Res<cra
     }
 }
 
+/// A building's outline in lat/lon, for keeping trees and grass off it.
+#[derive(Clone, Debug)]
+pub struct Footprint {
+    pub ring: Vec<(f64, f64)>,
+    /// (s, w, n, e)
+    pub bbox: (f64, f64, f64, f64),
+}
+
+type FootprintMap = std::collections::HashMap<TileId, Arc<Vec<Footprint>>>;
+
+fn footprint_store() -> &'static std::sync::RwLock<FootprintMap> {
+    static S: std::sync::OnceLock<std::sync::RwLock<FootprintMap>> = std::sync::OnceLock::new();
+    S.get_or_init(Default::default)
+}
+
+fn set_footprints(id: TileId, b: &build::Built) {
+    let list: Vec<Footprint> = b
+        .buildings
+        .iter()
+        .map(|bl| {
+            let ring: Vec<(f64, f64)> = bl.outline.iter().map(|&p| b.local.ll(p)).collect();
+            let mut bb = (90.0f64, 180.0f64, -90.0f64, -180.0f64);
+            for &(la, lo) in &ring {
+                bb = (bb.0.min(la), bb.1.min(lo), bb.2.max(la), bb.3.max(lo));
+            }
+            Footprint { ring, bbox: bb }
+        })
+        .collect();
+    let Ok(mut m) = footprint_store().write() else { return };
+    m.insert(id, Arc::new(list));
+    if m.len() > 400 {
+        let far: Vec<TileId> = m.keys().filter(|k| k.x.abs_diff(id.x) > 10 || k.y.abs_diff(id.y) > 10).copied().collect();
+        for k in far {
+            m.remove(&k);
+        }
+    }
+}
+
+/// Building outlines of a building tile (zoom 15), once it has loaded.
+pub fn footprints_for(id: TileId) -> Option<Arc<Vec<Footprint>>> {
+    footprint_store().read().ok()?.get(&id).cloned()
+}
+
 #[derive(bevy::ecs::system::SystemParam)]
 struct Apply<'w, 's> {
     commands: Commands<'w, 's>,
@@ -364,8 +408,9 @@ impl Apply<'_, '_> {
         mesh.insert_indices(Indices::U32(d.indices));
         let h = self.meshes.add(mesh);
         match (&c.mesh, c.root) {
-            (Some(old), Some(root)) => {
-                self.meshes.remove(old.id());
+            (Some(_), Some(root)) => {
+                // The old mesh is freed when its last handle goes (removing it here
+                // raced the renderer).
                 self.commands.entity(root).insert(Mesh3d(h.clone()));
                 if let Ok(mut a) = self.anchors.get_mut(root) {
                     a.ecef = d.center;
@@ -853,6 +898,7 @@ mod fixture_tests {
             let mut total = 0.0;
             let mut rooms: BTreeMap<String, usize> = BTreeMap::new();
             let only_b: Option<i64> = std::env::var("USX_BID").ok().and_then(|v| v.parse().ok());
+            let mut heavy: Vec<(usize, String)> = Vec::new();
             for (bi, bl) in b.buildings.iter().enumerate() {
                 if only_b.is_some_and(|x| x != bl.id) {
                     continue;
@@ -884,13 +930,43 @@ mod fixture_tests {
                                 }
                             }
                         }
-                        for mb in d.kit.parts.values() {
-                            tris += mb.idx.len() / 3;
-                            for q in &mb.pos {
+                        let my_tris: usize = d.meshes.iter().map(|m| m.1.indices().map(|i| i.len()).unwrap_or(0) / 3).sum();
+                        let hinges = d.specs.iter().filter(|s| matches!(s, furniture::Spec::Hinged { .. })).count();
+                        let hinge_tris: usize = d
+                            .specs
+                            .iter()
+                            .map(|s| if let furniture::Spec::Hinged { kit, .. } = s { kit.parts.values().map(|m| m.idx.len() / 3).sum() } else { 0 })
+                            .sum();
+                        heavy.push((
+                            my_tris + hinge_tris,
+                            format!(
+                                "{:?} {:.0} m² {} lv id {}: {} k tris ({} k in {} hinged), {} specs, {} walls, {} doors, {} meshes, {:.0} ms",
+                                bl.kind,
+                                bl.area,
+                                bl.levels,
+                                bl.id,
+                                (my_tris + hinge_tris) / 1000,
+                                hinge_tris / 1000,
+                                hinges,
+                                d.specs.len(),
+                                d.walls.len(),
+                                d.doors.len(),
+                                d.meshes.len(),
+                                dt
+                            ),
+                        ));
+                        for (_, mesh) in &d.meshes {
+                            let Some(bevy::mesh::VertexAttributeValues::Float32x3(pos)) = mesh.attribute(bevy::mesh::Mesh::ATTRIBUTE_POSITION)
+                            else {
+                                panic!("no positions")
+                            };
+                            let idx: Vec<usize> = mesh.indices().map(|i| i.iter().collect()).unwrap_or_default();
+                            tris += idx.len() / 3;
+                            for q in pos {
                                 assert!(q.iter().all(|x| x.is_finite()), "non-finite interior vertex in {}", bl.id);
                             }
-                            for &i in &mb.idx {
-                                assert!((i as usize) < mb.pos.len());
+                            for &i in &idx {
+                                assert!(i < pos.len());
                             }
                         }
                         for f in &d.floors {
@@ -928,6 +1004,10 @@ mod fixture_tests {
                 worst.0,
                 worst.1
             );
+            heavy.sort_by(|a, b| b.0.cmp(&a.0));
+            for h in heavy.iter().take(5) {
+                println!("    heaviest: {}", h.1);
+            }
         }
     }
 }

@@ -12,8 +12,26 @@ const STALL_W: f32 = 2.7;
 const STALL_D: f32 = 5.5;
 const AISLE: f32 = 7.3;
 const MODULE: f32 = AISLE + 2.0 * STALL_D;
-/// Surface cells (so the lot follows the ground).
-const CELL: f32 = 12.0;
+/// Surface cells (so the lot follows the ground closely).
+const CELL: f32 = 6.0;
+/// Heights above the ground: the paving, and paint on it (far enough apart that the
+/// paint never sinks into the paving where the two are draped differently).
+const PAVE_DY: f32 = 0.03;
+const PAINT_DY: f32 = 0.1;
+
+/// Lot geometry in small pieces, each going to the chunk under it (a whole lot in one
+/// chunk would be draped against ground that isn't loaded around its far corners).
+#[derive(Default)]
+struct Pieces {
+    cells: std::collections::HashMap<(i32, i32), (Vec2, Geom)>,
+}
+
+impl Pieces {
+    fn g(&mut self, p: Vec2) -> &mut Geom {
+        let k = ((p.x / 16.0).floor() as i32, (p.y / 16.0).floor() as i32);
+        &mut self.cells.entry(k).or_insert_with(|| (p, Geom::default())).1
+    }
+}
 
 /// Paint and surface kinds in `uv2[0]` for lot geometry (see road.wgsl).
 pub mod kind {
@@ -129,23 +147,35 @@ pub fn lots(
         if area_m2 < 60.0 {
             continue;
         }
-        // Only the tile that holds the lot's first vertex builds it.
-        if !in_tile(outers[0][0]) {
+        // Every tile the lot reaches builds its own part: the layout is worked out for
+        // the whole lot (the same in each tile) and only pieces in this tile are kept.
+        let (x0, x1, z0, z1) = bounds;
+        let touches = outers.iter().flatten().any(|p| p.x >= x0 - 500.0 && p.x <= x1 + 500.0 && p.y >= z0 - 500.0 && p.y <= z1 + 500.0);
+        if !touches {
             continue;
         }
         let seed = hash64(area.id as u64);
         let surface = surface_code(t);
         let inside = |p: Vec2| outers.iter().any(|r| point_in_ring(r, p)) && !inners.iter().any(|r| point_in_ring(r, p));
-        let mut g = Geom::default();
-        surface_cells(&mut g, &outers, &inners, bounds, surface);
-        let centre = outers[0].iter().copied().sum::<Vec2>() / outers[0].len() as f32;
+        let mut pc = Pieces::default();
+        surface_cells(&mut pc, &outers, &inners, bounds, surface);
         // Paint only on paved lots big enough for a row.
         let paved = surface <= 2;
         if paved && area_m2 > 250.0 {
-            let stalls = layout(&mut g, &mut out.props, &outers, &inners, &aisles, &inside, nearest_road, seed, area.id);
-            out.stalls += stalls;
+            let mut props = Vec::new();
+            let mut lot_pc = Pieces::default();
+            let stalls = layout(&mut lot_pc, &mut props, &outers, &inners, &aisles, &inside, nearest_road, seed, area.id);
+            if in_tile(outers[0][0]) {
+                out.stalls += stalls;
+            }
+            out.props.extend(props.into_iter().filter(|p| in_tile(p.p)));
+            for (_, (c, g)) in lot_pc.cells {
+                if in_tile(c) {
+                    out.pieces.push((c, g));
+                }
+            }
         }
-        out.pieces.push((centre, g));
+        out.pieces.extend(pc.cells.into_values());
     }
     out
 }
@@ -160,7 +190,7 @@ fn ring_area(r: &[Vec2]) -> f32 {
 }
 
 /// The paved surface in cells clipped to the lot.
-fn surface_cells(g: &mut Geom, outers: &[Vec<Vec2>], inners: &[Vec<Vec2>], bounds: (f32, f32, f32, f32), surface: u32) {
+fn surface_cells(pc: &mut Pieces, outers: &[Vec<Vec2>], inners: &[Vec<Vec2>], bounds: (f32, f32, f32, f32), surface: u32) {
     let (x0, x1, z0, z1) = bounds;
     let (mut bx0, mut bx1, mut bz0, mut bz1) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
     for p in outers.iter().flatten() {
@@ -169,9 +199,8 @@ fn surface_cells(g: &mut Geom, outers: &[Vec<Vec2>], inners: &[Vec<Vec2>], bound
         bz0 = bz0.min(p.y);
         bz1 = bz1.max(p.y);
     }
-    // Lots are built whole by one tile, a little past its edge.
-    let pad = 400.0;
-    let (bx0, bx1, bz0, bz1) = (bx0.max(x0 - pad), bx1.min(x1 + pad), bz0.max(z0 - pad), bz1.min(z1 + pad));
+    // Only this tile's part (its neighbours build theirs).
+    let (bx0, bx1, bz0, bz1) = (bx0.max(x0), bx1.min(x1), bz0.max(z0), bz1.min(z1));
     if bx0 >= bx1 || bz0 >= bz1 {
         return;
     }
@@ -179,7 +208,12 @@ fn surface_cells(g: &mut Geom, outers: &[Vec<Vec2>], inners: &[Vec<Vec2>], bound
     let (c1x, c1z) = ((bx1 / CELL).floor() as i32, (bz1 / CELL).floor() as i32);
     for cz in c0z..=c1z {
         for cx in c0x..=c1x {
-            let (qx0, qz0, qx1, qz1) = (cx as f32 * CELL, cz as f32 * CELL, (cx + 1) as f32 * CELL, (cz + 1) as f32 * CELL);
+            let (qx0, qz0, qx1, qz1) =
+                ((cx as f32 * CELL).max(x0), (cz as f32 * CELL).max(z0), ((cx + 1) as f32 * CELL).min(x1), ((cz + 1) as f32 * CELL).min(z1));
+            if qx0 >= qx1 || qz0 >= qz1 {
+                continue;
+            }
+            let g = pc.g(Vec2::new((qx0 + qx1) * 0.5, (qz0 + qz1) * 0.5));
             let mut polys: Vec<Vec<Vec2>> = Vec::new();
             for r in outers {
                 let c = clip_rect(r, qx0, qz0, qx1, qz1);
@@ -205,7 +239,7 @@ fn surface_cells(g: &mut Geom, outers: &[Vec<Vec2>], inners: &[Vec<Vec2>], bound
                 let base = g.v.len() as u32;
                 for k in 0..flat.len() / 2 {
                     let p = Vec2::new(flat[2 * k], flat[2 * k + 1]);
-                    g.v.push(vtx(p, 0.05, [p.x, p.y], kind::SURFACE, surface));
+                    g.v.push(vtx(p, PAVE_DY, [p.x, p.y], kind::SURFACE, surface));
                 }
                 for t in tris.chunks_exact(3) {
                     // Facing up means clockwise in (x, z) numbers (z points south).
@@ -245,7 +279,7 @@ fn runs(u0: f32, u1: f32, ok: &dyn Fn(f32) -> bool) -> Vec<(f32, f32)> {
 /// Rows of stalls, paint, islands, medians, wheel stops, lights and signs.
 #[allow(clippy::too_many_arguments)]
 fn layout(
-    g: &mut Geom,
+    pc: &mut Pieces,
     props: &mut Vec<Prop>,
     outers: &[Vec<Vec2>],
     inners: &[Vec<Vec2>],
@@ -328,12 +362,18 @@ fn layout(
                     continue;
                 }
                 let start = (s0 + s1) * 0.5 - n as f32 * STALL_W * 0.5;
-                // Stripes between stalls, and the back line.
+                // Stripes between stalls (in two halves, so each piece stays small), and
+                // the back line a stall at a time.
                 for k in 0..=n {
                     let u = start + k as f32 * STALL_W;
-                    line(g, at(u, front), at(u, back), 0.1, 0.075);
+                    let mid = (front + back) * 0.5;
+                    line(pc.g(at(u, (front + mid) * 0.5)), at(u, front), at(u, mid), 0.1, PAINT_DY);
+                    line(pc.g(at(u, (mid + back) * 0.5)), at(u, mid), at(u, back), 0.1, PAINT_DY);
                 }
-                line(g, at(start, back - side * 0.05), at(start + n as f32 * STALL_W, back - side * 0.05), 0.1, 0.075);
+                for k in 0..n {
+                    let (ua, ub) = (start + k as f32 * STALL_W, start + (k + 1) as f32 * STALL_W);
+                    line(pc.g(at((ua + ub) * 0.5, back)), at(ua, back - side * 0.05), at(ub, back - side * 0.05), 0.1, PAINT_DY);
+                }
                 for k in 0..n {
                     let u = start + (k as f32 + 0.5) * STALL_W;
                     let f = at(u, front);
@@ -344,6 +384,7 @@ fn layout(
                 if island {
                     for (k, uc) in [r0 + 1.1, r1 - 1.1].into_iter().enumerate() {
                         let c = at(uc, (front + back) * 0.5);
+                        let g = pc.g(c);
                         prism(g, c, nrm, STALL_D * 0.5 - 0.15, 0.95, (H::Ground { off: 0.0 }, 0.0), (H::Ground { off: 0.0 }, 0.16), None);
                         flat(
                             g,
@@ -383,6 +424,7 @@ fn layout(
                     let (m0, m1) = (a0.max(b0) + 2.4, a1.min(b1) - 2.4);
                     if m1 - m0 > 6.0 {
                         let c = at((m0 + m1) * 0.5, back);
+                        let g = pc.g(c);
                         prism(g, c, ax, (m1 - m0) * 0.5, 0.6, (H::Ground { off: 0.0 }, 0.0), (H::Ground { off: 0.0 }, 0.15), None);
                         flat(
                             g,
@@ -438,7 +480,7 @@ fn layout(
             }
         }
     }
-    let wheel_stops = hash01(seed ^ 0x5709) < 0.4;
+    let wheel_stops = hash01(seed ^ 0x5709) < 0.75;
     for (si, s) in stalls.iter().enumerate() {
         let hw = STALL_W * 0.5 - 0.06;
         let q = [
@@ -454,8 +496,9 @@ fn layout(
         } else {
             ([q[1], q[0], q[3], q[2]], [[STALL_W, 0.0], [0.0, 0.0], [0.0, STALL_D], [STALL_W, STALL_D]])
         };
+        let g = pc.g(s.front + s.into * (STALL_D * 0.5));
         if s.accessible {
-            flat(g, q, uv, 0.07, kind::ACCESSIBLE);
+            flat(g, q, uv, PAINT_DY - 0.01, kind::ACCESSIBLE);
             // The sign at the head of the stall, facing the aisle.
             let p = s.front + s.into * (STALL_D + 0.35);
             props.push(Prop {
@@ -467,12 +510,12 @@ fn layout(
                 dy: 0.0,
             });
         } else if s.hatch {
-            flat(g, q, uv, 0.07, kind::HATCH);
+            flat(g, q, uv, PAINT_DY - 0.01, kind::HATCH);
         }
         if wheel_stops && !s.hatch {
             let c = s.front + s.into * (STALL_D - 0.75);
             prism(
-                g,
+                pc.g(c),
                 c,
                 s.along,
                 0.9,
@@ -514,7 +557,7 @@ mod tests {
         let tags = Tags(vec![("amenity".into(), "parking".into())]);
         let osm = OsmTile { areas: vec![usx_core::osm::Area { id: 7, outer: vec![ring], inner: vec![], tags }], ..Default::default() };
         let out = lots(&osm, &local, (-1000.0, 1000.0, -1000.0, 1000.0), &|_| true, &|_| None);
-        assert_eq!(out.pieces.len(), 1);
+        assert!(out.pieces.len() > 10);
         // Three modules of two rows, ~28 stalls a row.
         assert!(out.stalls > 120 && out.stalls < 200, "{}", out.stalls);
         assert!(out.props.iter().filter(|p| p.kind == PropKind::ParkingSign).count() >= 5);

@@ -8,6 +8,7 @@ mod controls;
 mod globe;
 mod gpu_usage;
 mod map;
+mod nature;
 mod player;
 mod roads;
 mod shot;
@@ -77,6 +78,28 @@ fn parse_args() -> Args {
     a
 }
 
+/// Where a crash report goes (the game has no console on Windows).
+pub fn crash_log_path() -> std::path::PathBuf {
+    usx_core::settings::data_dir().join("crash.log")
+}
+
+/// On a panic, write what happened and where to `crash.log` before the game closes.
+fn install_crash_log() {
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let bt = std::backtrace::Backtrace::force_capture();
+        let thread = std::thread::current().name().unwrap_or("?").to_string();
+        let text = format!(
+            "US Explorer {} crashed at {} UTC\nthread: {thread}\n{info}\n\n{bt}\n",
+            usx_core::VERSION,
+            sun::format_utc(sun::SimClock::now_real())
+        );
+        let _ = std::fs::create_dir_all(usx_core::settings::data_dir());
+        let _ = std::fs::write(crash_log_path(), text);
+        default(info);
+    }));
+}
+
 fn main() {
     // The same executable doubles as the weather service.
     if std::env::args().nth(1).as_deref() == Some("--weather-service") {
@@ -84,6 +107,7 @@ fn main() {
         return;
     }
     usx_core::update::cleanup_old();
+    install_crash_log();
     let args = parse_args();
     let settings = Settings::load();
     usx_core::net::limiter().set_mbps(settings.bandwidth_mbps * 0.9);
@@ -131,6 +155,7 @@ fn main() {
         buildings::BuildingsPlugin,
         bevy::diagnostic::SystemInformationDiagnosticsPlugin,
         title::TitlePlugin,
+        nature::NaturePlugin,
     ));
     app.run();
 }

@@ -26,3 +26,10 @@ panic = "abort"
 inherits = "release"
 lto = "fat"
 codegen-units = 1
+
+# Quick optimised builds while developing (no LTO, incremental).
+[profile.fast]
+inherits = "release"
+lto = false
+codegen-units = 64
+incremental = true

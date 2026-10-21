@@ -136,6 +136,65 @@ const KEEP: &[&str] = &[
     "wikidata",
     "start_date",
     "historic",
+    // Nature layer.
+    "leaf_type",
+    "leaf_cycle",
+    "genus",
+    "species",
+    "taxon",
+    "circumference",
+    "diameter_crown",
+    "denotation",
+    "wetland",
+    "golf",
+    "sport",
+    "crop",
+    "produce",
+    "trees",
+    "fence_type",
+    "wall",
+    "material",
+    "voltage",
+    "cables",
+    "structure",
+    "design",
+    "line",
+    "generator:source",
+    "generator:method",
+    "rotor:diameter",
+    "seamark:type",
+    "seamark:name",
+    "seamark:buoy_lateral:colour",
+    "seamark:buoy_lateral:shape",
+    "seamark:buoy_lateral:category",
+    "seamark:buoy_cardinal:category",
+    "seamark:buoy_cardinal:colour",
+    "seamark:buoy_cardinal:shape",
+    "seamark:buoy_special_purpose:colour",
+    "seamark:buoy_special_purpose:shape",
+    "seamark:buoy_safe_water:colour",
+    "seamark:buoy_safe_water:shape",
+    "seamark:buoy_isolated_danger:colour",
+    "seamark:buoy_isolated_danger:shape",
+    "seamark:mooring:category",
+    "seamark:mooring:colour",
+    "seamark:mooring:shape",
+    "seamark:beacon_lateral:colour",
+    "seamark:beacon_lateral:category",
+    "seamark:beacon_lateral:shape",
+    "seamark:light:colour",
+    "seamark:light:character",
+    "seamark:light:period",
+    "seamark:topmark:shape",
+    "seamark:topmark:colour",
+    "tidal",
+    "tower:type",
+    "tower:construction",
+    "lifeguard",
+    "vending",
+    "bicycle_parking",
+    "flag:type",
+    "brand",
 ];
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -200,6 +259,34 @@ pub enum Layer {
     /// Buildings and building parts, entrances, indoor mapping, and the shops and
     /// amenities that say what a building is used for.
     Buildings,
+    /// Trees, woods and ground cover, parks, coastline and rivers, fences and walls,
+    /// power lines, wind turbines, buoys, piers and street furniture.
+    Nature,
+}
+
+/// Land cover drawn as an area in the nature layer.
+pub fn is_cover(t: &Tags) -> bool {
+    t.get("natural").is_some_and(|v| {
+        matches!(v, "wood" | "scrub" | "heath" | "grassland" | "sand" | "beach" | "wetland" | "bare_rock" | "scree" | "dune" | "shingle")
+    }) || t.get("landuse").is_some_and(|v| {
+        matches!(
+            v,
+            "forest"
+                | "grass"
+                | "meadow"
+                | "farmland"
+                | "orchard"
+                | "vineyard"
+                | "cemetery"
+                | "recreation_ground"
+                | "village_green"
+                | "allotments"
+                | "plant_nursery"
+                | "flowerbed"
+        )
+    }) || t.get("leisure").is_some_and(|v| matches!(v, "park" | "garden" | "golf_course" | "pitch" | "playground" | "nature_reserve" | "dog_park"))
+        || t.get("golf").is_some_and(|v| matches!(v, "fairway" | "green" | "tee" | "bunker" | "rough"))
+        || t.get("man_made").is_some_and(|v| matches!(v, "pier" | "breakwater" | "groyne")) && t.get("area").is_some_and(|a| a == "yes")
 }
 
 /// A surface parking lot (or any parking area) drawn as an area.
@@ -220,6 +307,7 @@ pub fn is_area(t: &Tags, layer: Layer) -> bool {
     match layer {
         Layer::Roads => is_water(t) || is_parking(t),
         Layer::Buildings => is_building(t) || is_indoor(t),
+        Layer::Nature => is_cover(t),
     }
 }
 
@@ -276,6 +364,36 @@ relation[\"building:part\"](if:count_members()<200)({b});\
 way[indoor~\"^(room|corridor|area|level)$\"]({b});\
 node[entrance]({b});node[door]({b});\
 node[shop]({b});node[amenity]({b});node[office]({b});node[craft]({b});node[tourism]({b});node[healthcare]({b});\
+);out body geom qt;"
+    )
+}
+
+/// The Overpass QL for one tile's nature layer.
+pub fn query_nature(id: TileId) -> String {
+    let (w, s, e, n) = id.bounds();
+    let b = format!("{s:.6},{w:.6},{n:.6},{e:.6}");
+    format!(
+        "[out:json][timeout:120];(\
+node[natural=tree]({b});\
+way[natural=tree_row]({b});\
+way[natural~\"^(wood|scrub|heath|grassland|sand|beach|wetland|bare_rock|scree|dune|shingle)$\"]({b});\
+relation[natural~\"^(wood|scrub|heath|grassland|sand|beach|wetland)$\"](if:count_members()<300)({b});\
+way[landuse~\"^(forest|grass|meadow|farmland|orchard|vineyard|cemetery|recreation_ground|village_green|allotments|plant_nursery|flowerbed)$\"]({b});\
+relation[landuse~\"^(forest|grass|meadow|farmland|orchard|vineyard|cemetery|recreation_ground)$\"](if:count_members()<300)({b});\
+way[leisure~\"^(park|garden|golf_course|pitch|playground|nature_reserve|dog_park)$\"]({b});\
+relation[leisure~\"^(park|garden|golf_course|nature_reserve)$\"](if:count_members()<300)({b});\
+way[golf~\"^(fairway|green|tee|bunker|rough)$\"]({b});\
+way[natural=coastline]({b});\
+way[waterway~\"^(river|stream|canal|ditch|drain)$\"]({b});\
+way[barrier~\"^(fence|wall|hedge|retaining_wall|city_wall|jersey_barrier)$\"]({b});\
+way[power=line]({b});node[power=tower]({b});\
+node[power=generator][\"generator:source\"=wind]({b});\
+node[\"seamark:type\"]({b});\
+way[man_made~\"^(pier|breakwater|groyne)$\"]({b});\
+node[emergency=lifeguard]({b});\
+node[amenity~\"^(waste_basket|bicycle_parking|drinking_water|telephone|vending_machine|shelter|fountain|bbq|recycling)$\"]({b});\
+node[leisure~\"^(picnic_table|firepit)$\"]({b});\
+node[man_made~\"^(flagpole|water_tower|mast|lighthouse|windmill)$\"]({b});\
 );out body geom qt;"
     )
 }
@@ -384,6 +502,7 @@ pub fn parse_layer(json: &[u8], layer: Layer) -> Result<OsmTile, String> {
                 if layer == Layer::Buildings {
                     continue;
                 }
+                // Pieces of big areas outside the tile come back as gaps: keep the lines.
                 if pts.len() >= 2 {
                     out.ways.push(Way { id: el.id, nodes, pts, tags });
                 }
@@ -494,8 +613,15 @@ pub fn parse_osm_xml_layer(xml: &[u8], layer: Layer) -> Result<OsmTile, String> 
         buf.clear();
     }
     let wanted_way = |t: &Tags| {
-        layer == Layer::Roads && t.get("highway").is_some()
-            || t.get("railway").is_some_and(|r| matches!(r, "rail" | "light_rail" | "subway" | "tram" | "narrow_gauge" | "monorail"))
+        layer == Layer::Nature
+            && (t.get("natural").is_some_and(|v| matches!(v, "tree_row" | "coastline"))
+                || t.get("waterway").is_some_and(|v| matches!(v, "river" | "stream" | "canal" | "ditch" | "drain"))
+                || t.get("barrier").is_some_and(|v| matches!(v, "fence" | "wall" | "hedge" | "retaining_wall" | "city_wall" | "jersey_barrier"))
+                || t.is("power", "line")
+                || t.get("man_made").is_some_and(|v| matches!(v, "pier" | "breakwater" | "groyne")))
+            || layer == Layer::Roads && t.get("highway").is_some()
+            || layer == Layer::Roads
+                && t.get("railway").is_some_and(|r| matches!(r, "rail" | "light_rail" | "subway" | "tram" | "narrow_gauge" | "monorail"))
             || layer == Layer::Roads && t.is("barrier", "guard_rail")
             || layer == Layer::Roads && t.is("power", "minor_line")
     };
@@ -563,6 +689,7 @@ pub fn download_layer(id: TileId, layer: Layer) -> Result<OsmTile, NetError> {
     let enc = encode_query(&match layer {
         Layer::Roads => query(id),
         Layer::Buildings => query_buildings(id),
+        Layer::Nature => query_nature(id),
     });
     let start = NEXT_ENDPOINT.fetch_add(1, Ordering::Relaxed);
     let (tx, rx) = std::sync::mpsc::channel::<Result<OsmTile, NetError>>();
@@ -615,6 +742,7 @@ fn cache_key(id: TileId, layer: Layer) -> String {
     match layer {
         Layer::Roads => format!("osm/v3/{}.bin", id.path()),
         Layer::Buildings => format!("bld/v1/{}.bin", id.path()),
+        Layer::Nature => format!("nat/v1/{}.bin", id.path()),
     }
 }
 

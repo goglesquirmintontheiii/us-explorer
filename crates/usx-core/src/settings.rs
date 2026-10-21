@@ -205,6 +205,14 @@ pub struct Settings {
     pub roads: bool,
     /// Sun shadows from terrain and objects.
     pub shadows: bool,
+    /// Trees, grass and ground cover.
+    pub vegetation: bool,
+    /// Fences, walls, power lines, wind turbines, buoys, piers and street furniture.
+    pub details: bool,
+    /// Ambient sound (city, traffic, forest, surf).
+    pub ambient_sound: bool,
+    /// Ambient sound volume, 0..1.
+    pub volume: f32,
 }
 
 impl Default for Settings {
@@ -242,6 +250,10 @@ impl Default for Settings {
             minimap_rotates: true,
             map_style: MapStyle::Streets,
             invert_look_y: false,
+            vegetation: true,
+            details: true,
+            ambient_sound: true,
+            volume: 0.6,
         }
     }
 }

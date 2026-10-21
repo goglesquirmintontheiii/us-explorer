@@ -235,8 +235,64 @@ pub fn conform(id: TileId, h: &mut [f32], corridors: &[Corridor], lakes: &[Lake]
             h[vi] = raw[vi] + (target - raw[vi]) * wgt;
         }
     }
+    let ring_inside = |r: &[Vec2], p: Vec2| {
+        let mut c = false;
+        let n = r.len();
+        if n < 3 {
+            return false;
+        }
+        let mut j = n - 1;
+        for i in 0..n {
+            let (a, b) = (r[i], r[j]);
+            if (a.y > p.y) != (b.y > p.y) && p.x < (b.x - a.x) * (p.y - a.y) / (b.y - a.y) + a.x {
+                c = !c;
+            }
+            j = i;
+        }
+        c
+    };
+    // Parking lots: the ground under them (and just past their edge) smoothed over
+    // about 8 m, so the paving lies on it without bumps poking through. Roads keep
+    // their levelling.
+    let steps = ((8.0 / spacing).round() as i64).max(1);
+    for l in lakes.iter().filter(|l| l.level) {
+        if l.bbox.0 > nn || l.bbox.2 < s || l.bbox.1 > e || l.bbox.3 < w {
+            continue;
+        }
+        let outer: Vec<Vec<Vec2>> = l.outer.iter().map(|r| r.iter().map(|&(a, b)| local.xz(a, b)).collect()).collect();
+        let inner: Vec<Vec<Vec2>> = l.inner.iter().map(|r| r.iter().map(|&(a, b)| local.xz(a, b)).collect()).collect();
+        let (mut lo, mut hi) = (Vec2::splat(f32::MAX), Vec2::splat(f32::MIN));
+        for p in outer.iter().flatten() {
+            lo = lo.min(*p);
+            hi = hi.max(*p);
+        }
+        let m = spacing * 1.01;
+        for (vi, &p) in vpos.iter().enumerate() {
+            if best[vi].0 > 0.0 || p.x < lo.x - m || p.y < lo.y - m || p.x > hi.x + m || p.y > hi.y + m {
+                continue;
+            }
+            // Inside, or within a lattice step of an edge (so triangles crossing the
+            // edge are smoothed too).
+            let near = |q: Vec2| outer.iter().any(|r| ring_inside(r, q)) && !inner.iter().any(|r| ring_inside(r, q));
+            if !(near(p) || [Vec2::X, Vec2::NEG_X, Vec2::Y, Vec2::NEG_Y].iter().any(|d| near(p + *d * m))) {
+                continue;
+            }
+            let (i, j) = ((vi % GRID) as i64, (vi / GRID) as i64);
+            let (mut sum, mut cnt) = (0.0f32, 0.0f32);
+            for dj in -steps..=steps {
+                for di in -steps..=steps {
+                    let (x, y) = (i + di, j + dj);
+                    if x >= 0 && y >= 0 && x < GRID as i64 && y < GRID as i64 {
+                        sum += raw[y as usize * GRID + x as usize];
+                        cnt += 1.0;
+                    }
+                }
+            }
+            h[vi] = sum / cnt;
+        }
+    }
     // Lake and river beds: down from the shore at about 1 in 6 to the lake's depth.
-    for l in lakes {
+    for l in lakes.iter().filter(|l| !l.level) {
         if l.bbox.0 > nn || l.bbox.2 < s || l.bbox.1 > e || l.bbox.3 < w {
             continue;
         }
