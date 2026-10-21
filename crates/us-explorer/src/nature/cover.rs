@@ -38,6 +38,8 @@ pub enum Cover {
     Crop = 7,
     Wetland = 8,
     Rock = 9,
+    /// Sand held by dune grass (sea oats, beach grass) behind a beach.
+    Dune = 10,
 }
 
 impl Cover {
@@ -52,6 +54,7 @@ impl Cover {
             7 => Cover::Crop,
             8 => Cover::Wetland,
             9 => Cover::Rock,
+            10 => Cover::Dune,
             _ => Cover::None,
         }
     }
@@ -64,6 +67,7 @@ impl Cover {
             Cover::Shrub => 0.4,
             Cover::Crop => 1.0,
             Cover::Wetland => 0.9,
+            Cover::Dune => 0.4,
             _ => 0.0,
         }
     }
@@ -391,6 +395,7 @@ pub fn build(input: CellInput) -> CellData {
                         if matches!(have, Cover::Canopy | Cover::Shrub) { Cover::Shrub } else { Cover::DryGrass }
                     }
                     CoverClass::Sand => Cover::Sand,
+                    CoverClass::Dune => Cover::Dune,
                     CoverClass::Wetland => {
                         if have == Cover::Canopy { have } else { Cover::Wetland }
                     }
@@ -405,6 +410,15 @@ pub fn build(input: CellInput) -> CellData {
     for k in 0..N * N {
         if mask[k] == M_WATER {
             cover[k] = Cover::Water;
+        }
+    }
+    // Dunes: sand on the coast well back from the water grows dune grass.
+    if input.nature.as_ref().is_some_and(|n| n.coast_near(cla, clo, 600.0)) {
+        let wet = distance_to(&cover.iter().map(|c| *c as u8).collect::<Vec<u8>>(), N, |c| c == Cover::Water as u8, 60.0 / mpp);
+        for k in 0..N * N {
+            if cover[k] == Cover::Sand && wet[k] >= 42.0 / mpp && mask[k] == M_FREE {
+                cover[k] = Cover::Dune;
+            }
         }
     }
     // ---- setting for species: built-up, beside water, on the coast, or wild

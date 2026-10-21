@@ -419,6 +419,8 @@ fn build_map(j: &MapJob) -> Vec<u8> {
                     (0.25 + 1.0 * grown, if row { 1.0 } else { 0.15 })
                 }
                 Cover::Wetland => (0.7 + 0.3 * noise, 0.9),
+                // Dune grass grows in clumps with bare sand between.
+                Cover::Dune => (0.5 + 0.3 * noise, if hash(i as u32 / 9 + 7, k as u32 / 9 + 3) > 0.45 { 1.0 } else { 0.1 }),
                 _ => (0.1, 1.0),
             };
             // Colour: the imagery's colour pulled towards the region's grass colour for
@@ -426,8 +428,8 @@ fn build_map(j: &MapJob) -> Vec<u8> {
             let im = [img[0] as f32 / 255.0, img[1] as f32 / 255.0, img[2] as f32 / 255.0];
             let has_img = img != [0, 0, 0];
             let lin = |c: f32| c.powf(1.0 / 2.2);
-            let target = [lin(base[0]), lin(base[1]), lin(base[2])];
-            let mix = if has_img { 0.45 } else { 1.0 };
+            let target = if cover == Cover::Dune { [0.66, 0.64, 0.42] } else { [lin(base[0]), lin(base[1]), lin(base[2])] };
+            let mix = if has_img && cover != Cover::Dune { 0.45 } else { 0.85 };
             let mut c = [0.0f32; 3];
             for q in 0..3 {
                 c[q] = im[q] + (target[q] - im[q]) * mix;

@@ -481,6 +481,8 @@ fn layout(
         }
     }
     let wheel_stops = hash01(seed ^ 0x5709) < 0.75;
+    // How full the lot is, and its cars: head-in mostly, a few backed in.
+    let full = 0.25 + 0.6 * hash01(seed ^ 0xf011);
     for (si, s) in stalls.iter().enumerate() {
         let hw = STALL_W * 0.5 - 0.06;
         let q = [
@@ -511,6 +513,24 @@ fn layout(
             });
         } else if s.hatch {
             flat(g, q, uv, PAINT_DY - 0.01, kind::HATCH);
+        }
+        let r = hash64(seed ^ 0xca5 ^ si as u64 ^ (id as u64) << 24);
+        // Nearer the buildings fills first.
+        let want = full * (0.6 + 0.8 * (s.dist_road / 60.0).min(1.0));
+        if !s.hatch && hash01(r) < want && (!s.accessible || hash01(r ^ 1) < 0.4) {
+            let body = super::cars::body_for(hash01(r ^ 2));
+            let paint = super::cars::paint_for(hash01(r ^ 3));
+            let l = super::cars::length(body);
+            let c = s.front + s.into * (STALL_D - l * 0.5 - 0.35 - hash01(r ^ 4) * 0.3) + s.along * (hash01(r ^ 5) - 0.5) * 0.3;
+            let face = if hash01(r ^ 6) < 0.12 { -s.into } else { s.into };
+            props.push(Prop {
+                kind: PropKind::Car { body, paint },
+                p: c,
+                h: H::Ground { off: 0.0 },
+                heading: heading_of(face) + (hash01(r ^ 7) - 0.5) * 0.06,
+                id: r,
+                dy: 0.0,
+            });
         }
         if wheel_stops && !s.hatch {
             let c = s.front + s.into * (STALL_D - 0.75);

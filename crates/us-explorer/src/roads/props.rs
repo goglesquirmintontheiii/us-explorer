@@ -135,6 +135,8 @@ pub struct PropAssets {
     pub lamp_off: [Handle<StandardMaterial>; 3],
     pub ped_on: [Handle<StandardMaterial>; 2],
     pub ped_off: [Handle<StandardMaterial>; 2],
+    cars: HashMap<(u8, u8), Handle<Mesh>>,
+    car_mat: Handle<StandardMaterial>,
 }
 
 fn color_of(m: Mat) -> (Color, f32, f32) {
@@ -315,7 +317,27 @@ pub fn setup(
     for (s, (r, w, h)) in order.iter().zip(atlas.rects.iter()) {
         std_faces.insert(*s, (meshes.add(face_mesh(*w, *h, *r, true)), *w, *h));
     }
-    commands.insert_resource(PropAssets { meshes: HashMap::new(), mats: m, std_faces, std_mat, lamp_on, lamp_off, ped_on, ped_off });
+    // Car paint: glossy, with a clear coat; colours come from the meshes.
+    let car_mat = mats.add(StandardMaterial {
+        base_color: Color::WHITE,
+        perceptual_roughness: 0.3,
+        reflectance: 0.6,
+        clearcoat: 0.7,
+        clearcoat_perceptual_roughness: 0.08,
+        ..default()
+    });
+    commands.insert_resource(PropAssets {
+        meshes: HashMap::new(),
+        mats: m,
+        std_faces,
+        std_mat,
+        lamp_on,
+        lamp_off,
+        ped_on,
+        ped_off,
+        cars: HashMap::new(),
+        car_mat,
+    });
 }
 
 impl PropAssets {
@@ -377,6 +399,10 @@ pub fn solids(kind: &PropKind) -> Vec<(Vec2, f32, f32)> {
         PropKind::Gantry { span, .. } => vec![(Vec2::new(-span * 0.5, 0.0), 0.3, 8.0), (Vec2::new(span * 0.5, 0.0), 0.3, 8.0)],
         PropKind::OverpassSign { .. } => Vec::new(),
         PropKind::ParkingSign => one(0.05, 2.3),
+        PropKind::Car { body, .. } => {
+            let h = super::cars::length(*body) * 0.5 - 0.9;
+            vec![(Vec2::new(0.0, -h), 0.95, 1.5), (Vec2::ZERO, 0.95, 1.5), (Vec2::new(0.0, h), 0.95, 1.5)]
+        }
     }
 }
 
@@ -642,6 +668,7 @@ fn parts(kind: &PropKind) -> Vec<Part> {
         PropKind::ParkingSign => {
             p.push(cyl(0.03, 2.2, Galvanized, Vec3::new(0.0, 1.1, 0.03)));
         }
+        PropKind::Car { .. } => {}
     }
     p
 }
@@ -685,8 +712,21 @@ pub fn spawn(
         }
         PropKind::Yield => std_face(StdSign::Yield, 2.2, &mut children, assets, meshes),
         PropKind::SpeedLimit { mph } => std_face(StdSign::Speed((mph / 5 * 5).clamp(5, 85)), 2.1, &mut children, assets, meshes),
-        PropKind::BusStop { .. } => std_face(StdSign::Bus, 2.4, &mut children, assets, meshes),
+        PropKind::BusStop { .. } => {
+            // The sign stands across the curb, read by traffic approaching the stop
+            // (the shelter faces the road).
+            if let Some((m, w, h)) = std(StdSign::Bus, assets) {
+                let rot = Quat::from_rotation_y(std::f32::consts::FRAC_PI_2);
+                children.push((m, assets.std_mat.clone(), Transform::from_xyz(0.0, 2.4, 0.0).with_rotation(rot), None));
+                let bm = assets.mesh(meshes, Shape::Box(mm(w * 0.98), mm(h * 0.98), 4));
+                children.push((bm, back.clone(), Transform::from_xyz(0.002, 2.4, 0.0).with_rotation(rot), None));
+            }
+        }
         PropKind::ParkingSign => std_face(StdSign::Accessible, 1.95, &mut children, assets, meshes),
+        PropKind::Car { body, paint } => {
+            let m = assets.cars.entry((*body, *paint)).or_insert_with(|| meshes.add(super::cars::mesh(*body, *paint))).clone();
+            children.push((m, assets.car_mat.clone(), Transform::IDENTITY, None));
+        }
         PropKind::Crossbuck { .. } => {
             // Two blades crossed at 90 degrees, readable from the front.
             for (k, a) in [(0u8, 0.785f32), (1, -0.785)] {

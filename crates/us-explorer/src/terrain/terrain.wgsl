@@ -12,6 +12,31 @@
     mesh_view_bindings::{view, globals},
 }
 
+struct TerrainParams {
+    // Swell: direction of travel (east, south), height (m), period (s).
+    swell: vec4<f32>,
+    // Wind: direction of travel (east, south), speed (m/s), wind-sea height (m).
+    wind: vec4<f32>,
+};
+
+@group(#{MATERIAL_BIND_GROUP}) @binding(100) var<uniform> sea: TerrainParams;
+
+// One deep-water wave: returns (height, d/dx, d/dy) at p (metres, x east, y south).
+// The wave vector is snapped to whole cycles per PERIOD so waves line up across tiles
+// (each tile's detail coordinates are offset by whole periods).
+fn wave(p: vec2<f32>, dir: vec2<f32>, wavelength: f32, amp: f32, t: f32, phase0: f32) -> vec3<f32> {
+    let q = 6.2831853 / PERIOD;
+    var kv = round(dir * (6.2831853 / wavelength) / q) * q;
+    if dot(kv, kv) < 1e-10 {
+        kv = vec2<f32>(q, 0.0);
+    }
+    let k = length(kv);
+    let w = sqrt(9.81 * k);
+    let ph = dot(kv, p) - w * t + phase0;
+    let c = cos(ph);
+    return vec3<f32>(amp * sin(ph), amp * c * kv.x, amp * c * kv.y);
+}
+
 const PERIOD: f32 = 4096.0;
 
 fn hash(c: vec2<f32>) -> f32 {
@@ -64,6 +89,8 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let depth = 0.0;
 #endif
     let water = select(smoothstep(0.03, 0.5, depth), 0.0, skirt);
+    // Land just above the sea carries its height the same way (alpha above 1).
+    let above_sea = select(-1.0, -depth / max(1.0 + depth, 1e-3), depth < 0.0);
 
     // Rock on steep ground: imagery taken from above smears on cliffs.
     let steep = smoothstep(0.28, 0.55, slope) * (1.0 - water);
@@ -112,31 +139,90 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     let shadow = (1.0 - smoothstep(0.03, 0.16, lum)) * (1.0 - water);
     base = base + (vec3(lum * 1.6 + 0.02) - base) * shadow * 0.35;
 
+    // Beaches: sand just above the waterline is darker and glossy, with the swash of
+    // each wave running up and back.
+    if above_sea >= 0.0 && above_sea < 2.5 && !skirt {
+        let sandy = clamp((lum - 0.35) * 4.0, 0.0, 1.0) * clamp(1.0 - abs(base.g - base.r) * 6.0, 0.0, 1.0) * clamp((base.r - base.b) * 6.0, 0.0, 1.0);
+        if sandy > 0.0 {
+            let t = globals.time;
+            let period = max(sea.swell.w, 4.0);
+            let run = max(sea.swell.z, 0.2) * 0.6;
+            // Swash height above the still waterline over a wave's cycle.
+            let cyc = fract(t / period + dot(p, vec2<f32>(0.003, 0.002)));
+            let swash = run * smoothstep(0.0, 0.35, cyc) * (1.0 - smoothstep(0.35, 1.0, cyc));
+            let wet = (1.0 - smoothstep(0.0, 0.6 + run, above_sea)) * sandy;
+            let film = (1.0 - smoothstep(swash - 0.05, swash + 0.05, above_sea)) * sandy;
+            base = mix(base, base * vec3<f32>(0.62, 0.6, 0.58), wet * 0.8);
+            pbr_input.material.perceptual_roughness = mix(pbr_input.material.perceptual_roughness, 0.25, wet * 0.6);
+            // The thin sheet of water itself: glossy, a little foam at its edge.
+            let edge = smoothstep(swash - 0.12, swash, above_sea) * (1.0 - smoothstep(swash, swash + 0.04, above_sea));
+            base = mix(base, base * vec3<f32>(0.5, 0.55, 0.6), film * 0.6);
+            base = mix(base, vec3<f32>(0.9, 0.92, 0.93), edge * 0.7 * sandy);
+            pbr_input.material.perceptual_roughness = mix(pbr_input.material.perceptual_roughness, 0.05, film);
+            pbr_input.material.reflectance = mix(pbr_input.material.reflectance, vec3(0.5), film);
+        }
+    }
+
     if water > 0.0 {
         let t = globals.time;
-        // Wind waves: three layers drifting in different directions, as a height field.
-        let wave = (fbm(p + vec2(t * 1.3, t * 0.4), 9.0) * 0.55
-            + vnoise(p + vec2(-t * 0.8, t * 1.1), 3.0) * 0.3
+        // Ocean surface as a few real waves: the swell (from buoy and wave-model data:
+        // its period sets the wavelength), two neighbours of it, and the wind sea, plus
+        // fine chop. Normals from their slopes.
+        let sdir = normalize(sea.swell.xy + vec2(1e-4, 0.0));
+        let wdir = normalize(sea.wind.xy + vec2(1e-4, 0.0));
+        let swell_len = 1.56 * sea.swell.w * sea.swell.w;
+        let wind_t = max(0.6 * sqrt(max(sea.wind.z, 0.5)) + 1.0, 1.5);
+        let wind_len = 1.56 * wind_t * wind_t;
+        let ha = sea.swell.z * 0.5;
+        let hw = sea.wind.w * 0.5;
+        let rot = mat2x2<f32>(0.94, 0.34, -0.34, 0.94);
+        // Shallow water: waves slow down and shorten towards the shore.
+        let shoal = clamp(sqrt(max(depth, 0.3) / (swell_len * 0.5)), 0.25, 1.0);
+        var wv = wave(p, sdir, swell_len * shoal, ha * 0.6, t, 0.0);
+        wv += wave(p, rot * sdir, swell_len * 0.71 * shoal, ha * 0.3, t, 1.7);
+        wv += wave(p, transpose(rot) * sdir, swell_len * 0.53 * shoal, ha * 0.2, t, 4.1);
+        wv += wave(p, wdir, wind_len, hw * 0.6, t, 2.3);
+        wv += wave(p, rot * wdir, wind_len * 0.6, hw * 0.35, t, 5.3);
+        wv += wave(p, transpose(rot) * wdir, wind_len * 0.37, hw * 0.25, t, 0.9);
+        // Fine chop (noise), stronger in more wind.
+        let chop_s = 0.25 + min(sea.wind.z / 10.0, 1.5);
+        let wave_n = (fbm(p + wdir * t * 1.3, 9.0) * 0.55
+            + vnoise(p + wdir * t * 0.8 + vec2(-t * 0.3, t * 0.2), 3.0) * 0.3
             + vnoise(p + vec2(t * 0.5, -t * 0.9), 1.1) * 0.15);
         let e = 0.2;
-        let wx = fbm(p + vec2(e + t * 1.3, t * 0.4), 9.0) * 0.55 + vnoise(p + vec2(e - t * 0.8, t * 1.1), 3.0) * 0.3
+        let wx = fbm(p + vec2(e, 0.0) + wdir * t * 1.3, 9.0) * 0.55 + vnoise(p + vec2(e, 0.0) + wdir * t * 0.8 + vec2(-t * 0.3, t * 0.2), 3.0) * 0.3
             + vnoise(p + vec2(e + t * 0.5, -t * 0.9), 1.1) * 0.15;
-        let wy = fbm(p + vec2(t * 1.3, e + t * 0.4), 9.0) * 0.55 + vnoise(p + vec2(-t * 0.8, e + t * 1.1), 3.0) * 0.3
+        let wy = fbm(p + vec2(0.0, e) + wdir * t * 1.3, 9.0) * 0.55 + vnoise(p + vec2(0.0, e) + wdir * t * 0.8 + vec2(-t * 0.3, t * 0.2), 3.0) * 0.3
             + vnoise(p + vec2(t * 0.5, e - t * 0.9), 1.1) * 0.15;
-        // Waves flatten out with distance (and in very shallow water).
-        let amp = (1.0 - smoothstep(150.0, 2500.0, dist)) * 0.9 * smoothstep(0.1, 1.5, depth) + 0.08;
-        let wn = vec3((wx - wave) / e, 0.0, (wy - wave) / e) * amp * water;
+        // Detail fades with distance (and in very shallow water) so it never sparkles.
+        let far = 1.0 - smoothstep(150.0, 2500.0, dist);
+        let amp = far * 0.9 * smoothstep(0.1, 1.5, depth) * chop_s * 0.35 + 0.05;
+        let big = (1.0 - smoothstep(800.0, 6000.0, dist)) * smoothstep(0.2, 1.0, depth);
+        // Detail x runs east, y south; the tangent frame near the origin follows the
+        // world's x and z.
+        let slope_v = vec2<f32>(wv.y, wv.z) * big + vec2<f32>((wx - wave_n) / e, (wy - wave_n) / e) * amp;
+        let wn = vec3(slope_v.x, 0.0, slope_v.y) * water;
         pbr_input.N = normalize(pbr_input.N - wn);
         // Colour: the imagery (reefs, sand, depth) seen through the water, darker and
-        // bluer with depth; whitecaps on wave crests and foam along the shore.
+        // bluer with depth; whitecaps in a breeze, and surf breaking where the waves
+        // run into shallow water.
         let deep = vec3(0.012, 0.05, 0.075);
         var wc = mix(base * vec3(0.8, 0.92, 1.0), deep, smoothstep(2.0, 50.0, depth) * 0.75);
-        let crest = smoothstep(0.72, 0.85, wave) * smoothstep(3.0, 15.0, depth) * 0.35;
+        let crest_h = wv.x / max(ha * 1.1 + hw * 1.2, 0.05);
+        let caps = smoothstep(5.0, 11.0, sea.wind.z);
+        let crest = smoothstep(0.55, 0.85, crest_h + (wave_n - 0.5) * 0.6) * smoothstep(3.0, 15.0, depth) * (0.08 + 0.55 * caps);
+        // Breakers: lines of foam parallel to the shore, in water shallower than about
+        // twice the wave height, moving in with the swell.
+        let hs = max(sea.swell.z, 0.1);
+        let surf_zone = (1.0 - smoothstep(hs * 0.8, hs * 2.6 + 0.6, depth)) * smoothstep(0.02, 0.25, depth);
+        let surf_phase = sqrt(max(depth, 0.01)) * 6.2831853 / max(sqrt(9.81) * sea.swell.w * 0.35, 0.5) * 6.0 + t * 6.2831853 / max(sea.swell.w, 3.0);
+        let breaker = smoothstep(0.55, 0.95, sin(surf_phase) * 0.5 + 0.5 + (vnoise(p * 0.25 + vec2(t * 0.1, 0.0), 1.5) - 0.5) * 0.5) * surf_zone * min(hs * 1.5, 1.0);
         let shore = (1.0 - smoothstep(0.05, 0.9, depth)) * smoothstep(0.45, 0.7, vnoise(p * 1.0 + vec2(t * 0.7, 0.0), 1.5));
-        wc = mix(wc, vec3(0.85, 0.9, 0.92), clamp(crest + shore * 0.8, 0.0, 1.0));
+        let foam = clamp(crest + breaker + shore * 0.8, 0.0, 1.0);
+        wc = mix(wc, vec3(0.86, 0.9, 0.92), foam);
         base = mix(base, wc, water);
-        pbr_input.material.perceptual_roughness = mix(pbr_input.material.perceptual_roughness, 0.06 + shore * 0.5, water);
-        pbr_input.material.reflectance = mix(pbr_input.material.reflectance, vec3(0.45), water);
+        pbr_input.material.perceptual_roughness = mix(pbr_input.material.perceptual_roughness, 0.06 + foam * 0.6, water);
+        pbr_input.material.reflectance = mix(pbr_input.material.reflectance, vec3(0.45), water * (1.0 - foam));
     }
 
     pbr_input.material.base_color = vec4(base, 1.0);

@@ -8,7 +8,9 @@ mod controls;
 mod globe;
 mod gpu_usage;
 mod map;
+mod ambience;
 mod nature;
+mod sky;
 mod player;
 mod roads;
 mod shot;
@@ -156,6 +158,8 @@ fn main() {
         bevy::diagnostic::SystemInformationDiagnosticsPlugin,
         title::TitlePlugin,
         nature::NaturePlugin,
+        sky::SkyPlugin,
+        ambience::AmbiencePlugin,
     ));
     app.run();
 }

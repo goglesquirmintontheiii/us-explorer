@@ -159,6 +159,8 @@ impl Plugin for TerrainPlugin {
         .add_message::<Teleported>()
         .insert_resource(TeleportClock(Instant::now(), true))
         .add_plugins((region::RegionPlugin, material::TerrainMaterialPlugin))
+        .init_resource::<material::Waves>()
+        .add_systems(Update, apply_waves)
         .add_systems(Startup, detect_compression)
         .add_systems(Update, (on_teleport, receive, select).chain().in_set(TerrainSet));
     }
@@ -354,6 +356,7 @@ fn receive(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<TerrainMaterial>>,
     time: Res<Time>,
+    waves: Res<material::Waves>,
 ) {
     let now = time.elapsed_secs_f64();
     let start = Instant::now();
@@ -425,7 +428,7 @@ fn receive(
                         cull_mode: None,
                         ..default()
                     },
-                    extension: TerrainExt {},
+                    extension: TerrainExt { params: waves.0 },
                 });
                 let mut ec = commands.spawn((
                     Mesh3d(mesh.clone()),
@@ -702,5 +705,17 @@ fn select(
     if clock.1 && stats.idle_frames > 30 && deepest > 8 {
         stats.settle = Some(clock.0.elapsed().as_secs_f32());
         clock.1 = false;
+    }
+}
+
+/// New sea state: every tile's material gets it.
+fn apply_waves(waves: Res<material::Waves>, mut materials: ResMut<Assets<TerrainMaterial>>) {
+    if !waves.is_changed() {
+        return;
+    }
+    for (_, mut m) in materials.iter_mut() {
+        if m.extension.params != waves.0 {
+            m.extension.params = waves.0;
+        }
     }
 }

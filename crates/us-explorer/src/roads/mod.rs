@@ -6,6 +6,7 @@
 //! them changes, and the terrain itself is levelled under the roads (`terrain::conform`).
 
 pub mod build;
+pub mod cars;
 pub mod classify;
 pub mod drape;
 pub mod material;
@@ -159,7 +160,7 @@ pub struct Roads {
     tiles: HashMap<TileId, RoadTile>,
     fetch: WorkPool<TileId, (TileId, Result<OsmTile, String>)>,
     work: WorkPool<Job, Out>,
-    material: Handle<RoadMaterial>,
+    pub material: Handle<RoadMaterial>,
     pub enabled: bool,
     pub last_error: Option<String>,
     /// Round-robin cursor over chunks for drape checks.
@@ -288,7 +289,32 @@ fn prepare(id: TileId, osm: &OsmTile) -> Prepared {
         }
         h
     };
-    let built = build::build(id, osm, &dem);
+    // Rivers flow along their mapped centrelines (in the nature layer).
+    let rivers = osm.areas.iter().any(|a| {
+        usx_core::osm::is_water(&a.tags)
+            && (matches!(a.tags.get("water"), Some("river" | "canal" | "stream" | "rapids")) || a.tags.is("waterway", "riverbank"))
+    });
+    let flows: Vec<(Vec<(f64, f64)>, f32)> = if rivers {
+        usx_core::osm::load_layer(id, usx_core::osm::Layer::Nature, crate::terrain::load::cache())
+            .map(|n| {
+                n.ways
+                    .iter()
+                    .filter_map(|w| {
+                        let sp = match w.tags.get("waterway")? {
+                            "river" => 0.9,
+                            "stream" => 0.5,
+                            "canal" => 0.2,
+                            _ => return None,
+                        };
+                        Some((w.pts.clone(), sp))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let built = build::build_with(id, osm, &dem, &flows);
     let mut atlases = Vec::with_capacity(built.chunks.len());
     let mut faces = Vec::with_capacity(built.chunks.len());
     for c in &built.chunks {
@@ -679,6 +705,7 @@ fn update_material(
     day: Res<crate::sun::DayNight>,
     mut mats: ResMut<Assets<RoadMaterial>>,
     time: Res<Time>,
+    cond: Res<crate::nature::conditions::Conditions>,
     mut last: Local<f32>,
 ) {
     let Some(roads) = roads else { return };
@@ -688,6 +715,8 @@ fn update_material(
     if let Some(mut m) = mats.get_mut(&roads.material) {
         m.extension.params.night = day.dark;
         m.extension.params.time = t;
+        let to = (cond.wind_from + 180.0).to_radians();
+        m.extension.params.wind = Vec4::new(to.sin(), -to.cos(), (cond.wind_speed / 15.0).clamp(0.0, 1.0), 0.0);
     }
 }
 

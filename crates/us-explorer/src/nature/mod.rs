@@ -8,8 +8,11 @@
 
 pub mod conditions;
 pub mod cover;
+pub mod details;
 pub mod features;
 pub mod grass;
+pub mod ndvi;
+mod ndvi_palette;
 pub mod nature_osm;
 pub mod species;
 pub mod sprites;
@@ -141,6 +144,9 @@ pub struct Nature {
     /// Season of the prototypes in use (refreshed every few game hours), and where.
     season_check: f64,
     season_at: Option<(f64, f64)>,
+    /// Satellite greenness where you are (lat, lon it was for), and a fetch underway.
+    pub greenness: Option<(f64, f64, Option<ndvi::Greenness>)>,
+    green_rx: Option<crossbeam_channel::Receiver<(f64, f64, Option<ndvi::Greenness>)>>,
 }
 
 impl Nature {
@@ -195,8 +201,10 @@ impl Plugin for NaturePlugin {
                 timer: 0.0,
                 season_check: -1e18,
                 season_at: None,
+                greenness: None,
+                green_rx: None,
             })
-            .add_plugins((conditions::ConditionsPlugin, grass::GrassPlugin))
+            .add_plugins((conditions::ConditionsPlugin, grass::GrassPlugin, details::DetailsPlugin))
             .add_systems(Startup, trees::setup)
             .add_systems(
                 Update,
@@ -209,18 +217,38 @@ impl Plugin for NaturePlugin {
 }
 
 /// The season where you are: prototypes are regrown when it changes noticeably.
+#[allow(clippy::too_many_arguments)]
 fn season(
     mut nat: ResMut<Nature>,
     mut ta: Option<ResMut<TreeAssets>>,
     clock: Res<crate::sun::SimClock>,
     viewer: Res<Viewer>,
     settings: Res<crate::GameSettings>,
+    args: Res<crate::Args>,
     mut commands: Commands,
 ) {
     let Some(ta) = ta.as_deref_mut() else { return };
     let t = clock.time();
     let full = three_d(settings.0.preset);
     let g = viewer.geo();
+    // Satellite greenness: fetched once per area in the background.
+    if let Some(rx) = &nat.green_rx
+        && let Ok(r) = rx.try_recv()
+    {
+        info!("satellite greenness: {:?}", r.2);
+        nat.greenness = Some(r);
+        nat.green_rx = None;
+        nat.season_check = -1e18;
+    }
+    let far = nat.greenness.is_none_or(|(la, lo, _)| (la - g.lat).abs() > 1.0 || (lo - g.lon).abs() > 1.0);
+    if far && nat.green_rx.is_none() && args.shots.is_empty() {
+        let (tx, rx) = crossbeam_channel::bounded(1);
+        let (la, lo) = (g.lat, g.lon);
+        std::thread::spawn(move || {
+            let _ = tx.send((la, lo, ndvi::fetch(la, lo, t)));
+        });
+        nat.green_rx = Some(rx);
+    }
     // Every few game hours, or after a long trip.
     let moved = nat.season_at.is_none_or(|(la, lo)| (la - g.lat).abs() > 0.5 || (lo - g.lon).abs() > 0.5);
     if (t - nat.season_check).abs() < 3.0 * 3600.0 && full == ta.full_detail && !moved {
@@ -231,6 +259,14 @@ fn season(
     let elev = crate::terrain::load::dem_height(g.lat, g.lon).unwrap_or(g.h.max(0.0));
     let biome = species::biome_at(g.lat, g.lon, elev);
     let mut s = species::season(biome, g.lat, elev, species::day_of_year(t));
+    // Where the satellite sees the seasons change, it leads.
+    if let Some((_, _, Some(gr))) = nat.greenness
+        && let Some(l) = gr.leafiness()
+        && !matches!(biome, species::Biome::Tropical | species::Biome::SouthFlorida)
+    {
+        s.leaves = s.leaves * 0.35 + l * 0.65;
+        s.dormant = s.dormant.max((1.0 - l) * 0.8) * if l > 0.8 { 0.3 } else { 1.0 };
+    }
     // Round so small changes don't regrow every tree.
     for v in [&mut s.leaves, &mut s.fall, &mut s.spring, &mut s.dry, &mut s.dormant] {
         *v = (*v * 10.0).round() / 10.0;
@@ -256,7 +292,7 @@ fn clear_cell(commands: &mut Commands, c: &mut Cell) {
     c.with_3d = false;
 }
 
-fn tile_distance(viewer: DVec3, id: TileId) -> f64 {
+pub(crate) fn tile_distance(viewer: DVec3, id: TileId) -> f64 {
     let (w, s, e, n) = id.bounds();
     let g = Geodetic::from_ecef(viewer);
     let lat = g.lat.clamp(s, n);

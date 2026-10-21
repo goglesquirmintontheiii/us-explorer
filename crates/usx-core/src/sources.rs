@@ -116,7 +116,7 @@ pub const CREDITS: &[Credit] = &[
     },
     Credit {
         name: "OpenStreetMap",
-        used_for: "Roads, bridges, railways, signs and roadside objects; place search (Nominatim)",
+        used_for: "Roads, bridges, railways, signs and roadside objects, buildings, trees, parks, fences, power lines, wind turbines, buoys and piers; place search (Nominatim)",
         attribution: "© OpenStreetMap contributors, ODbL",
         url: "https://www.openstreetmap.org/copyright",
     },
@@ -125,6 +125,42 @@ pub const CREDITS: &[Credit] = &[
         used_for: "Fetching OpenStreetMap data (overpass-api.de, private.coffee, kumi.systems)",
         attribution: "Overpass API by Roland Olbricht and the public instance operators",
         url: "https://wiki.openstreetmap.org/wiki/Overpass_API",
+    },
+    Credit {
+        name: "Open-Meteo",
+        used_for: "Wind, cloud cover, temperature, time zone and the sea state (waves and swell)",
+        attribution: "Weather data by Open-Meteo.com, CC BY 4.0 (from national weather services incl. NOAA and DWD)",
+        url: "https://open-meteo.com/",
+    },
+    Credit {
+        name: "NOAA National Data Buoy Center",
+        used_for: "Wave height, period and direction from the nearest buoy",
+        attribution: "NOAA National Data Buoy Center; public domain",
+        url: "https://www.ndbc.noaa.gov/",
+    },
+    Credit {
+        name: "NOAA Space Weather Prediction Center",
+        used_for: "Aurora forecast (OVATION) and planetary K index",
+        attribution: "NOAA SWPC; public domain",
+        url: "https://www.swpc.noaa.gov/",
+    },
+    Credit {
+        name: "NASA GIBS: MODIS NDVI and VIIRS Black Marble",
+        used_for: "Seasons (vegetation greenness) and light pollution in the night sky",
+        attribution: "We acknowledge the use of imagery provided by services from NASA's Global Imagery Browse Services (GIBS), part of NASA's Earth Science Data and Information System (ESDIS).",
+        url: "https://earthdata.nasa.gov/gibs",
+    },
+    Credit {
+        name: "Yale Bright Star Catalogue",
+        used_for: "The 7,000 stars in the night sky",
+        attribution: "Hoffleit & Warren, Yale University Observatory (5th revised ed.), via brettonw/YaleBrightStarCatalog",
+        url: "http://tdc-www.harvard.edu/catalogs/bsc5.html",
+    },
+    Credit {
+        name: "JPL approximate planetary positions",
+        used_for: "Where the planets are",
+        attribution: "E. M. Standish, JPL Solar System Dynamics; public domain",
+        url: "https://ssd.jpl.nasa.gov/planets/approx_pos.html",
     },
     Credit {
         name: "DejaVu Fonts",

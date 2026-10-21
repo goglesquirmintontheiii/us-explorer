@@ -18,6 +18,7 @@ pub enum CoverClass {
     Wetland,
     Rock,
     Golf,
+    Dune,
 }
 
 pub struct CoverArea {
@@ -171,7 +172,8 @@ fn cover_class(t: &Tags) -> Option<(CoverClass, bool)> {
             "wood" => (CoverClass::Forest, false),
             "scrub" | "heath" => (CoverClass::Scrub, false),
             "grassland" => (CoverClass::Grass, false),
-            "sand" | "dune" | "shingle" => (CoverClass::Sand, false),
+            "dune" => (CoverClass::Dune, false),
+            "sand" | "shingle" => (CoverClass::Sand, false),
             "beach" => (CoverClass::Sand, true),
             "wetland" => (CoverClass::Wetland, false),
             "bare_rock" | "scree" => (CoverClass::Rock, false),

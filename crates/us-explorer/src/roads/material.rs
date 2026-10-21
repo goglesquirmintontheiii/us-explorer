@@ -13,6 +13,8 @@ pub struct RoadParams {
     pub wet: f32,
     pub time: f32,
     pub _pad: f32,
+    /// Wind over inland water: direction of travel (east, south), strength 0..1.
+    pub wind: Vec4,
 }
 
 #[derive(Asset, AsBindGroup, Reflect, Debug, Clone, Default)]

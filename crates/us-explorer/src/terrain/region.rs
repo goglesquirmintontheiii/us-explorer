@@ -87,6 +87,7 @@ impl RegionDownload {
             if t.z == usx_core::osm::ZOOM {
                 ok &= usx_core::osm::load(t, load::cache()).is_ok();
                 ok &= usx_core::osm::load_layer(t, usx_core::osm::Layer::Buildings, load::cache()).is_ok();
+                ok &= usx_core::osm::load_layer(t, usx_core::osm::Layer::Nature, load::cache()).is_ok();
             }
             if ok {
                 p2.done.fetch_add(1, Ordering::Relaxed);

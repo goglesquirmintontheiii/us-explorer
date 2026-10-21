@@ -178,6 +178,10 @@ struct World<'w> {
     clock: ResMut<'w, SimClock>,
     diagnostics: Res<'w, DiagnosticsStore>,
     map: Res<'w, FullMap>,
+    nstats: Res<'w, crate::nature::NatureStats>,
+    cond: Res<'w, crate::nature::conditions::Conditions>,
+    sky: Res<'w, crate::sky::SkyInfo>,
+    lp: Res<'w, crate::sky::LightPollution>,
 }
 
 #[derive(SystemParam)]
@@ -198,7 +202,7 @@ fn draw(
     o: Out,
     mut commands: Commands,
 ) -> Result {
-    let World { viewer, player, mut terrain, stats, roads, bstats, sysinfo, adapter, link, mut region, mut clock, diagnostics, map } = w;
+    let World { viewer, player, mut terrain, stats, roads, bstats, sysinfo, adapter, link, mut region, mut clock, diagnostics, map, nstats, cond, sky, lp } = w;
     let Out { mut blocked, mut lock, mut tp, mut exit } = o;
     let ctx = contexts.ctx_mut()?;
     let units = settings.0.units;
@@ -309,7 +313,28 @@ fn draw(
                     LinkState::Disabled => "weather service off".into(),
                     LinkState::Failed(e) => format!("weather service: {e}"),
                 });
-                ui.label(format!("{}{}", crate::sun::format_utc(clock.time()), if clock.offset != 0.0 { "  (shifted)" } else { "" }));
+                ui.label(format!(
+                    "nature: {} tiles, {} cells ({} building), {} trees ({} 3D), {} species",
+                    nstats.tiles, nstats.cells, nstats.cells_building, nstats.trees, nstats.trees_3d, nstats.species
+                ));
+                ui.label(format!(
+                    "wind {:.1} m/s from {:.0}°, cloud {:.0}%, waves {:.1} m / {:.0} s, Kp {:.1}, aurora {:.0}/{:.0}",
+                    cond.wind_speed, cond.wind_from, cond.cloud_cover * 100.0, cond.wave_height, cond.wave_period, cond.kp, cond.aurora_here, cond.aurora_north
+                ));
+                ui.label(format!("conditions from {}", cond.source));
+                ui.label(format!(
+                    "moon {:.0}% lit ({}), {:.0}° up; light pollution {}",
+                    sky.moon_lit * 100.0,
+                    if sky.moon_waxing { "waxing" } else { "waning" },
+                    sky.moon_elevation,
+                    if lp.known { format!("{:.2}", lp.level) } else { "unknown".into() }
+                ));
+                ui.label(format!(
+                    "{} ({}){}",
+                    crate::sky::astro::local_time(clock.time(), cond.timezone.as_deref(), geo.lat, geo.lon),
+                    crate::sun::format_utc(clock.time()),
+                    if clock.offset != 0.0 { "  (shifted)" } else { "" }
+                ));
                 if let Some(s) = stats.settle {
                     ui.label(format!("last arrival loaded in {s:.1} s"));
                 }
@@ -522,6 +547,18 @@ fn draw(
                         ui.label("Buildings");
                         ui.checkbox(&mut draft.buildings, "Buildings with interiors, doors and furniture (OpenStreetMap)");
                         ui.end_row();
+                        ui.label("Nature");
+                        ui.checkbox(&mut draft.vegetation, "Trees, grass and ground cover (3D from the default preset up)");
+                        ui.end_row();
+                        ui.label("Details");
+                        ui.checkbox(&mut draft.details, "Fences, power lines, wind turbines, buoys, piers");
+                        ui.end_row();
+                        ui.label("Sound");
+                        ui.horizontal(|ui| {
+                            ui.checkbox(&mut draft.ambient_sound, "Ambient sound");
+                            ui.add_enabled(draft.ambient_sound, egui::Slider::new(&mut draft.volume, 0.0..=1.0).text("volume"));
+                        });
+                        ui.end_row();
                         ui.label("Units");
                         ui.horizontal(|ui| {
                             ui.radio_value(&mut draft.units, Units::Imperial, "Imperial");
@@ -695,7 +732,7 @@ fn draw(
             .default_pos(ctx.content_rect().center())
             .default_width(380.0)
             .show(ctx, |ui| {
-                ui.label("Save the area around you to the cache so it works without a connection: imagery, elevation (lidar from detail 17), roads and buildings.");
+                ui.label("Save the area around you to the cache so it works without a connection: imagery, elevation (lidar from detail 17), roads, buildings and nature (trees need detail 18).");
                 ui.add(egui::Slider::new(&mut menus.region_radius_km, 1.0..=60.0).text("radius (km)"));
                 ui.add(egui::Slider::new(&mut menus.region_zoom, 12..=19).text("detail (zoom level)"));
                 let plan = RegionDownload::plan(geo.lat, geo.lon, menus.region_radius_km, menus.region_zoom);
