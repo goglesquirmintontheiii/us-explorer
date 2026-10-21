@@ -71,6 +71,13 @@ jobs:
             --window 1600x900 --time 2026-06-21T18:00:00Z --shot-dir shots "${args[@]}" 2>&1 | sed "s/\x1b\[[0-9;]*m//g" | grep -v XSETTINGS > shots/log.txt || true
           tail -40 shots/log.txt
           ls -l shots
+      - name: Share cache
+        run: |
+          cd ~/.cache && du -sh * || true
+          tar czf /tmp/cache.tgz --exclude=mesa_shader_cache -C ~/.cache . && ls -l /tmp/cache.tgz
+          mkdir /tmp/dc && cd /tmp/dc && git init -q -b devcache && split -b 45m /tmp/cache.tgz cache.tgz.part-
+          git add -A && git -c user.name=ci -c user.email=ci@example.com commit -qm cache
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" HEAD:devcache
       - name: Publish to the screenshots branch
         run: |
           SHA=${GITHUB_SHA::7}
