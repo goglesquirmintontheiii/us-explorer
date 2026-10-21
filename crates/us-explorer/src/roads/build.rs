@@ -1467,6 +1467,47 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
         best
     };
 
+    // Vehicle roads on a grid (for facing mapped objects toward the street, and for
+    // spotting the other half of a divided road).
+    let mut road_grid: HashMap<(i32, i32), Vec<(Vec2, Vec2, f32, u32)>> = HashMap::new();
+    const GRID: f32 = 30.0;
+    for (wi, w) in ways.iter().enumerate().filter(|(_, w)| w.class.vehicle() && !w.elevated()) {
+        for q in w.pts.windows(2) {
+            let (lo, hi) = (q[0].min(q[1]), q[0].max(q[1]));
+            for gx in (lo.x / GRID).floor() as i32..=(hi.x / GRID).floor() as i32 {
+                for gz in (lo.y / GRID).floor() as i32..=(hi.y / GRID).floor() as i32 {
+                    road_grid.entry((gx, gz)).or_default().push((q[0], q[1], w.prof.half(), wi as u32));
+                }
+            }
+        }
+    }
+    // Another road running alongside within `gap` metres of this edge point (the other
+    // carriageway of a divided road, a frontage road): no sidewalk or curb between them.
+    let neighbour_alongside = |p: Vec2, dir: Vec2, own: u32, gap: f32| -> bool {
+        let (cx, cz) = ((p.x / GRID).floor() as i32, (p.y / GRID).floor() as i32);
+        for gx in cx - 1..=cx + 1 {
+            for gz in cz - 1..=cz + 1 {
+                for &(a, b, hw, wi) in road_grid.get(&(gx, gz)).into_iter().flatten() {
+                    if wi == own {
+                        continue;
+                    }
+                    let ab = b - a;
+                    if ab.normalize_or(Vec2::X).dot(dir).abs() < 0.85 {
+                        continue;
+                    }
+                    // Alongside, not just meeting this road end-on.
+                    let t = (p - a).dot(ab) / ab.length_squared().max(1e-6);
+                    if !(0.0..=1.0).contains(&t) {
+                        continue;
+                    }
+                    if (a + ab * t).distance(p) - hw < gap {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    };
     for s in &segs {
         let w = &ways[s.way as usize];
         let full = &w.pts[s.i0..=s.i1];
@@ -1546,8 +1587,32 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
                 .collect()
         };
         let raised = |r: usize| matches!(hrule[r], H::Raised { off, fill, .. } if off - fill > 0.3);
-        let (swl, swr) = sidewalks(w, sidewalks_mapped, urban_here);
-        let (curb_l, curb_r) = curbs(w, (swl, swr), sidewalks_mapped, urban_here);
+        let (mut swl, mut swr) = sidewalks(w, sidewalks_mapped, urban_here);
+        let (mut curb_l, mut curb_r) = curbs(w, (swl, swr), sidewalks_mapped, urban_here);
+        // A divided road's halves: nothing in the median between them.
+        if w.class.vehicle() && (swl || swr || curb_l || curb_r) {
+            let hw = w.prof.half();
+            for side in [-1.0f32, 1.0] {
+                let hits = [0.25f32, 0.5, 0.75]
+                    .iter()
+                    .filter(|&&f| {
+                        let i = ((rows - 1) as f32 * f) as usize;
+                        let dir = (pts[(i + 1).min(rows - 1)] - pts[i.saturating_sub(1)]).normalize_or(Vec2::X);
+                        let edge = pts[i] + right(dir) * side * (hw + 0.3);
+                        neighbour_alongside(edge, dir, s.way, 4.5)
+                    })
+                    .count();
+                if hits >= 2 {
+                    if side < 0.0 {
+                        swl = false;
+                        curb_l = false;
+                    } else {
+                        swr = false;
+                        curb_r = false;
+                    }
+                }
+            }
+        }
         let sw_w = 1.8;
         let side_extra = |sw: bool, curb: bool| -> f32 {
             if sw {
@@ -2570,26 +2635,13 @@ pub fn build_with(tile: TileId, osm: &OsmTile, dem: &dyn Fn(f64, f64) -> Option<
             }
         }
     }
-    // Nearest road (vehicle ways), for facing mapped objects toward the street.
-    let mut road_grid: HashMap<(i32, i32), Vec<(Vec2, Vec2, f32)>> = HashMap::new();
-    const GRID: f32 = 30.0;
-    for w in ways.iter().filter(|w| w.class.vehicle() && !w.elevated()) {
-        for q in w.pts.windows(2) {
-            let (lo, hi) = (q[0].min(q[1]), q[0].max(q[1]));
-            for gx in (lo.x / GRID).floor() as i32..=(hi.x / GRID).floor() as i32 {
-                for gz in (lo.y / GRID).floor() as i32..=(hi.y / GRID).floor() as i32 {
-                    road_grid.entry((gx, gz)).or_default().push((q[0], q[1], w.prof.half()));
-                }
-            }
-        }
-    }
     // (closest point on a road, distance from its edge, road direction)
     let nearest_road = |p: Vec2| -> Option<(Vec2, f32, Vec2)> {
         let (cx, cz) = ((p.x / GRID).floor() as i32, (p.y / GRID).floor() as i32);
         let mut best: Option<(Vec2, f32, Vec2)> = None;
         for gx in cx - 1..=cx + 1 {
             for gz in cz - 1..=cz + 1 {
-                for &(a, b, hw) in road_grid.get(&(gx, gz)).into_iter().flatten() {
+                for &(a, b, hw, _) in road_grid.get(&(gx, gz)).into_iter().flatten() {
                     let ab = b - a;
                     let t = ((p - a).dot(ab) / ab.length_squared().max(1e-6)).clamp(0.0, 1.0);
                     let c = a + ab * t;

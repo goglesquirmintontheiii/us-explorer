@@ -42,6 +42,9 @@ pub enum Cover {
     Dune = 10,
 }
 
+/// Number of Cover values (for per-class tallies).
+const COVER_KINDS: usize = Cover::Dune as usize + 1;
+
 impl Cover {
     pub fn from_u8(v: u8) -> Cover {
         match v {
@@ -259,8 +262,9 @@ fn classify(r: f32, g: f32, b: f32, spread: f32, biome: Biome) -> Cover {
     let chroma = mx - mn;
     let exg = 2.0 * g - r - b;
     let arid = matches!(biome, Biome::Sonoran | Biome::Mojave | Biome::Chihuahuan | Biome::GreatBasin);
-    // Water: dark, blue or blue-green, smooth.
-    if b > r + 0.02 && b >= g - 0.02 && lum < 0.3 && spread < 0.05 {
+    // Water: dark, blue or blue-green, smooth; or clearly blue/turquoise (shallow sea,
+    // waves and all; leaves are never bluer than they are red).
+    if b > r + 0.02 && b >= g - 0.02 && lum < 0.3 && spread < 0.05 || b > r + 0.08 && b > g * 0.82 {
         return Cover::Water;
     }
     // Green vegetation.
@@ -366,6 +370,26 @@ pub fn build(input: CellInput) -> CellData {
                     }
                 }
                 cover[k] = classify(srgb(p[0]), srgb(p[1]), srgb(p[2]), hi - lo, biome);
+            }
+        }
+    }
+    // ---- the sea, from the elevation model (bathymetry below zero), on a coarse grid
+    {
+        const G: usize = 64;
+        let step = N / G;
+        for gy in 0..G {
+            for gx in 0..G {
+                let (u, v) = ((gx as f64 + 0.5) / G as f64, (gy as f64 + 0.5) / G as f64);
+                let (la, lo) = id.lat_lon_at(u, v);
+                if crate::terrain::load::dem_height(la, lo).is_some_and(|h| h < -0.3) {
+                    for y in gy * step..(gy + 1) * step {
+                        for x in gx * step..(gx + 1) * step {
+                            if mask[y * N + x] == M_FREE {
+                                mask[y * N + x] = M_WATER;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -494,8 +518,11 @@ pub fn build(input: CellInput) -> CellData {
         if trees.len() >= max_trees {
             break;
         }
-        let shrub = score < 0.0;
         let set = setting_at(x, y);
+        // Thickets on the dunes behind a beach are low scrub (sea grape, palmetto),
+        // not trees.
+        let dune = set == Setting::Coastal && sand_dist[y * N + x] < 25.0 / mpp;
+        let shrub = score < 0.0 || dune;
         let list = if shrub { shrub_mix(biome) } else { species::mix(biome, set) };
         let sp = species::pick(list, rng.f());
         let d = def(sp);
@@ -557,7 +584,7 @@ pub fn build(input: CellInput) -> CellData {
     let mut gcol = vec![[0u8; 3]; GRASS_N * GRASS_N];
     for y in 0..GRASS_N {
         for x in 0..GRASS_N {
-            let mut counts = [0u8; 10];
+            let mut counts = [0u8; COVER_KINDS];
             let mut acc = [0u32; 3];
             let mut n = 0u32;
             for dy in 0..2 {
@@ -573,7 +600,7 @@ pub fn build(input: CellInput) -> CellData {
                     }
                 }
             }
-            let best = (0..10).max_by_key(|&i| counts[i]).unwrap_or(0);
+            let best = (0..COVER_KINDS).max_by_key(|&i| counts[i]).unwrap_or(0);
             gcover[y * GRASS_N + x] = best as u8;
             gcol[y * GRASS_N + x] = if n > 0 { [(acc[0] / n) as u8, (acc[1] / n) as u8, (acc[2] / n) as u8] } else { [0, 0, 0] };
         }
@@ -690,5 +717,68 @@ mod tests {
         let d = distance_to(&v, n, |x| x == 0, 100.0);
         assert_eq!(d[8 * n + 8], 0.0);
         assert!((d[8 * n + 12] - 4.0).abs() < 0.01);
+    }
+}
+
+#[cfg(test)]
+mod dump {
+    use super::*;
+
+    /// Writes the land cover and tree spots of the cell at USX_CELL="lat,lon" to
+    /// /tmp/cell.png (cover colours, trees as dots) for checking by eye.
+    #[test]
+    #[ignore]
+    fn cell_dump() {
+        let Ok(v) = std::env::var("USX_CELL") else { return };
+        let (lat, lon) = v.split_once(',').map(|(a, b)| (a.parse().unwrap(), b.parse().unwrap())).unwrap();
+        let root = format!("{}/.cache/us-explorer", std::env::var("HOME").unwrap());
+        let _ = crate::terrain::load::CACHE.set(usx_core::cache::DiskCache::open(root, 50 << 30));
+        let id = TileId::containing(lat, lon, 17).0;
+        let biome = species::biome_at(lat, lon, 2.0);
+        let input = CellInput {
+            id,
+            imagery: ImagerySource::Esri,
+            season: species::season(biome, lat, 2.0, 180.0),
+            corridors: Vec::new(),
+            areas: Vec::new(),
+            buildings: Vec::new(),
+            nature: {
+                let parent = id.ancestor(usx_core::osm::ZOOM);
+                usx_core::osm::cached_layer(parent, usx_core::osm::Layer::Nature, crate::terrain::load::cache())
+                    .map(|o| Arc::new(crate::nature::nature_osm::sort(parent, &o)))
+            },
+        };
+        println!("nature data: {}", input.nature.is_some());
+        if let Some(i) = imagery(id, ImagerySource::Esri) {
+            i.save("/tmp/cell_img.png").unwrap();
+        }
+        let c = build(input);
+        let n = GRASS_N;
+        let mut img = usx_core::image::RgbImage::new(n as u32, n as u32);
+        for k in 0..n * n {
+            let col = match Cover::from_u8(c.cover[k]) {
+                Cover::None => [60, 60, 60],
+                Cover::Water => [30, 60, 160],
+                Cover::Canopy => [20, 110, 30],
+                Cover::Grass => [120, 200, 90],
+                Cover::DryGrass => [190, 180, 90],
+                Cover::Shrub => [90, 130, 60],
+                Cover::Sand => [240, 225, 170],
+                Cover::Crop => [200, 200, 40],
+                Cover::Wetland => [60, 160, 150],
+                Cover::Rock => [150, 140, 130],
+                Cover::Dune => [210, 210, 120],
+            };
+            img.put_pixel((k % n) as u32, (k / n) as u32, usx_core::image::Rgb(col));
+        }
+        let w = id.width_m() as f32;
+        for t in &c.trees {
+            let (x, y) = ((t.p.x / w + 0.5) * n as f32, (t.p.y / w + 0.5) * n as f32);
+            if x >= 0.0 && y >= 0.0 && (x as usize) < n && (y as usize) < n {
+                img.put_pixel(x as u32, y as u32, usx_core::image::Rgb([255, 0, 0]));
+            }
+        }
+        img.save("/tmp/cell.png").unwrap();
+        println!("{} trees, biome {:?}", c.trees.len(), c.biome);
     }
 }
