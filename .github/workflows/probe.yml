@@ -14,10 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch
+        env:
+          URLS: ${{ inputs.urls }}
         run: |
           mkdir out
           i=0
-          for u in ${{ inputs.urls }}; do
+          for u in $URLS; do
             i=$((i+1))
             code=$(curl -sS -L -m 90 -A "us-explorer-probe" -o "out/$i.body" -w "%{http_code} %{content_type} %{size_download}" "$u" 2>out/$i.err || true)
             echo "$i $code $u" | tee -a out/index.txt

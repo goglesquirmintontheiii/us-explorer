@@ -31,10 +31,12 @@ jobs:
       - name: Build
         run: cargo build --release -p us-explorer
       - name: Visit
+        env:
+          SHOTS: ${{ inputs.shots }}
         run: |
           mkdir -p shots
           args=()
-          IFS='|' read -ra specs <<< "${{ inputs.shots }}"
+          IFS='|' read -ra specs <<< "$SHOTS"
           for s in "${specs[@]}"; do args+=(--shot "$s"); done
           export XDG_RUNTIME_DIR=$(mktemp -d)
           export USX_SHOT_TIMEOUT=300
