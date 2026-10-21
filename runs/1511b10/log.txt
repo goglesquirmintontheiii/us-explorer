@@ -1,0 +1,310 @@
+2026-10-21T06:14:41.346174Z  INFO bevy_diagnostic::system_information_diagnostics_plugin::internal: SystemInfo { os: "Linux (Ubuntu 24.04)", kernel: "7.0.0-1017-azure", cpu: "AMD EPYC 7763 64-Core Processor", core_count: "2", memory: "15.6 GiB" }
+2026-10-21T06:14:45.192811Z  INFO bevy_render::renderer: AdapterInfo { name: "llvmpipe (LLVM 20.1.2, 256 bits)", vendor: 65541, device: 0, device_type: Cpu, device_pci_bus_id: "", driver: "llvmpipe", driver_info: "Mesa 25.2.8-0ubuntu0.24.04.4 (LLVM 20.1.2)", backend: Vulkan, subgroup_min_size: 8, subgroup_max_size: 8, transient_saves_memory: false }
+2026-10-21T06:14:45.192830Z  WARN bevy_render::renderer: The selected adapter is using a driver that only supports software rendering. This is likely to be very slow. See https://bevy.org/learn/errors/b0006/
+2026-10-21T06:14:46.877170Z  INFO bevy_pbr::cluster: GPU clustering is supported on this device.
+2026-10-21T06:14:46.877208Z  INFO bevy_render::batching::gpu_preprocessing: GPU preprocessing is fully supported on this device.
+2026-10-21T06:14:46.877531Z  INFO bevy_egui::render: Using bindless_mode_array_size 16 (Device maximum 1000000)
+2026-10-21T06:14:46.877814Z  INFO bevy_winit::system: Creating new window US Explorer 0.3.1-hotfix (64v0)
+2026-10-21T06:14:46.880072Z  WARN winit::platform_impl::linux::x11::util::randr: XRandR reported that the display's 0mm in size, which is certifiably insane
+2026-10-21T06:14:46.880126Z  INFO winit::platform_impl::linux::x11::window: Guessed window scale factor: 1
+2026-10-21T06:14:46.883026Z  INFO us_explorer::terrain: terrain textures: BC1 compressed
+2026-10-21T06:15:10.455582Z  INFO us_explorer::buildings: buildings 15/9648/12316: 1337 buildings, 299679 vertices
+2026-10-21T06:15:13.355279Z  INFO us_explorer::buildings: buildings 15/9649/12316: 948 buildings, 217900 vertices
+2026-10-21T06:15:52.346985Z  INFO us_explorer::roads: roads 15/9649/12316: 864 ways, 95 junctions, 0 bridges, 4 tunnels, 943 props, 102221 vertices
+2026-10-21T06:17:14.941112Z  INFO us_explorer::buildings: buildings 15/9648/12317: 1689 buildings, 290613 vertices
+2026-10-21T06:17:26.012059Z  INFO us_explorer::roads: roads 15/9648/12317: 776 ways, 115 junctions, 0 bridges, 0 tunnels, 937 props, 91443 vertices
+2026-10-21T06:17:35.044065Z  INFO us_explorer::roads: roads 15/9648/12316: 490 ways, 67 junctions, 0 bridges, 1 tunnels, 689 props, 80071 vertices
+2026-10-21T06:17:56.924090Z  INFO us_explorer::buildings: buildings 15/9649/12317: 973 buildings, 206704 vertices
+2026-10-21T06:18:15.148886Z  INFO us_explorer::buildings: buildings 15/9648/12315: 542 buildings, 160303 vertices
+2026-10-21T06:18:26.805636Z  INFO us_explorer::roads: roads 15/9649/12317: 929 ways, 97 junctions, 0 bridges, 0 tunnels, 714 props, 93578 vertices
+2026-10-21T06:18:41.945852Z  INFO us_explorer::roads: roads 15/9649/12315: 1067 ways, 72 junctions, 0 bridges, 76 tunnels, 513 props, 148096 vertices
+2026-10-21T06:18:47.638978Z  INFO us_explorer::shot: screenshot shots/bld-manhattan-skyline.png after 240.0s (settled: false, deepest zoom 19)
+2026-10-21T06:18:53.376574Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-manhattan-skyline.png
+2026-10-21T06:19:11.839628Z  INFO us_explorer::buildings: buildings 15/9649/12315: 698 buildings, 191146 vertices
+2026-10-21T06:19:25.368869Z  INFO us_explorer::roads: roads 15/9647/12316: 716 ways, 80 junctions, 19 bridges, 0 tunnels, 428 props, 73727 vertices
+2026-10-21T06:19:56.049212Z  INFO us_explorer::buildings: buildings 15/9650/12316: 745 buildings, 179086 vertices
+2026-10-21T06:20:08.231250Z  INFO us_explorer::roads: roads 15/9648/12315: 1359 ways, 114 junctions, 22 bridges, 217 tunnels, 1021 props, 357517 vertices
+2026-10-21T06:20:29.863417Z  INFO us_explorer::buildings: buildings 15/9650/12315: 646 buildings, 276189 vertices
+2026-10-21T06:21:03.460419Z  INFO us_explorer::buildings: buildings 15/9647/12316: 303 buildings, 71249 vertices
+2026-10-21T06:21:21.782982Z  INFO us_explorer::roads: roads 15/9647/12317: 722 ways, 77 junctions, 2 bridges, 0 tunnels, 561 props, 69070 vertices
+2026-10-21T06:21:57.568042Z  INFO us_explorer::buildings: buildings 15/9650/12317: 255 buildings, 59347 vertices
+2026-10-21T06:22:03.044302Z  INFO us_explorer::roads: roads 15/9650/12316: 975 ways, 149 junctions, 15 bridges, 12 tunnels, 756 props, 156615 vertices
+2026-10-21T06:22:42.349128Z  INFO us_explorer::buildings: buildings 15/9649/12314: 946 buildings, 245361 vertices
+2026-10-21T06:22:50.396243Z  INFO us_explorer::roads: roads 15/9650/12315: 1248 ways, 135 junctions, 12 bridges, 165 tunnels, 849 props, 333881 vertices
+2026-10-21T06:23:08.558502Z  INFO us_explorer::shot: screenshot shots/bld-empire-state.png after 242.0s (settled: false, deepest zoom 19)
+2026-10-21T06:23:16.549520Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-empire-state.png
+2026-10-21T06:23:35.462717Z  INFO us_explorer::roads: roads 15/9648/12314: 935 ways, 186 junctions, 29 bridges, 24 tunnels, 611 props, 127594 vertices
+2026-10-21T06:25:53.467899Z  INFO us_explorer::roads: roads 15/6829/12443: 517 ways, 157 junctions, 0 bridges, 0 tunnels, 419 props, 79841 vertices
+2026-10-21T06:26:10.282586Z  INFO us_explorer::buildings: buildings 15/6829/12444: 1516 buildings, 262039 vertices
+2026-10-21T06:26:41.796886Z  INFO us_explorer::roads: roads 15/6829/12444: 265 ways, 144 junctions, 17 bridges, 0 tunnels, 467 props, 63771 vertices
+2026-10-21T06:26:44.784192Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:26:44.784208Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:26:47.970842Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:26:47.970859Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:27:25.016622Z  INFO us_explorer::buildings: buildings 15/6829/12443: 1700 buildings, 283296 vertices
+2026-10-21T06:27:33.565338Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:27:33.565355Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:27:37.277645Z  INFO us_explorer::shot: screenshot shots/bld-suburb-denver.png after 241.8s (settled: false, deepest zoom 19)
+2026-10-21T06:27:39.115531Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:27:39.115543Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:27:42.871675Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-suburb-denver.png
+2026-10-21T06:28:02.560740Z  INFO us_explorer::buildings: buildings 15/6828/12444: 780 buildings, 133821 vertices
+2026-10-21T06:28:21.335987Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:21.336005Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:23.049697Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:23.049716Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:24.997321Z  INFO us_explorer::roads: roads 15/6828/12444: 233 ways, 148 junctions, 0 bridges, 0 tunnels, 362 props, 61578 vertices
+2026-10-21T06:28:37.768643Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:37.768661Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:43.283120Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:43.283139Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:50.677327Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:50.677345Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:28:59.866884Z  INFO us_explorer::buildings: buildings 15/6828/12443: 1552 buildings, 253873 vertices
+2026-10-21T06:29:01.899147Z  INFO us_explorer::roads: roads 15/6828/12443: 360 ways, 108 junctions, 0 bridges, 0 tunnels, 548 props, 67762 vertices
+2026-10-21T06:29:22.005642Z  INFO us_explorer::roads: roads 15/6830/12444: 441 ways, 162 junctions, 12 bridges, 0 tunnels, 367 props, 64119 vertices
+2026-10-21T06:29:27.532122Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:29:27.532140Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:29:44.626279Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:29:44.626298Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:03.729632Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:03.729649Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:21.477143Z  INFO us_explorer::roads: roads 15/6829/12442: 439 ways, 136 junctions, 15 bridges, 0 tunnels, 650 props, 99048 vertices
+2026-10-21T06:30:21.484099Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:21.484120Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:36.708077Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:36.708096Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:44.435875Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:44.441325Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:44.439524Z  INFO us_explorer::buildings: buildings 15/6830/12443: 702 buildings, 153293 vertices
+2026-10-21T06:30:55.620928Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:30:55.620966Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:01.426846Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:01.426861Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:05.554730Z  INFO us_explorer::roads: roads 15/6830/12443: 686 ways, 172 junctions, 1 bridges, 0 tunnels, 359 props, 69449 vertices
+2026-10-21T06:31:17.143924Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:17.143964Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:51.767901Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:51.767920Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:31:51.779871Z  INFO us_explorer::buildings: buildings 15/6830/12444: 983 buildings, 206898 vertices
+2026-10-21T06:31:55.644491Z  INFO us_explorer::shot: screenshot shots/bld-house-street.png after 240.1s (settled: false, deepest zoom 19)
+2026-10-21T06:32:02.083354Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-house-street.png
+2026-10-21T06:32:02.095475Z  INFO us_explorer::roads: roads 15/6829/12445: 116 ways, 105 junctions, 1 bridges, 0 tunnels, 506 props, 48805 vertices
+2026-10-21T06:32:33.207576Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:32:33.207592Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:32:51.590376Z  INFO us_explorer::buildings: buildings 15/6829/12442: 1211 buildings, 204340 vertices
+2026-10-21T06:32:51.590446Z  INFO us_explorer::roads: roads 15/6830/12442: 324 ways, 170 junctions, 4 bridges, 0 tunnels, 652 props, 75216 vertices
+2026-10-21T06:33:04.428737Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:04.428756Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:12.286774Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:12.286797Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:42.534166Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:42.534183Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:33:45.286095Z  INFO us_explorer::roads: roads 15/6828/12442: 431 ways, 131 junctions, 0 bridges, 0 tunnels, 634 props, 80555 vertices
+2026-10-21T06:34:03.151019Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:34:03.151040Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:34:29.668272Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:34:29.668290Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:34:40.546608Z  INFO us_explorer::buildings: buildings 15/6829/12445: 1133 buildings, 204146 vertices
+2026-10-21T06:34:43.491516Z  INFO us_explorer::roads: roads 15/6830/12445: 141 ways, 90 junctions, 0 bridges, 0 tunnels, 542 props, 52529 vertices
+2026-10-21T06:34:51.703706Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:34:51.703725Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:02.104016Z  INFO us_explorer::buildings: buildings 15/6828/12442: 1788 buildings, 295357 vertices
+2026-10-21T06:35:33.655527Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:33.655543Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:39.232315Z  INFO us_explorer::roads: roads 15/6828/12445: 83 ways, 118 junctions, 0 bridges, 0 tunnels, 574 props, 60789 vertices
+2026-10-21T06:35:44.802048Z  INFO us_explorer::roads: roads 15/6831/12443: 444 ways, 189 junctions, 0 bridges, 3 tunnels, 514 props, 67251 vertices
+2026-10-21T06:35:47.435065Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:47.435116Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:55.959283Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:35:55.959340Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:36:04.084114Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:36:04.084133Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:36:17.754492Z  INFO us_explorer::shot: screenshot shots/bld-house-inside.png after 241.3s (settled: false, deepest zoom 19)
+2026-10-21T06:36:26.167444Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-house-inside.png
+2026-10-21T06:36:26.181040Z  INFO us_explorer::roads: roads 15/6827/12443: 357 ways, 208 junctions, 21 bridges, 0 tunnels, 437 props, 120842 vertices
+2026-10-21T06:36:45.262349Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:36:45.262404Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:05.116755Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:05.116980Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:10.645993Z  INFO us_explorer::buildings: buildings 15/6830/12442: 963 buildings, 165425 vertices
+2026-10-21T06:37:13.839166Z  INFO us_explorer::roads: roads 15/6827/12444: 278 ways, 206 junctions, 0 bridges, 0 tunnels, 543 props, 146727 vertices
+2026-10-21T06:37:13.839453Z  INFO us_explorer::roads: roads 15/6831/12444: 251 ways, 101 junctions, 5 bridges, 3 tunnels, 257 props, 49426 vertices
+2026-10-21T06:37:33.655812Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:33.655836Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:41.902304Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:41.902319Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:41.911929Z  INFO us_explorer::buildings: buildings 15/6828/12445: 1363 buildings, 220988 vertices
+2026-10-21T06:37:50.008367Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:37:50.008384Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:38:03.720455Z  INFO us_explorer::roads: roads 15/6827/12442: 268 ways, 179 junctions, 7 bridges, 0 tunnels, 277 props, 79539 vertices
+2026-10-21T06:38:20.281776Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:38:20.281795Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:38:37.190370Z  INFO us_explorer::roads: roads 15/6830/12441: 196 ways, 123 junctions, 0 bridges, 0 tunnels, 536 props, 51145 vertices
+2026-10-21T06:38:43.602047Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:38:43.602072Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:38:43.614028Z  INFO us_explorer::roads: roads 15/6828/12441: 400 ways, 149 junctions, 32 bridges, 3 tunnels, 791 props, 119462 vertices
+2026-10-21T06:39:02.668399Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:39:02.668420Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:39:16.629539Z  INFO us_explorer::buildings: buildings 15/6827/12444: 1233 buildings, 208778 vertices
+2026-10-21T06:39:44.421643Z  INFO us_explorer::buildings: buildings 15/6827/12443: 1227 buildings, 208630 vertices
+2026-10-21T06:39:47.235279Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:39:47.235345Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:39:47.249695Z  INFO us_explorer::roads: roads 15/6829/12441: 319 ways, 102 junctions, 16 bridges, 0 tunnels, 471 props, 71051 vertices
+2026-10-21T06:40:10.117045Z  INFO us_explorer::roads: roads 15/6831/12442: 211 ways, 181 junctions, 4 bridges, 0 tunnels, 453 props, 59487 vertices
+2026-10-21T06:40:41.475599Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:41.475616Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:47.199250Z  INFO us_explorer::shot: screenshot shots/bld-supermarket-inside.png after 241.9s (settled: false, deepest zoom 19)
+2026-10-21T06:40:47.203978Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:47.203995Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:53.354263Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:53.354281Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:40:56.265747Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-supermarket-inside.png
+2026-10-21T06:41:19.271876Z  INFO us_explorer::roads: roads 15/6827/12445: 295 ways, 271 junctions, 0 bridges, 0 tunnels, 577 props, 66443 vertices
+2026-10-21T06:41:21.856530Z  INFO us_explorer::roads: roads 15/6827/12441: 358 ways, 222 junctions, 13 bridges, 0 tunnels, 320 props, 93249 vertices
+2026-10-21T06:41:30.621852Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:41:30.621870Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:42:03.617330Z  INFO us_explorer::buildings: buildings 15/6827/12442: 523 buildings, 95640 vertices
+2026-10-21T06:42:07.898900Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:42:07.898965Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:42:23.030226Z  INFO us_explorer::buildings: buildings 15/6829/12441: 964 buildings, 171562 vertices
+2026-10-21T06:42:45.228080Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:42:45.228098Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:42:54.327229Z  INFO us_explorer::roads: roads 15/6830/12446: 372 ways, 303 junctions, 0 bridges, 0 tunnels, 155 props, 41790 vertices
+2026-10-21T06:42:58.918881Z  INFO us_explorer::roads: roads 15/6829/12446: 275 ways, 209 junctions, 0 bridges, 0 tunnels, 270 props, 39407 vertices
+2026-10-21T06:43:19.208405Z  INFO us_explorer::roads: roads 15/6828/12446: 523 ways, 296 junctions, 25 bridges, 0 tunnels, 415 props, 73965 vertices
+2026-10-21T06:43:41.735110Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:43:41.735130Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:06.220131Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:06.220149Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:24.244067Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:24.244084Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:50.546769Z  INFO us_explorer::roads: roads 15/6826/12444: 119 ways, 107 junctions, 1 bridges, 0 tunnels, 97 props, 43847 vertices
+2026-10-21T06:44:54.957462Z  INFO us_explorer::buildings: buildings 15/6830/12445: 864 buildings, 184639 vertices
+2026-10-21T06:44:57.134327Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:44:57.134343Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:45:01.567584Z  INFO us_explorer::buildings: buildings 15/6828/12441: 1477 buildings, 246916 vertices
+2026-10-21T06:45:05.976039Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:45:05.976053Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:45:17.289577Z  INFO us_explorer::shot: screenshot shots/bld-parking-safeway.png after 241.0s (settled: false, deepest zoom 19)
+2026-10-21T06:45:23.989498Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-parking-safeway.png
+2026-10-21T06:45:32.940106Z  INFO us_explorer::roads: roads 15/6826/12443: 246 ways, 211 junctions, 11 bridges, 0 tunnels, 244 props, 44259 vertices
+2026-10-21T06:47:17.529079Z  INFO us_explorer::roads: roads 15/9374/12537: 1007 ways, 240 junctions, 29 bridges, 7 tunnels, 790 props, 190889 vertices
+2026-10-21T06:47:20.064705Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:47:20.064729Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:48:23.733918Z  INFO us_explorer::roads: roads 15/9374/12536: 1335 ways, 203 junctions, 18 bridges, 25 tunnels, 722 props, 170081 vertices
+2026-10-21T06:49:00.141731Z  INFO us_explorer::roads: roads 15/9373/12536: 991 ways, 108 junctions, 41 bridges, 6 tunnels, 730 props, 120065 vertices
+2026-10-21T06:49:02.535721Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:02.535740Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:39.044774Z  INFO us_explorer::buildings: buildings 15/9374/12537: 430 buildings, 93505 vertices
+2026-10-21T06:49:40.325075Z  INFO us_explorer::shot: screenshot shots/bld-office-inside-dc.png after 240.7s (settled: false, deepest zoom 19)
+2026-10-21T06:49:44.203429Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-office-inside-dc.png
+2026-10-21T06:49:46.777729Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:46.777776Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:48.185309Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:48.185335Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:49.490085Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:49.490102Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:49:58.769128Z  INFO us_explorer::roads: roads 15/9649/12315: 1067 ways, 72 junctions, 0 bridges, 76 tunnels, 513 props, 148096 vertices
+2026-10-21T06:49:59.884125Z  INFO us_explorer::roads: roads 15/9648/12315: 1359 ways, 114 junctions, 22 bridges, 217 tunnels, 1021 props, 357517 vertices
+2026-10-21T06:49:59.888087Z  INFO us_explorer::roads: roads 15/9649/12314: 753 ways, 90 junctions, 0 bridges, 12 tunnels, 715 props, 91821 vertices
+2026-10-21T06:50:02.235209Z  INFO us_explorer::roads: roads 15/9649/12316: 864 ways, 95 junctions, 0 bridges, 4 tunnels, 943 props, 102221 vertices
+2026-10-21T06:50:03.365000Z  INFO us_explorer::roads: roads 15/9648/12316: 490 ways, 67 junctions, 0 bridges, 1 tunnels, 689 props, 80071 vertices
+2026-10-21T06:50:03.365873Z  INFO us_explorer::roads: roads 15/9648/12314: 935 ways, 186 junctions, 29 bridges, 24 tunnels, 611 props, 127594 vertices
+2026-10-21T06:50:04.417721Z  INFO us_explorer::roads: roads 15/9650/12314: 1022 ways, 100 junctions, 0 bridges, 267 tunnels, 543 props, 296227 vertices
+2026-10-21T06:50:05.281586Z  INFO us_explorer::roads: roads 15/9650/12315: 1248 ways, 135 junctions, 12 bridges, 165 tunnels, 849 props, 333881 vertices
+2026-10-21T06:50:10.886175Z  INFO us_explorer::buildings: buildings 15/9648/12315: 542 buildings, 160003 vertices
+2026-10-21T06:50:10.886193Z  INFO us_explorer::buildings: buildings 15/9649/12315: 698 buildings, 191146 vertices
+2026-10-21T06:50:10.886197Z  INFO us_explorer::buildings: buildings 15/9649/12314: 946 buildings, 245373 vertices
+2026-10-21T06:50:10.886201Z  INFO us_explorer::buildings: buildings 15/9649/12316: 948 buildings, 217764 vertices
+2026-10-21T06:50:10.886204Z  INFO us_explorer::buildings: buildings 15/9648/12316: 1337 buildings, 299595 vertices
+2026-10-21T06:50:10.886208Z  INFO us_explorer::buildings: buildings 15/9650/12315: 646 buildings, 276177 vertices
+2026-10-21T06:50:10.886212Z  INFO us_explorer::buildings: buildings 15/9648/12314: 422 buildings, 115816 vertices
+2026-10-21T06:51:26.838022Z  INFO us_explorer::roads: roads 15/9647/12315: 402 ways, 56 junctions, 21 bridges, 4 tunnels, 255 props, 57044 vertices
+2026-10-21T06:51:26.838395Z  INFO us_explorer::roads: roads 15/9647/12316: 716 ways, 80 junctions, 19 bridges, 0 tunnels, 428 props, 73727 vertices
+2026-10-21T06:51:29.798326Z  INFO us_explorer::roads: roads 15/9650/12316: 975 ways, 149 junctions, 15 bridges, 12 tunnels, 756 props, 156615 vertices
+2026-10-21T06:52:24.683584Z  INFO us_explorer::buildings: buildings 15/9650/12314: 494 buildings, 214312 vertices
+2026-10-21T06:52:36.239869Z  INFO us_explorer::roads: roads 15/9647/12314: 100 ways, 15 junctions, 1 bridges, 8 tunnels, 93 props, 41053 vertices
+2026-10-21T06:52:36.240042Z  INFO us_explorer::roads: roads 15/9649/12317: 929 ways, 97 junctions, 0 bridges, 0 tunnels, 714 props, 93578 vertices
+2026-10-21T06:52:36.241568Z  INFO us_explorer::roads: roads 15/9648/12317: 776 ways, 115 junctions, 0 bridges, 0 tunnels, 937 props, 91443 vertices
+2026-10-21T06:52:41.734867Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:52:41.735717Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:52:53.170544Z  INFO us_explorer::buildings: buildings 15/9650/12316: 745 buildings, 179350 vertices
+2026-10-21T06:52:53.170565Z  INFO us_explorer::buildings: buildings 15/9647/12316: 303 buildings, 71249 vertices
+2026-10-21T06:52:53.172254Z  INFO us_explorer::buildings: buildings 15/9647/12315: 118 buildings, 44317 vertices
+2026-10-21T06:53:24.639233Z  INFO us_explorer::roads: roads 15/9648/12313: 400 ways, 89 junctions, 20 bridges, 2 tunnels, 372 props, 65483 vertices
+2026-10-21T06:53:29.007323Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:53:29.007343Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:53:29.021324Z  INFO us_explorer::roads: roads 15/9649/12313: 963 ways, 116 junctions, 2 bridges, 7 tunnels, 664 props, 106220 vertices
+2026-10-21T06:53:29.021881Z  INFO us_explorer::roads: roads 15/9650/12317: 1083 ways, 99 junctions, 8 bridges, 2 tunnels, 574 props, 95084 vertices
+2026-10-21T06:53:29.025349Z  INFO us_explorer::roads: roads 15/9647/12317: 722 ways, 77 junctions, 2 bridges, 0 tunnels, 561 props, 69070 vertices
+2026-10-21T06:53:37.607870Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:53:37.607889Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:53:55.285020Z  INFO us_explorer::shot: screenshot shots/bld-mcdonalds-inside.png after 241.5s (settled: false, deepest zoom 19)
+2026-10-21T06:54:01.181207Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:01.181224Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:04.106525Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-mcdonalds-inside.png
+2026-10-21T06:54:06.975826Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:06.975847Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:15.379861Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:15.379891Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:54:31.720039Z  INFO us_explorer::buildings: buildings 15/6829/12444: 1516 buildings, 261951 vertices
+2026-10-21T06:54:31.720058Z  INFO us_explorer::buildings: buildings 15/6829/12443: 1700 buildings, 283296 vertices
+2026-10-21T06:54:31.720063Z  INFO us_explorer::buildings: buildings 15/6828/12444: 780 buildings, 133781 vertices
+2026-10-21T06:54:31.720067Z  INFO us_explorer::buildings: buildings 15/6828/12443: 1552 buildings, 253797 vertices
+2026-10-21T06:54:31.720071Z  INFO us_explorer::buildings: buildings 15/6830/12444: 983 buildings, 206898 vertices
+2026-10-21T06:54:31.720075Z  INFO us_explorer::buildings: buildings 15/6830/12443: 702 buildings, 153265 vertices
+2026-10-21T06:54:31.720079Z  INFO us_explorer::buildings: buildings 15/6829/12445: 1133 buildings, 204146 vertices
+2026-10-21T06:54:31.720083Z  INFO us_explorer::buildings: buildings 15/6828/12445: 1363 buildings, 220988 vertices
+2026-10-21T06:54:31.720088Z  INFO us_explorer::buildings: buildings 15/6829/12442: 1211 buildings, 204340 vertices
+2026-10-21T06:54:31.720095Z  INFO us_explorer::buildings: buildings 15/6828/12442: 1788 buildings, 295357 vertices
+2026-10-21T06:54:31.720099Z  INFO us_explorer::buildings: buildings 15/6830/12445: 864 buildings, 184639 vertices
+2026-10-21T06:54:31.720102Z  INFO us_explorer::buildings: buildings 15/6830/12442: 963 buildings, 165425 vertices
+2026-10-21T06:54:31.720106Z  INFO us_explorer::buildings: buildings 15/6827/12443: 1227 buildings, 208630 vertices
+2026-10-21T06:54:31.720110Z  INFO us_explorer::buildings: buildings 15/6827/12444: 1233 buildings, 208778 vertices
+2026-10-21T06:56:00.654124Z  INFO us_explorer::roads: roads 15/6829/12443: 517 ways, 157 junctions, 0 bridges, 0 tunnels, 419 props, 79841 vertices
+2026-10-21T06:56:00.654789Z  INFO us_explorer::roads: roads 15/6829/12444: 265 ways, 144 junctions, 17 bridges, 0 tunnels, 467 props, 63771 vertices
+2026-10-21T06:56:00.655254Z  INFO us_explorer::roads: roads 15/6828/12444: 233 ways, 148 junctions, 0 bridges, 0 tunnels, 362 props, 61578 vertices
+2026-10-21T06:56:03.303679Z  INFO us_explorer::roads: roads 15/6828/12443: 360 ways, 108 junctions, 0 bridges, 0 tunnels, 548 props, 67762 vertices
+2026-10-21T06:56:03.306603Z  INFO us_explorer::roads: roads 15/6830/12443: 686 ways, 172 junctions, 1 bridges, 0 tunnels, 359 props, 69449 vertices
+2026-10-21T06:56:03.309048Z  INFO us_explorer::roads: roads 15/6830/12444: 441 ways, 162 junctions, 12 bridges, 0 tunnels, 367 props, 64119 vertices
+2026-10-21T06:56:03.309597Z  INFO us_explorer::roads: roads 15/6828/12445: 83 ways, 118 junctions, 0 bridges, 0 tunnels, 574 props, 60789 vertices
+2026-10-21T06:56:06.089705Z  INFO us_explorer::roads: roads 15/6829/12445: 116 ways, 105 junctions, 1 bridges, 0 tunnels, 506 props, 48805 vertices
+2026-10-21T06:56:06.089936Z  INFO us_explorer::roads: roads 15/6828/12442: 431 ways, 131 junctions, 0 bridges, 0 tunnels, 634 props, 80555 vertices
+2026-10-21T06:56:06.090932Z  INFO us_explorer::roads: roads 15/6829/12442: 439 ways, 136 junctions, 15 bridges, 0 tunnels, 650 props, 99048 vertices
+2026-10-21T06:56:08.678003Z  INFO us_explorer::roads: roads 15/6830/12445: 141 ways, 90 junctions, 0 bridges, 0 tunnels, 542 props, 52529 vertices
+2026-10-21T06:56:08.678271Z  INFO us_explorer::roads: roads 15/6830/12442: 324 ways, 170 junctions, 4 bridges, 0 tunnels, 652 props, 75216 vertices
+2026-10-21T06:56:08.678841Z  INFO us_explorer::roads: roads 15/6827/12444: 278 ways, 206 junctions, 0 bridges, 0 tunnels, 543 props, 146727 vertices
+2026-10-21T06:56:11.436977Z  INFO us_explorer::roads: roads 15/6827/12443: 357 ways, 208 junctions, 21 bridges, 0 tunnels, 437 props, 120842 vertices
+2026-10-21T06:56:11.437742Z  INFO us_explorer::roads: roads 15/6827/12445: 295 ways, 271 junctions, 0 bridges, 0 tunnels, 577 props, 66443 vertices
+2026-10-21T06:56:11.438375Z  INFO us_explorer::roads: roads 15/6831/12444: 251 ways, 101 junctions, 5 bridges, 3 tunnels, 257 props, 49426 vertices
+2026-10-21T06:56:14.111932Z  INFO us_explorer::roads: roads 15/6827/12442: 268 ways, 179 junctions, 7 bridges, 0 tunnels, 277 props, 79539 vertices
+2026-10-21T06:56:14.112726Z  INFO us_explorer::roads: roads 15/6831/12443: 444 ways, 189 junctions, 0 bridges, 3 tunnels, 514 props, 67251 vertices
+2026-10-21T06:56:14.116769Z  INFO us_explorer::roads: roads 15/6829/12446: 275 ways, 209 junctions, 0 bridges, 0 tunnels, 270 props, 39407 vertices
+2026-10-21T06:56:14.117535Z  INFO us_explorer::roads: roads 15/6831/12445: 84 ways, 63 junctions, 3 bridges, 0 tunnels, 340 props, 38752 vertices
+2026-10-21T06:56:16.756072Z  INFO us_explorer::roads: roads 15/6828/12446: 523 ways, 296 junctions, 25 bridges, 0 tunnels, 415 props, 73965 vertices
+2026-10-21T06:56:16.756877Z  INFO us_explorer::roads: roads 15/6830/12446: 372 ways, 303 junctions, 0 bridges, 0 tunnels, 155 props, 41790 vertices
+2026-10-21T06:56:16.757380Z  INFO us_explorer::roads: roads 15/6829/12441: 319 ways, 102 junctions, 16 bridges, 0 tunnels, 471 props, 71051 vertices
+2026-10-21T06:56:16.757846Z  INFO us_explorer::roads: roads 15/6831/12442: 211 ways, 181 junctions, 4 bridges, 0 tunnels, 453 props, 59487 vertices
+2026-10-21T06:56:19.210872Z  INFO us_explorer::roads: roads 15/6830/12441: 196 ways, 123 junctions, 0 bridges, 0 tunnels, 536 props, 51145 vertices
+2026-10-21T06:56:21.015869Z  INFO us_explorer::roads: roads 15/6828/12441: 400 ways, 149 junctions, 32 bridges, 3 tunnels, 791 props, 119462 vertices
+2026-10-21T06:56:21.016094Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:56:21.016104Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:56:41.921041Z  INFO us_explorer::buildings: buildings 15/6827/12445: 1171 buildings, 197668 vertices
+2026-10-21T06:56:41.921060Z  INFO us_explorer::buildings: buildings 15/6827/12442: 523 buildings, 95640 vertices
+2026-10-21T06:56:44.267463Z  INFO us_explorer::buildings: buildings 15/6831/12443: 815 buildings, 176595 vertices
+2026-10-21T06:56:56.171707Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:56:56.171724Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:57:05.847329Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:57:05.850968Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:57:30.694231Z  INFO us_explorer::buildings: buildings 15/6831/12445: 730 buildings, 171237 vertices
+2026-10-21T06:57:35.740762Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:57:35.740779Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:58:06.015224Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:58:06.018964Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:58:11.189239Z  INFO us_explorer::buildings: buildings 15/6831/12444: 1272 buildings, 273386 vertices
+2026-10-21T06:58:13.719352Z  INFO us_explorer::buildings: buildings 15/6828/12446: 631 buildings, 117976 vertices
+2026-10-21T06:58:26.468910Z  INFO us_explorer::shot: screenshot shots/bld-night-suburb.png after 242.5s (settled: false, deepest zoom 19)
+2026-10-21T06:58:34.196693Z  INFO bevy_render::view::window::screenshot: Screenshot saved to shots/bld-night-suburb.png
+2026-10-21T06:58:36.682383Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
+2026-10-21T06:58:36.682403Z ERROR bevy_render::slab_allocator: Use-after-free: attempted to copy element data for an unallocated key
