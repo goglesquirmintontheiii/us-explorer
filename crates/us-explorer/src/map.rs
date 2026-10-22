@@ -345,7 +345,7 @@ fn draw_maps(
     }
 
     // ------------------------------------------------------------ minimap
-    if settings.0.show_minimap && !map.open && !menus.pause {
+    if settings.0.show_minimap && !map.open && !menus.pause && !menus.title {
         let size = 210.0;
         let screen = ctx.content_rect();
         let rect = Rect::from_min_size(Pos2::new(screen.max.x - size - 12.0, 12.0), EVec2::splat(size));

@@ -15,7 +15,7 @@ pub struct ShotSpec {
     pub agl: f64,
     pub heading: f64,
     pub pitch: f64,
-    /// Menu to open for the picture: pause, teleport, settings, credits or region.
+    /// Menu to open for the picture: pause, teleport, settings, credits, region or title.
     pub menu: Option<String>,
     /// UTC time for this picture (overrides --time).
     pub time: Option<f64>,
@@ -101,6 +101,7 @@ fn run(
     mut clock: ResMut<crate::sun::SimClock>,
     mut settings: ResMut<crate::GameSettings>,
     args: Res<crate::Args>,
+    mut title: Option<ResMut<crate::title::Title>>,
 ) {
     r.frame += 1;
     if r.current.is_none() {
@@ -132,6 +133,10 @@ fn run(
         menus.settings = m == "settings";
         menus.credits = m == "credits";
         menus.region = m == "region";
+        // The title screen, as at start (checks the menus actually draw there).
+        if let Some(t) = title.as_deref_mut() {
+            t.open = m == "title";
+        }
         if next.map {
             map.open_at(next.lat, next.lon);
         } else {

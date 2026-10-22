@@ -209,7 +209,7 @@ fn draw(
     let geo = viewer.geo();
 
     // ------------------------------------------------------------- overlay
-    if settings.0.show_debug_overlay && !map.open {
+    if settings.0.show_debug_overlay && !map.open && !menus.title {
         let fps = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS).and_then(|d| d.smoothed()).unwrap_or(0.0);
         let ms = diagnostics.get(&FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|d| d.smoothed()).unwrap_or(0.0);
         let net = usx_core::net::stats();

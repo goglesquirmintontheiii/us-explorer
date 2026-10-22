@@ -135,6 +135,12 @@ fn main() {
     )
     .insert_resource(GameSettings(settings))
     .insert_resource(args)
+    // The main camera carries the menus' context explicitly (see camera.rs).
+    .insert_resource(bevy_egui::EguiGlobalSettings { auto_create_primary_context: false, ..default() })
+    // Bevy's "static scene" shortcut in transform propagation sometimes left newly
+    // spawned roadside objects at the world origin (drawn huge, right on top of you);
+    // propagate every hierarchy every frame instead.
+    .insert_resource(bevy::transform::systems::StaticTransformOptimizations::Disabled)
     .add_plugins((
         bevy_egui::EguiPlugin::default(),
         bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),

@@ -9,6 +9,7 @@ name=street-level-boulder;lat=40.0150;lon=-105.2705;agl=2;heading=260;pitch=2
 name=us-overview;lat=38.5;lon=-97.0;agl=1800000;heading=0;pitch=-89
 name=el-capitan-close;lat=37.7230;lon=-119.6450;agl=250;heading=330;pitch=-4
 name=park-ground;lat=40.7812;lon=-73.9665;agl=3;heading=0;pitch=-8
+name=title-screen;lat=39.7392;lon=-104.9903;agl=800;heading=265;pitch=-10;menu=title
 name=menu-teleport;lat=39.7392;lon=-104.9903;agl=800;heading=265;pitch=-10;menu=teleport
 name=night-denver;lat=39.7392;lon=-104.9903;agl=900;heading=265;pitch=-8;time=2026-06-22T06:00:00Z
 name=dusk-grand-canyon;lat=36.0572;lon=-112.1400;agl=300;heading=270;pitch=-4;time=2026-06-22T03:20:00Z

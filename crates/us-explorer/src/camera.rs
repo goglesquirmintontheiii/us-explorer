@@ -39,6 +39,9 @@ fn spawn_camera(mut commands: Commands, settings: Res<crate::GameSettings>) {
     commands.spawn((
         MainCamera,
         Camera3d::default(),
+        // Menus draw on this camera (never the bathroom mirror's, which renders to an
+        // image and is usually off: egui picking that one left a black, dead screen).
+        bevy_egui::PrimaryEguiContext,
         Projection::Perspective(PerspectiveProjection { fov: settings.0.fov_deg.to_radians(), near: 0.1, ..default() }),
         AtmosphereSettings { aerial_view_lut_max_distance: 120_000.0, ..default() },
         AtmosphereEnvironmentMapLight::default(),
